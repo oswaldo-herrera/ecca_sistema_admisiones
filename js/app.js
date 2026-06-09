@@ -98,10 +98,12 @@ async function getRecord(folio) {
 }
 
 async function saveRecord(d) {
-  const { error } = await _sb
+  const { data, error } = await _sb
     .from('inscripciones')
-    .upsert(toDb(d), { onConflict: 'folio' });
+    .upsert(toDb(d), { onConflict: 'folio' })
+    .select();
   if (error) throw error;
+  if (!data || data.length === 0) throw new Error('El registro no se guardó — verifique los permisos de la tabla en Supabase.');
 }
 
 async function deleteRecord(folio) {

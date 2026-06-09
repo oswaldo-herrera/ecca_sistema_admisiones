@@ -30,8 +30,8 @@
       <a href="recibo.html" class="sb-item"><i class="fas fa-file-invoice"></i><span>Recibo</span></a>
     </nav>
     <div class="sb-footer">
-      <i class="fas fa-location-dot"></i> Independencia 841, León, Gto.<br>
-      Tels. 211-5392 y 211-5393
+      <i class="fas fa-location-dot"></i>5 de Febrero 628, Centro, León, Gto.<br>
+      Tel. 479 153 4007
     </div>
   </aside>
   <div class="sidebar-overlay"></div>
@@ -355,15 +355,19 @@
 <script>
 let currentFolio = getActiveFolio();
 
-// Restaurar registro activo si existe
+// Restaurar registro activo si existe en BD
 (async function init() {
   if (currentFolio) {
     try {
       const rec = await getRecord(currentFolio);
       if (rec) { setForm(rec); return; }
     } catch(e) { /* silencioso */ }
+    // Folio en sesión no existe en BD — limpiar para evitar estado inconsistente
+    currentFolio = null;
+    setActiveFolio(null);
   }
   $('folio-disp').textContent = '—';
+  $('bc-folio').textContent   = 'Nuevo registro';
 })();
 
 /* ---- UI helpers ---- */
