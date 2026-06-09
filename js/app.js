@@ -105,11 +105,12 @@ async function saveRecord(d) {
 }
 
 async function deleteRecord(folio) {
-  const { error } = await _sb
+  const { error, count } = await _sb
     .from('inscripciones')
-    .delete()
+    .delete({ count: 'exact' })
     .eq('folio', folio);
   if (error) throw error;
+  if (count === 0) throw new Error('El registro no se encontró o no hay permiso para eliminarlo.');
 }
 
 async function nextFolio() {
