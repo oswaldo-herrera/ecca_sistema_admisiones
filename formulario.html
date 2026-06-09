@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ECCA — Nueva Inscripción</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<div class="layout">
+
+  <!-- ===== SIDEBAR ===== -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-brand">
+      <div class="sb-logo" style="background:#fff;padding:3px">
+        <img src="images/ecca_logo.png" alt="Logo ECCA" style="width:100%;height:100%;object-fit:contain;display:block">
+      </div>
+      <div>
+        <div class="sb-brand-name">ECCA Prepa León</div>
+        <div class="sb-brand-sub">Sistema de Admisiones</div>
+      </div>
+    </div>
+    <nav class="sb-nav">
+      <div class="sb-group-label">Principal</div>
+      <a href="index.html" class="sb-item"><i class="fas fa-house"></i><span>Inicio</span></a>
+      <a href="formulario.html" class="sb-item"><i class="fas fa-user-plus"></i><span>Nueva Inscripción</span></a>
+      <div class="sb-group-label">Gestión</div>
+      <a href="base-datos.html" class="sb-item"><i class="fas fa-table-list"></i><span>Base de Datos</span><span class="sb-badge">0</span></a>
+      <a href="recibo.html" class="sb-item"><i class="fas fa-file-invoice"></i><span>Recibo</span></a>
+    </nav>
+    <div class="sb-footer">
+      <i class="fas fa-location-dot"></i> Independencia 841, León, Gto.<br>
+      Tels. 211-5392 y 211-5393
+    </div>
+  </aside>
+  <div class="sidebar-overlay"></div>
+
+  <!-- ===== MAIN ===== -->
+  <div class="main-content">
+
+    <!-- Topbar -->
+    <header class="topbar">
+      <button class="topbar-hamburger" aria-label="Menú"><i class="fas fa-bars"></i></button>
+      <nav class="topbar-breadcrumb">
+        <a href="index.html"><i class="fas fa-house"></i></a>
+        <span class="sep">›</span>
+        <a href="formulario.html">Inscripciones</a>
+        <span class="sep">›</span>
+        <span class="current" id="bc-folio">Nuevo registro</span>
+      </nav>
+      <div class="topbar-right">
+        <div class="topbar-folio">
+          <span class="lbl">Folio</span>
+          <span class="val" id="folio-disp">—</span>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="guardarRegistro()">
+          <i class="fas fa-floppy-disk"></i> Guardar
+        </button>
+      </div>
+    </header>
+
+    <!-- Page header -->
+    <div class="page-header">
+      <div>
+        <div class="page-title">Registro de Inscripción</div>
+        <div class="page-sub">Complete los datos del alumno y el pago para generar el expediente.</div>
+      </div>
+      <div class="page-actions">
+        <button class="btn btn-ghost btn-sm" onclick="exportarCSV()"><i class="fas fa-download"></i> Exportar BD</button>
+        <button class="btn btn-secondary btn-sm" onclick="abrirBuscar()"><i class="fas fa-magnifying-glass"></i> Buscar</button>
+        <button class="btn btn-danger btn-sm" onclick="eliminarRegistro()"><i class="fas fa-trash"></i> Eliminar</button>
+      </div>
+    </div>
+
+    <!-- Form body -->
+    <div class="page-body">
+
+      <!-- DATOS DEL ALUMNO -->
+      <div class="card">
+        <div class="card-header">
+          <div class="ch-icon ch-blue"><i class="fas fa-user-graduate"></i></div>
+          <div><div class="ch-title">Datos del Alumno</div><div class="ch-sub">Información personal del estudiante</div></div>
+        </div>
+        <div class="card-body">
+          <div class="form-grid">
+            <div class="field full">
+              <label class="field-label">Nombre completo <span class="req">*</span></label>
+              <input class="field-input" id="f-nombre" type="text" placeholder="Apellido Paterno  Apellido Materno  Nombre(s)">
+            </div>
+            <div class="field">
+              <label class="field-label">CURP</label>
+              <input class="field-input" id="f-curp" type="text" maxlength="18" placeholder="18 caracteres" oninput="this.value=this.value.toUpperCase()">
+            </div>
+            <div class="field">
+              <label class="field-label">Fecha de nacimiento</label>
+              <input class="field-input" id="f-fnac" type="date" onchange="calcEdad()">
+            </div>
+            <div class="field" style="max-width:110px">
+              <label class="field-label">Edad</label>
+              <input class="field-input" id="f-edad" type="number" placeholder="0" min="0" max="99">
+            </div>
+            <div class="field">
+              <label class="field-label">Teléfono</label>
+              <input class="field-input" id="f-tel" type="tel" placeholder="10 dígitos">
+            </div>
+            <div class="field">
+              <label class="field-label">Correo electrónico</label>
+              <input class="field-input" id="f-correo" type="email" placeholder="correo@ejemplo.com">
+            </div>
+            <div class="field full">
+              <label class="field-label">Escuela de procedencia</label>
+              <input class="field-input" id="f-escuela" type="text" placeholder="Nombre de la institución de donde proviene">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DATOS DEL PADRE / TUTOR -->
+      <div class="card">
+        <div class="card-header">
+          <div class="ch-icon ch-gold"><i class="fas fa-people-roof"></i></div>
+          <div><div class="ch-title">Datos del Padre / Tutor</div><div class="ch-sub">Responsable del alumno</div></div>
+        </div>
+        <div class="card-body">
+          <div class="form-grid">
+            <div class="field half">
+              <label class="field-label">Nombre completo</label>
+              <input class="field-input" id="f-pnombre" type="text" placeholder="Nombre del padre o tutor">
+            </div>
+            <div class="field">
+              <label class="field-label">Ocupación</label>
+              <input class="field-input" id="f-pocup" type="text" placeholder="Ocupación">
+            </div>
+            <div class="field">
+              <label class="field-label">Teléfono</label>
+              <input class="field-input" id="f-ptel" type="tel" placeholder="10 dígitos">
+            </div>
+            <div class="field">
+              <label class="field-label">Correo electrónico</label>
+              <input class="field-input" id="f-pcorreo" type="email" placeholder="correo@ejemplo.com">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MODALIDAD + PERFIL (dos columnas) -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+
+        <div class="card" style="margin-bottom:0">
+          <div class="card-header">
+            <div class="ch-icon ch-navy"><i class="fas fa-graduation-cap"></i></div>
+            <div><div class="ch-title">Modalidad</div></div>
+          </div>
+          <div class="card-body">
+            <div class="field">
+              <label class="field-label">Modalidad de estudio <span class="req">*</span></label>
+              <select class="field-select" id="f-modalidad">
+                <option value="">— Seleccionar —</option>
+                <option>Cuatrimestral</option>
+                <option>Semestral</option>
+                <option>Escolarizado</option>
+                <option>Abierto</option>
+                <option>En línea</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:0">
+          <div class="card-header">
+            <div class="ch-icon ch-purple"><i class="fas fa-person-running"></i></div>
+            <div><div class="ch-title">Perfil del Estudiante</div></div>
+          </div>
+          <div class="card-body">
+            <div class="form-grid" style="grid-template-columns:1fr 1fr;gap:12px">
+              <div class="field">
+                <label class="field-label">¿Trabaja actualmente?</label>
+                <select class="field-select" id="f-trabaja">
+                  <option value="">—</option>
+                  <option>Sí</option>
+                  <option>No</option>
+                </select>
+              </div>
+              <div class="field">
+                <label class="field-label">Deporte</label>
+                <input class="field-input" id="f-deporte" type="text" placeholder="Deporte que practica">
+              </div>
+              <div class="field full">
+                <label class="field-label">Objetivo principal</label>
+                <input class="field-input" id="f-objetivo" type="text" placeholder="¿Por qué desea estudiar aquí?">
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <div style="height:14px"></div>
+
+      <!-- DOCUMENTOS RECIBIDOS -->
+      <div class="card">
+        <div class="card-header">
+          <div class="ch-icon ch-green"><i class="fas fa-folder-open"></i></div>
+          <div><div class="ch-title">Documentos Recibidos</div><div class="ch-sub">Marque los documentos entregados por el alumno</div></div>
+        </div>
+        <div class="card-body">
+          <div class="doc-grid">
+            <div class="doc-card" onclick="toggleDoc(this,'d-acta')">
+              <span class="doc-icon">📄</span>
+              <span class="doc-name">Acta de Nacimiento</span>
+              <input type="checkbox" id="d-acta" onclick="event.stopPropagation()">
+              <input type="text"     id="d-acta-obs" placeholder="Obs." onclick="event.stopPropagation()">
+            </div>
+            <div class="doc-card" onclick="toggleDoc(this,'d-curp')">
+              <span class="doc-icon">🪪</span>
+              <span class="doc-name">CURP</span>
+              <input type="checkbox" id="d-curp" onclick="event.stopPropagation()">
+              <input type="text"     id="d-curp-obs" placeholder="Obs." onclick="event.stopPropagation()">
+            </div>
+            <div class="doc-card" onclick="toggleDoc(this,'d-cert')">
+              <span class="doc-icon">🎓</span>
+              <span class="doc-name">Certificado</span>
+              <input type="checkbox" id="d-cert" onclick="event.stopPropagation()">
+              <input type="text"     id="d-cert-obs" placeholder="Obs." onclick="event.stopPropagation()">
+            </div>
+            <div class="doc-card" onclick="toggleDoc(this,'d-fotos')">
+              <span class="doc-icon">📷</span>
+              <span class="doc-name">Fotografías</span>
+              <input type="checkbox" id="d-fotos" onclick="event.stopPropagation()">
+              <input type="text"     id="d-fotos-obs" placeholder="Obs." onclick="event.stopPropagation()">
+            </div>
+            <div class="doc-card" onclick="toggleDoc(this,'d-otro')">
+              <span class="doc-icon">📎</span>
+              <span class="doc-name">Otro</span>
+              <input type="checkbox" id="d-otro" onclick="event.stopPropagation()">
+              <input type="text"     id="d-otro-obs" placeholder="Especificar" onclick="event.stopPropagation()">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CONTROL ADMINISTRATIVO -->
+      <div class="card">
+        <div class="card-header">
+          <div class="ch-icon ch-gold"><i class="fas fa-circle-dollar-to-slot"></i></div>
+          <div><div class="ch-title">Control Administrativo</div><div class="ch-sub">Registro del pago realizado</div></div>
+        </div>
+        <div class="card-body">
+          <div class="form-grid">
+            <div class="field">
+              <label class="field-label">Fecha de pago</label>
+              <input class="field-input" id="f-fecha-pago" type="date">
+            </div>
+            <div class="field">
+              <label class="field-label">Concepto</label>
+              <select class="field-select" id="f-concepto">
+                <option value="">— Seleccionar —</option>
+                <option>Inscripción</option>
+                <option>Reinscripción</option>
+                <option>Colegiatura</option>
+                <option>Examen</option>
+                <option>Otro</option>
+              </select>
+            </div>
+            <div class="field">
+              <label class="field-label">Monto ($)</label>
+              <input class="field-input" id="f-monto" type="number" placeholder="0.00" step="0.01" min="0">
+            </div>
+            <div class="field">
+              <label class="field-label">Forma de pago</label>
+              <select class="field-select" id="f-fpago">
+                <option value="">— Seleccionar —</option>
+                <option>Efectivo</option>
+                <option>Transferencia</option>
+                <option>Tarjeta de débito</option>
+                <option>Tarjeta de crédito</option>
+                <option>Cheque</option>
+              </select>
+            </div>
+            <div class="field">
+              <label class="field-label">Recibió</label>
+              <input class="field-input" id="f-recibio" type="text" placeholder="Nombre de quien recibe el pago">
+            </div>
+            <div class="field">
+              <label class="field-label">¿Cómo se enteró?</label>
+              <select class="field-select" id="f-medio">
+                <option value="">— Seleccionar —</option>
+                <option>Redes sociales</option>
+                <option>Recomendación</option>
+                <option>Volante / folleto</option>
+                <option>Internet</option>
+                <option>Radio / TV</option>
+                <option>Otro</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /page-body -->
+
+    <!-- Sticky footer -->
+    <footer class="form-footer">
+      <button class="btn btn-primary" onclick="nuevoRegistro()"><i class="fas fa-plus"></i> Nuevo Registro</button>
+      <button class="btn btn-success" onclick="guardarRegistro()"><i class="fas fa-floppy-disk"></i> Guardar</button>
+      <button class="btn btn-secondary" onclick="limpiarForm()"><i class="fas fa-eraser"></i> Limpiar</button>
+      <div class="spacer"></div>
+      <button class="btn btn-secondary" onclick="verRecibo()"><i class="fas fa-file-invoice"></i> Ver Recibo</button>
+      <button class="btn btn-ghost" onclick="window.location.href='base-datos.html'"><i class="fas fa-table-list"></i> Base de Datos</button>
+    </footer>
+
+  </div><!-- /main-content -->
+</div><!-- /layout -->
+
+<!-- ===== MODAL CONFIRM ===== -->
+<div class="modal-ov" id="modal-confirm">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 id="mc-title">Confirmar</h3>
+      <button class="modal-close" onclick="closeModal('modal-confirm')">&#10005;</button>
+    </div>
+    <div class="modal-body"><p id="mc-msg"></p></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary btn-sm" onclick="closeModal('modal-confirm')">Cancelar</button>
+      <button class="btn btn-danger btn-sm" id="mc-ok">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL BUSCAR ===== -->
+<div class="modal-ov" id="modal-buscar">
+  <div class="modal-box modal-lg">
+    <div class="modal-header">
+      <h3><i class="fas fa-magnifying-glass" style="color:var(--gold)"></i> Buscar Alumno</h3>
+      <button class="modal-close" onclick="closeModal('modal-buscar')">&#10005;</button>
+    </div>
+    <div class="modal-body" style="padding:14px 18px 0">
+      <div class="search-box" style="max-width:100%;margin-bottom:12px">
+        <i class="fas fa-magnifying-glass"></i>
+        <input type="text" id="buscar-q" placeholder="Nombre, folio o CURP..." oninput="buscarAlumno()" autocomplete="off">
+      </div>
+      <div class="sr-list" id="sr-list">
+        <div style="text-align:center;padding:24px;color:var(--text-light)">Escriba para buscar...</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary btn-sm" onclick="closeModal('modal-buscar')">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script src="js/app.js"></script>
+<script>
+let currentFolio = getActiveFolio();
+
+// Restaurar registro activo si existe
+(async function init() {
+  if (currentFolio) {
+    try {
+      const rec = await getRecord(currentFolio);
+      if (rec) { setForm(rec); return; }
+    } catch(e) { /* silencioso */ }
+  }
+  $('folio-disp').textContent = '—';
+})();
+
+/* ---- UI helpers ---- */
+function setBusy(on) {
+  document.querySelectorAll('.form-footer .btn, .page-actions .btn').forEach(b => {
+    b.disabled      = on;
+    b.style.opacity = on ? '.55' : '';
+    b.style.cursor  = on ? 'wait' : '';
+  });
+}
+
+/* ---- CRUD ---- */
+async function nuevoRegistro() {
+  limpiarForm(true);
+  setBusy(true);
+  try {
+    currentFolio = await nextFolio();
+    setActiveFolio(currentFolio);
+    $('folio-disp').textContent = currentFolio;
+    $('bc-folio').textContent   = currentFolio;
+    $('f-fecha-pago').value     = today();
+    toast('Nuevo registro. Folio: ' + currentFolio, 'ok');
+  } catch(e) {
+    toast('Error al generar folio: ' + e.message, 'err');
+  } finally {
+    setBusy(false);
+  }
+}
+
+function limpiarForm(keepFolio = false) {
+  ['f-nombre','f-curp','f-fnac','f-edad','f-tel','f-correo','f-escuela',
+   'f-pnombre','f-pocup','f-ptel','f-pcorreo','f-modalidad','f-trabaja',
+   'f-deporte','f-objetivo','d-acta-obs','d-curp-obs','d-cert-obs','d-fotos-obs','d-otro-obs',
+   'f-fecha-pago','f-concepto','f-monto','f-fpago','f-recibio','f-medio']
+  .forEach(id => sv(id, ''));
+  ['d-acta','d-curp','d-cert','d-fotos','d-otro'].forEach(id => sc(id, false));
+  document.querySelectorAll('.doc-card').forEach(c => c.classList.remove('is-checked'));
+  if (!keepFolio) {
+    currentFolio = null; setActiveFolio(null);
+    $('folio-disp').textContent = '—';
+    $('bc-folio').textContent   = 'Nuevo registro';
+  }
+}
+
+function getForm() {
+  return {
+    folio:     currentFolio,
+    nombre:    gv('f-nombre'),   curp:      gv('f-curp'),
+    fechaNac:  gv('f-fnac'),     edad:      gv('f-edad'),
+    tel:       gv('f-tel'),      correo:    gv('f-correo'),
+    escuela:   gv('f-escuela'),
+    pNombre:   gv('f-pnombre'),  pOcup:     gv('f-pocup'),
+    pTel:      gv('f-ptel'),     pCorreo:   gv('f-pcorreo'),
+    modalidad: gv('f-modalidad'),trabaja:   gv('f-trabaja'),
+    deporte:   gv('f-deporte'),  objetivo:  gv('f-objetivo'),
+    docActa:   gc('d-acta'),     docActaObs:  gv('d-acta-obs'),
+    docCurp:   gc('d-curp'),     docCurpObs:  gv('d-curp-obs'),
+    docCert:   gc('d-cert'),     docCertObs:  gv('d-cert-obs'),
+    docFotos:  gc('d-fotos'),    docFotosObs: gv('d-fotos-obs'),
+    docOtro:   gc('d-otro'),     docOtroObs:  gv('d-otro-obs'),
+    fechaPago: gv('f-fecha-pago'), concepto: gv('f-concepto'),
+    monto:     gv('f-monto'),    fpago:     gv('f-fpago'),
+    recibio:   gv('f-recibio'),  medio:     gv('f-medio'),
+  };
+}
+
+function setForm(d) {
+  sv('f-nombre',d.nombre);   sv('f-curp',d.curp);     sv('f-fnac',d.fechaNac);
+  sv('f-edad',d.edad);       sv('f-tel',d.tel);        sv('f-correo',d.correo);
+  sv('f-escuela',d.escuela);
+  sv('f-pnombre',d.pNombre); sv('f-pocup',d.pOcup);
+  sv('f-ptel',d.pTel);       sv('f-pcorreo',d.pCorreo);
+  sv('f-modalidad',d.modalidad); sv('f-trabaja',d.trabaja);
+  sv('f-deporte',d.deporte); sv('f-objetivo',d.objetivo);
+  sc('d-acta',d.docActa);    sv('d-acta-obs',d.docActaObs);
+  sc('d-curp',d.docCurp);    sv('d-curp-obs',d.docCurpObs);
+  sc('d-cert',d.docCert);    sv('d-cert-obs',d.docCertObs);
+  sc('d-fotos',d.docFotos);  sv('d-fotos-obs',d.docFotosObs);
+  sc('d-otro',d.docOtro);    sv('d-otro-obs',d.docOtroObs);
+  sv('f-fecha-pago',d.fechaPago); sv('f-concepto',d.concepto);
+  sv('f-monto',d.monto);     sv('f-fpago',d.fpago);
+  sv('f-recibio',d.recibio); sv('f-medio',d.medio);
+  $('folio-disp').textContent = d.folio || '—';
+  $('bc-folio').textContent   = d.folio || 'Nuevo registro';
+  currentFolio = d.folio;
+  [['d-acta',d.docActa],['d-curp',d.docCurp],['d-cert',d.docCert],
+   ['d-fotos',d.docFotos],['d-otro',d.docOtro]].forEach(([id, val]) => {
+    const cb = $(id);
+    if (cb?.closest('.doc-card')) cb.closest('.doc-card').classList.toggle('is-checked', !!val);
+  });
+}
+
+async function guardarRegistro() {
+  if (!currentFolio) { toast('Pulse "+ Nuevo Registro" primero.', 'warn'); return; }
+  const data = getForm();
+  if (!data.nombre) { toast('El nombre del alumno es obligatorio.', 'err'); $('f-nombre').focus(); return; }
+  setBusy(true);
+  try {
+    await saveRecord(data);
+    toast('Guardado correctamente. (' + currentFolio + ')', 'ok');
+    await refreshBadge();
+  } catch(e) {
+    toast('Error al guardar: ' + e.message, 'err');
+  } finally {
+    setBusy(false);
+  }
+}
+
+async function eliminarRegistro() {
+  if (!currentFolio) { toast('No hay registro activo.', 'warn'); return; }
+  confirm2('Eliminar Registro',
+    '¿Eliminar el folio ' + currentFolio + '? No se puede deshacer.',
+    async () => {
+      setBusy(true);
+      try {
+        await deleteRecord(currentFolio);
+        limpiarForm();
+        toast('Registro eliminado.', 'ok');
+        await refreshBadge();
+      } catch(e) {
+        toast('Error al eliminar: ' + e.message, 'err');
+      } finally {
+        setBusy(false);
+      }
+    }
+  );
+}
+
+function calcEdad() {
+  const fn = $('f-fnac').value;
+  if (!fn) return;
+  const hoy = new Date(), nac = new Date(fn + 'T00:00:00');
+  let e = hoy.getFullYear() - nac.getFullYear();
+  if (hoy.getMonth() < nac.getMonth() || (hoy.getMonth() === nac.getMonth() && hoy.getDate() < nac.getDate())) e--;
+  sv('f-edad', e >= 0 ? e : '');
+}
+
+function toggleDoc(card, cbId) {
+  const cb = $(cbId);
+  if (!cb) return;
+  cb.checked = !cb.checked;
+  card.classList.toggle('is-checked', cb.checked);
+}
+
+function verRecibo() {
+  if (!currentFolio) { toast('Guarde o cargue un registro primero.', 'warn'); return; }
+  setActiveFolio(currentFolio);
+  window.location.href = 'recibo.html';
+}
+
+/* ---- Buscar (carga en caché al abrir, filtra en memoria) ---- */
+let _searchCache = [];
+
+async function abrirBuscar() {
+  sv('buscar-q', '');
+  $('sr-list').innerHTML = '<div style="text-align:center;padding:30px"><i class="fas fa-spinner fa-spin" style="color:var(--gold);font-size:22px"></i></div>';
+  openModal('modal-buscar');
+  try {
+    _searchCache = await getRecords();
+    $('sr-list').innerHTML = '<div style="text-align:center;padding:24px;color:var(--text-light)">Escriba para buscar...</div>';
+    setTimeout(() => $('buscar-q').focus(), 80);
+  } catch(e) {
+    $('sr-list').innerHTML = '<div style="text-align:center;padding:24px;color:#dc2626">Error al cargar registros.</div>';
+  }
+}
+
+function buscarAlumno() {
+  const q    = ($('buscar-q').value || '').toLowerCase();
+  const cont = $('sr-list');
+  if (!q) { cont.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text-light)">Escriba para buscar...</div>'; return; }
+  const res = _searchCache.filter(r =>
+    (r.folio  || '').toLowerCase().includes(q) ||
+    (r.nombre || '').toLowerCase().includes(q) ||
+    (r.curp   || '').toLowerCase().includes(q)
+  );
+  if (!res.length) { cont.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text-light)">Sin resultados.</div>'; return; }
+  cont.innerHTML = res.map(r => `
+    <div class="sr-item" onclick="selResult('${esc(r.folio)}')">
+      <span class="sr-folio">${esc(r.folio)}</span>
+      <span class="sr-name">${esc(r.nombre || '(sin nombre)')}</span>
+      <span class="sr-meta">${esc(r.curp || '')} ${r.modalidad ? '&nbsp;·&nbsp;' + esc(r.modalidad) : ''}</span>
+    </div>`).join('');
+}
+
+function selResult(folio) {
+  closeModal('modal-buscar');
+  const rec = _searchCache.find(r => r.folio === folio);
+  if (!rec) return;
+  setForm(rec);
+  setActiveFolio(folio);
+  toast('Registro cargado: ' + folio, 'ok');
+}
+</script>
+</body>
+</html>

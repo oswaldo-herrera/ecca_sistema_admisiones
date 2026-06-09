@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ECCA — Recibo de Inscripción</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<div class="layout">
+
+  <!-- ===== SIDEBAR ===== -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-brand">
+      <div class="sb-logo" style="background:#fff;padding:3px">
+        <img src="images/ecca_logo.png" alt="Logo ECCA" style="width:100%;height:100%;object-fit:contain;display:block">
+      </div>
+      <div>
+        <div class="sb-brand-name">ECCA Prepa León</div>
+        <div class="sb-brand-sub">Sistema de Admisiones</div>
+      </div>
+    </div>
+    <nav class="sb-nav">
+      <div class="sb-group-label">Principal</div>
+      <a href="index.html" class="sb-item"><i class="fas fa-house"></i><span>Inicio</span></a>
+      <a href="formulario.html" class="sb-item"><i class="fas fa-user-plus"></i><span>Nueva Inscripción</span></a>
+      <div class="sb-group-label">Gestión</div>
+      <a href="base-datos.html" class="sb-item"><i class="fas fa-table-list"></i><span>Base de Datos</span><span class="sb-badge">0</span></a>
+      <a href="recibo.html" class="sb-item"><i class="fas fa-file-invoice"></i><span>Recibo</span></a>
+    </nav>
+    <div class="sb-footer">
+      <i class="fas fa-location-dot"></i> Independencia 841, León, Gto.<br>
+      Tels. 211-5392 y 211-5393
+    </div>
+  </aside>
+  <div class="sidebar-overlay"></div>
+
+  <!-- ===== MAIN ===== -->
+  <div class="main-content">
+
+    <!-- Topbar -->
+    <header class="topbar">
+      <button class="topbar-hamburger" aria-label="Menú"><i class="fas fa-bars"></i></button>
+      <nav class="topbar-breadcrumb">
+        <a href="index.html"><i class="fas fa-house"></i></a>
+        <span class="sep">›</span>
+        <a href="base-datos.html">Base de Datos</a>
+        <span class="sep">›</span>
+        <span class="current">Recibo</span>
+      </nav>
+      <div class="topbar-right">
+        <div class="topbar-folio">
+          <span class="lbl">Folio</span>
+          <span class="val" id="tb-folio">—</span>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="window.print()">
+          <i class="fas fa-print"></i> Imprimir / PDF
+        </button>
+      </div>
+    </header>
+
+    <!-- Page header -->
+    <div class="page-header">
+      <div>
+        <div class="page-title">Recibo de Inscripción</div>
+        <div class="page-sub">Vista previa del recibo para impresión o exportación a PDF</div>
+      </div>
+      <div class="page-actions">
+        <button class="btn btn-secondary btn-sm no-print" onclick="window.location.href='formulario.html'">
+          <i class="fas fa-pen"></i> Editar Registro
+        </button>
+        <button class="btn btn-secondary btn-sm no-print" onclick="window.location.href='base-datos.html'">
+          <i class="fas fa-table-list"></i> Base de Datos
+        </button>
+        <button class="btn btn-primary btn-sm no-print" onclick="window.print()">
+          <i class="fas fa-print"></i> Imprimir / Exportar PDF
+        </button>
+      </div>
+    </div>
+
+    <!-- Recibo document -->
+    <div class="recibo-page">
+
+      <!-- Empty state -->
+      <div id="empty-state" style="display:none;max-width:680px;margin:0 auto">
+        <div class="card">
+          <div class="card-body" style="text-align:center;padding:50px 20px">
+            <i class="fas fa-file-invoice" style="font-size:48px;color:var(--text-light);display:block;margin-bottom:16px"></i>
+            <div style="font-size:18px;font-weight:700;margin-bottom:8px">Sin registro activo</div>
+            <div style="color:var(--text-muted);margin-bottom:24px">Cargue o guarde un registro en el formulario para generar el recibo.</div>
+            <a href="formulario.html"><button class="btn btn-primary"><i class="fas fa-user-plus"></i> Ir al Formulario</button></a>
+            &nbsp;
+            <a href="base-datos.html"><button class="btn btn-secondary"><i class="fas fa-table-list"></i> Ver Base de Datos</button></a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recibo -->
+      <div id="recibo-doc">
+        <div class="r-hdr">
+          <div class="r-logo" style="background:#fff;padding:4px">
+          <img src="images/ecca_logo.png" alt="Logo ECCA" style="width:100%;height:100%;object-fit:contain;display:block">
+        </div>
+          <div class="r-school">
+            <h1>ECCA PREPARATORIA DE LEÓN</h1>
+            <p>INCORPORADO A LA SECRETARÍA DE EDUCACIÓN DE GUANAJUATO</p>
+          </div>
+          <div class="r-fbox">
+            <span class="rfl">FOLIO</span>
+            <span class="rfn" id="r-folio">—</span>
+          </div>
+        </div>
+        <div class="r-title-bar">REGISTRO DE INSCRIPCIÓN</div>
+
+        <div class="r-body">
+
+          <div class="r-row">
+            <span class="r-lbl">Del Alumno:</span>
+            <span class="r-val" id="r-nombre"></span>
+          </div>
+          <div class="r-grid2">
+            <div class="r-row">
+              <span class="r-lbl">Nacimiento:</span>
+              <span class="r-val" id="r-fnac"></span>
+            </div>
+            <div class="r-row">
+              <span class="r-lbl">Edad:</span>
+              <span class="r-val" id="r-edad"></span>
+            </div>
+          </div>
+          <div class="r-row">
+            <span class="r-lbl">Padre o Tutor:</span>
+            <span class="r-val" id="r-padre"></span>
+          </div>
+          <div class="r-row">
+            <span class="r-lbl">Modalidad:</span>
+            <span class="r-val" id="r-modalidad"></span>
+          </div>
+
+          <div class="r-sec"><i class="fas fa-circle-dollar-to-slot"></i> DATOS DE PAGO</div>
+
+          <div class="r-row">
+            <span class="r-lbl">Concepto:</span>
+            <span class="r-val" id="r-concepto"></span>
+          </div>
+          <div class="r-grid2">
+            <div class="r-row">
+              <span class="r-lbl">Monto:</span>
+              <span class="r-val" id="r-monto"></span>
+            </div>
+            <div class="r-row">
+              <span class="r-lbl">Forma de Pago:</span>
+              <span class="r-val" id="r-fpago"></span>
+            </div>
+          </div>
+          <div class="r-grid2">
+            <div class="r-row">
+              <span class="r-lbl">Fecha:</span>
+              <span class="r-val" id="r-fecha-pago"></span>
+            </div>
+            <div class="r-row">
+              <span class="r-lbl">Recibió:</span>
+              <span class="r-val" id="r-recibio"></span>
+            </div>
+          </div>
+
+          <div class="r-sigs">
+            <div class="sig-blk"><div class="sig-line"></div><div class="sig-lbl">Padre o Tutor</div></div>
+            <div class="sig-blk"><div class="sig-line"></div><div class="sig-lbl">Alumno</div></div>
+            <div class="sig-blk"><div class="sig-line"></div><div class="sig-lbl">Asesor Educativo</div></div>
+          </div>
+
+        </div>
+
+        <div class="r-footer">
+          CALLE INDEPENDENCIA No. 841 COL. SAN MIGUEL &nbsp;|&nbsp; TELS. 211-5392 y 211-5393 &nbsp;|&nbsp; LEÓN, GTO.
+        </div>
+      </div><!-- /recibo-doc -->
+
+    </div><!-- /recibo-page -->
+  </div><!-- /main-content -->
+</div><!-- /layout -->
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script src="js/app.js"></script>
+<script>
+function llenarRecibo(d) {
+  $('r-folio').textContent      = d.folio     || '—';
+  $('tb-folio').textContent     = d.folio     || '—';
+  $('r-nombre').textContent     = d.nombre    || '';
+  $('r-fnac').textContent       = d.fechaNac  ? fmtDate(d.fechaNac) : '';
+  $('r-edad').textContent       = d.edad      ? d.edad + ' años' : '';
+  $('r-padre').textContent      = d.pNombre   || '';
+  $('r-modalidad').textContent  = d.modalidad || '';
+  $('r-concepto').textContent   = d.concepto  || '';
+  $('r-monto').textContent      = d.monto     ? fmtMoney(d.monto) : '';
+  $('r-fpago').textContent      = d.fpago     || '';
+  $('r-fecha-pago').textContent = d.fechaPago ? fmtDate(d.fechaPago) : '';
+  $('r-recibio').textContent    = d.recibio   || '';
+}
+
+function mostrarVacio() {
+  $('recibo-doc').style.display  = 'none';
+  $('empty-state').style.display = 'block';
+}
+
+// Init — carga el folio activo desde Supabase
+(async function () {
+  const folio = getActiveFolio();
+  if (!folio) { mostrarVacio(); return; }
+  try {
+    const rec = await getRecord(folio);
+    if (!rec) { mostrarVacio(); return; }
+    llenarRecibo(rec);
+  } catch(e) {
+    mostrarVacio();
+    toast('Error al cargar el recibo: ' + e.message, 'err');
+  }
+})();
+</script>
+</body>
+</html>

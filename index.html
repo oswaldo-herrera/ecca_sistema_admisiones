@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ECCA — Sistema de Admisiones</title>
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<div class="portada">
+  <div class="p-glass">
+    <div class="p-logo-wrap" style="background:#fff;padding:5px">
+      <img src="images/ecca_logo.png" alt="Logo ECCA" style="width:100%;height:100%;object-fit:contain;display:block">
+    </div>
+
+    <div class="p-school">ECCA Preparatoria de León</div>
+    <div class="p-tag">
+      Escuela de Capacitación Contable y Administrativa, A.C.<br>
+      Incorporado a la Secretaría de Educación de Guanajuato
+    </div>
+
+    <div class="p-div"></div>
+
+    <div class="p-sys">Sistema de Admisiones</div>
+    <div class="p-sub">Gestión digital de registros de inscripción</div>
+
+    <a href="formulario.html">
+      <button class="btn-enter">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+        Ingresar al Sistema
+      </button>
+    </a>
+
+    <div class="p-footer">
+      Calle Independencia No. 841 Col. San Miguel<br>
+      Tels. 211-5392 y 211-5393 &nbsp;|&nbsp; León, Gto.<br>
+      &copy; <span id="yr"></span> ECCA Preparatoria de León
+    </div>
+  </div>
+</div>
+
+<script>document.getElementById('yr').textContent = new Date().getFullYear();</script>
+</body>
+</html>
