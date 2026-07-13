@@ -27,7 +27,12 @@
       <a href="formulario.html" class="sb-item"><i class="fas fa-user-plus"></i><span>Nueva Inscripción</span></a>
       <div class="sb-group-label">Gestión</div>
       <a href="base-datos.html" class="sb-item"><i class="fas fa-table-list"></i><span>Base de Datos</span><span class="sb-badge">0</span></a>
+      <a href="grupos.html" class="sb-item"><i class="fas fa-people-group"></i><span>Grupos</span></a>
+      <a href="pagos.html" class="sb-item"><i class="fas fa-circle-dollar-to-slot"></i><span>Pagos</span></a>
       <a href="recibo.html" class="sb-item"><i class="fas fa-file-invoice"></i><span>Recibo</span></a>
+      <a href="credencial.html" class="sb-item"><i class="fas fa-id-card"></i><span>Credencial</span></a>
+      <div class="sb-group-label">Administración</div>
+      <a href="usuarios.html" class="sb-item"><i class="fas fa-users-gear"></i><span>Usuarios</span></a>
     </nav>
     <div class="sb-footer">
       <i class="fas fa-location-dot"></i> 5 de Febrero 628, Centro, León, Gto.<br>
@@ -186,19 +191,19 @@
 <script src="js/config.js"></script>
 <script src="js/app.js"></script>
 <script>
-function llenarRecibo(d) {
-  $('r-folio').textContent      = d.folio     || '—';
-  $('tb-folio').textContent     = d.folio     || '—';
-  $('r-nombre').textContent     = d.nombre    || '';
-  $('r-fnac').textContent       = d.fechaNac  ? fmtDate(d.fechaNac) : '';
-  $('r-edad').textContent       = d.edad      ? d.edad + ' años' : '';
-  $('r-padre').textContent      = d.pNombre   || '';
-  $('r-modalidad').textContent  = d.modalidad || '';
-  $('r-concepto').textContent   = d.concepto  || '';
-  $('r-monto').textContent      = d.monto     ? fmtMoney(d.monto) : '';
-  $('r-fpago').textContent      = d.fpago     || '';
-  $('r-fecha-pago').textContent = d.fechaPago ? fmtDate(d.fechaPago) : '';
-  $('r-recibio').textContent    = d.recibio   || '';
+function llenarRecibo(rec, pago) {
+  $('r-folio').textContent      = rec.folio     || '—';
+  $('tb-folio').textContent     = rec.folio     || '—';
+  $('r-nombre').textContent     = rec.nombre    || '';
+  $('r-fnac').textContent       = rec.fechaNac  ? fmtDate(rec.fechaNac) : '';
+  $('r-edad').textContent       = rec.edad      ? rec.edad + ' años' : '';
+  $('r-padre').textContent      = rec.pNombre   || '';
+  $('r-modalidad').textContent  = rec.modalidad || '';
+  $('r-concepto').textContent   = pago.concepto    || '';
+  $('r-monto').textContent      = pago.monto       ? fmtMoney(pago.monto) : '';
+  $('r-fpago').textContent      = pago.forma_pago  || '';
+  $('r-fecha-pago').textContent = pago.fecha_pago  ? fmtDate(pago.fecha_pago) : '';
+  $('r-recibio').textContent    = pago.recibio     || '';
 }
 
 function mostrarVacio() {
@@ -206,14 +211,21 @@ function mostrarVacio() {
   $('empty-state').style.display = 'block';
 }
 
-// Init — carga el folio activo desde Supabase
+// Init — carga el folio y el pago activo desde Supabase
 (async function () {
   const folio = getActiveFolio();
   if (!folio) { mostrarVacio(); return; }
   try {
     const rec = await getRecord(folio);
     if (!rec) { mostrarVacio(); return; }
-    llenarRecibo(rec);
+    const pagoId = getActivePago();
+    let pago = pagoId ? await getPago(pagoId) : null;
+    if (!pago) {
+      const pagos = await getPagos(folio);
+      pago = pagos[0] || null;
+    }
+    if (!pago) { mostrarVacio(); return; }
+    llenarRecibo(rec, pago);
   } catch(e) {
     mostrarVacio();
     toast('Error al cargar el recibo: ' + e.message, 'err');

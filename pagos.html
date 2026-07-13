@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ECCA — Pagos</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<div class="layout">
+
+  <!-- ===== SIDEBAR ===== -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-brand">
+      <div class="sb-logo" style="background:#fff;padding:3px">
+        <img src="images/ecca_logo.png" alt="Logo ECCA" style="width:100%;height:100%;object-fit:contain;display:block">
+      </div>
+      <div>
+        <div class="sb-brand-name">ECCA Prepa León</div>
+        <div class="sb-brand-sub">Sistema de Admisiones</div>
+      </div>
+    </div>
+    <nav class="sb-nav">
+      <div class="sb-group-label">Principal</div>
+      <a href="index.html" class="sb-item"><i class="fas fa-house"></i><span>Inicio</span></a>
+      <a href="formulario.html" class="sb-item"><i class="fas fa-user-plus"></i><span>Nueva Inscripción</span></a>
+      <div class="sb-group-label">Gestión</div>
+      <a href="base-datos.html" class="sb-item"><i class="fas fa-table-list"></i><span>Base de Datos</span><span class="sb-badge">0</span></a>
+      <a href="grupos.html" class="sb-item"><i class="fas fa-people-group"></i><span>Grupos</span></a>
+      <a href="pagos.html" class="sb-item"><i class="fas fa-circle-dollar-to-slot"></i><span>Pagos</span></a>
+      <a href="recibo.html" class="sb-item"><i class="fas fa-file-invoice"></i><span>Recibo</span></a>
+      <a href="credencial.html" class="sb-item"><i class="fas fa-id-card"></i><span>Credencial</span></a>
+      <div class="sb-group-label">Administración</div>
+      <a href="usuarios.html" class="sb-item"><i class="fas fa-users-gear"></i><span>Usuarios</span></a>
+    </nav>
+    <div class="sb-footer">
+      <i class="fas fa-location-dot"></i> 5 de Febrero 628, Centro, León, Gto.<br>
+      Tel. 479 153 4007
+    </div>
+  </aside>
+  <div class="sidebar-overlay"></div>
+
+  <!-- ===== MAIN ===== -->
+  <div class="main-content">
+
+    <!-- Topbar -->
+    <header class="topbar">
+      <button class="topbar-hamburger" aria-label="Menú"><i class="fas fa-bars"></i></button>
+      <nav class="topbar-breadcrumb">
+        <a href="index.html"><i class="fas fa-house"></i></a>
+        <span class="sep">›</span>
+        <span class="current">Pagos</span>
+      </nav>
+    </header>
+
+    <!-- Page header -->
+    <div class="page-header">
+      <div>
+        <div class="page-title">Pagos</div>
+        <div class="page-sub">Control de inscripción, colegiaturas y demás cargos por alumno o por grupo.</div>
+      </div>
+    </div>
+
+    <div class="page-body">
+
+      <!-- Tabs -->
+      <div style="display:flex;gap:8px;margin-bottom:14px">
+        <button class="btn btn-primary btn-sm" id="tab-alumno" onclick="cambiarTab('alumno')"><i class="fas fa-user"></i> Por Alumno</button>
+        <button class="btn btn-secondary btn-sm" id="tab-grupo" onclick="cambiarTab('grupo')"><i class="fas fa-people-group"></i> Por Grupo</button>
+      </div>
+
+      <!-- ===== TAB: POR ALUMNO ===== -->
+      <div id="panel-alumno">
+
+        <div class="card">
+          <div class="card-body">
+            <div class="search-box" style="max-width:100%">
+              <i class="fas fa-magnifying-glass"></i>
+              <input type="text" id="pa-q" placeholder="Buscar alumno por nombre, folio o CURP..." oninput="buscarAlumnoPago()" autocomplete="off">
+            </div>
+            <div class="sr-list" id="pa-list" style="margin-top:10px;display:none"></div>
+          </div>
+        </div>
+
+        <div id="pa-detalle" style="display:none">
+
+          <div class="card">
+            <div class="card-header">
+              <div class="ch-icon ch-navy"><i class="fas fa-user-graduate"></i></div>
+              <div><div class="ch-title" id="pa-nombre">—</div><div class="ch-sub" id="pa-meta">—</div></div>
+              <span class="spacer" style="flex:1"></span>
+              <button class="btn btn-secondary btn-sm" onclick="cerrarDetalleAlumno()"><i class="fas fa-xmark"></i> Cerrar</button>
+            </div>
+            <div class="card-body">
+
+              <div class="saldo-box" id="pa-saldo-box">
+                <div>
+                  <div class="sb-lbl">Saldo pendiente</div>
+                  <div class="sb-val" id="pa-saldo-val">$0.00</div>
+                </div>
+                <div style="text-align:right;font-size:12px;color:var(--text-muted)">
+                  <div>Total cargado: <b id="pa-total-cargos">$0.00</b></div>
+                  <div>Total pagado: <b id="pa-total-pagado">$0.00</b></div>
+                </div>
+              </div>
+
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                <span style="font-weight:600;font-size:13px">Cargos</span>
+                <button class="btn btn-secondary btn-sm" onclick="abrirCargoForm()"><i class="fas fa-plus"></i> Agregar Cargo</button>
+              </div>
+              <div class="sr-list" id="pa-cargos" style="margin-bottom:18px"></div>
+
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                <span style="font-weight:600;font-size:13px">Historial de pagos</span>
+                <button class="btn btn-primary btn-sm" onclick="abrirPagoForm()"><i class="fas fa-plus"></i> Registrar Pago</button>
+              </div>
+              <div class="sr-list" id="pa-pagos"></div>
+
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- ===== TAB: POR GRUPO ===== -->
+      <div id="panel-grupo" style="display:none">
+
+        <div class="card">
+          <div class="card-body">
+            <div class="form-grid">
+              <div class="field full">
+                <label class="field-label">Grupo</label>
+                <select class="field-select" id="pg-grupo" onchange="cargarGrupoPagos()">
+                  <option value="">— Seleccionar grupo —</option>
+                </select>
+              </div>
+            </div>
+            <div id="pg-acciones" style="display:none;gap:8px;flex-wrap:wrap;margin-top:8px">
+              <button class="btn btn-primary btn-sm" onclick="abrirGenerarCargo('Inscripción')"><i class="fas fa-file-invoice-dollar"></i> Generar Cargo de Inscripción</button>
+              <button class="btn btn-primary btn-sm" onclick="abrirGenerarCargo('Colegiatura')"><i class="fas fa-calendar-days"></i> Generar Colegiatura del Mes</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" id="pg-tabla-card" style="display:none">
+          <div class="card-body" style="padding:0">
+            <div style="overflow-x:auto">
+              <table class="dtbl">
+                <thead>
+                  <tr><th>Folio</th><th>Nombre</th><th>Total cargado</th><th>Total pagado</th><th>Saldo</th><th>Estado</th><th></th></tr>
+                </thead>
+                <tbody id="pg-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div><!-- /page-body -->
+  </div><!-- /main-content -->
+</div><!-- /layout -->
+
+<!-- ===== MODAL CONFIRM ===== -->
+<div class="modal-ov" id="modal-confirm">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 id="mc-title">Confirmar</h3>
+      <button class="modal-close" onclick="closeModal('modal-confirm')">&#10005;</button>
+    </div>
+    <div class="modal-body"><p id="mc-msg"></p></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary btn-sm" onclick="closeModal('modal-confirm')">Cancelar</button>
+      <button class="btn btn-danger btn-sm" id="mc-ok">Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL REGISTRAR PAGO ===== -->
+<div class="modal-ov" id="modal-pago-form">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3><i class="fas fa-circle-dollar-to-slot" style="color:var(--gold)"></i> Registrar Pago</h3>
+      <button class="modal-close" onclick="closeModal('modal-pago-form')">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <div class="field" style="margin-bottom:12px">
+        <label class="field-label">Cargo relacionado</label>
+        <select class="field-select" id="pf-cargo">
+          <option value="">— Pago libre (sin cargo) —</option>
+        </select>
+      </div>
+      <div class="field" style="margin-bottom:12px">
+        <label class="field-label">Concepto <span class="req">*</span></label>
+        <select class="field-select" id="pf-concepto">
+          <option value="">— Seleccionar —</option>
+          <option>Inscripción</option>
+          <option>Reinscripción</option>
+          <option>Colegiatura</option>
+          <option>Examen</option>
+          <option>Certificado</option>
+          <option>Credencial</option>
+          <option>Otro</option>
+        </select>
+      </div>
+      <div class="form-grid" style="margin-bottom:12px">
+        <div class="field">
+          <label class="field-label">Monto ($) <span class="req">*</span></label>
+          <input class="field-input" id="pf-monto" type="number" placeholder="0.00" step="0.01" min="0">
+        </div>
+        <div class="field">
+          <label class="field-label">Fecha de pago</label>
+          <input class="field-input" id="pf-fecha" type="date">
+        </div>
+        <div class="field">
+          <label class="field-label">Forma de pago</label>
+          <select class="field-select" id="pf-forma">
+            <option value="">— Seleccionar —</option>
+            <option>Efectivo</option>
+            <option>Transferencia</option>
+            <option>Tarjeta de débito</option>
+            <option>Tarjeta de crédito</option>
+            <option>Cheque</option>
+          </select>
+        </div>
+        <div class="field">
+          <label class="field-label">Recibió</label>
+          <input class="field-input" id="pf-recibio" type="text" placeholder="Nombre de quien recibe">
+        </div>
+      </div>
+      <div class="field">
+        <label class="field-label">Comprobante (imagen o PDF)</label>
+        <input class="field-input" id="pf-comprobante" type="file" accept="image/*,.pdf">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary btn-sm" onclick="closeModal('modal-pago-form')">Cancelar</button>
+      <button class="btn btn-primary btn-sm" id="pf-save" onclick="guardarPagoForm()"><i class="fas fa-floppy-disk"></i> Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL AGREGAR CARGO ===== -->
+<div class="modal-ov" id="modal-cargo-form">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3><i class="fas fa-file-invoice-dollar" style="color:var(--gold)"></i> Agregar Cargo</h3>
+      <button class="modal-close" onclick="closeModal('modal-cargo-form')">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <div class="field" style="margin-bottom:12px">
+        <label class="field-label">Concepto <span class="req">*</span></label>
+        <select class="field-select" id="cf-concepto">
+          <option value="">— Seleccionar —</option>
+          <option>Inscripción</option>
+          <option>Reinscripción</option>
+          <option>Colegiatura</option>
+          <option>Examen</option>
+          <option>Certificado</option>
+          <option>Credencial</option>
+          <option>Otro</option>
+        </select>
+      </div>
+      <div class="field" style="margin-bottom:12px">
+        <label class="field-label">Descripción</label>
+        <input class="field-input" id="cf-descripcion" type="text" placeholder="Ej. Colegiatura — Julio 2026">
+      </div>
+      <div class="form-grid">
+        <div class="field">
+          <label class="field-label">Monto ($) <span class="req">*</span></label>
+          <input class="field-input" id="cf-monto" type="number" placeholder="0.00" step="0.01" min="0">
+        </div>
+        <div class="field">
+          <label class="field-label">Fecha de vencimiento</label>
+          <input class="field-input" id="cf-vencimiento" type="date">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary btn-sm" onclick="closeModal('modal-cargo-form')">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="guardarCargoForm()"><i class="fas fa-floppy-disk"></i> Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL GENERAR CARGO POR GRUPO ===== -->
+<div class="modal-ov" id="modal-generar-grupo">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 id="gg-titulo">Generar Cargo</h3>
+      <button class="modal-close" onclick="closeModal('modal-generar-grupo')">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:12.5px;color:var(--text-muted);margin-bottom:12px">Se creará este cargo para todos los alumnos del grupo seleccionado.</p>
+      <div class="field" style="margin-bottom:12px">
+        <label class="field-label">Descripción</label>
+        <input class="field-input" id="gg-descripcion" type="text" placeholder="Ej. Colegiatura — Julio 2026">
+      </div>
+      <div class="form-grid">
+        <div class="field">
+          <label class="field-label">Monto ($) <span class="req">*</span></label>
+          <input class="field-input" id="gg-monto" type="number" placeholder="0.00" step="0.01" min="0">
+        </div>
+        <div class="field">
+          <label class="field-label">Fecha de vencimiento</label>
+          <input class="field-input" id="gg-vencimiento" type="date">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary btn-sm" onclick="closeModal('modal-generar-grupo')">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="guardarGenerarGrupo()"><i class="fas fa-floppy-disk"></i> Generar</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script src="js/app.js"></script>
+<script>
+let _paAlumno   = null;
+let _paCargos   = [];
+let _paPagos    = [];
+let _paSearch   = [];
+let _grupos     = [];
+let _pgGrupoId  = null;
+let _pgConcepto = '';
+let _editingCargoId = null;
+
+/* ---- Tabs ---- */
+function cambiarTab(t) {
+  const esAlumno = t === 'alumno';
+  $('panel-alumno').style.display = esAlumno ? 'block' : 'none';
+  $('panel-grupo').style.display  = esAlumno ? 'none'  : 'block';
+  $('tab-alumno').className = 'btn btn-sm ' + (esAlumno ? 'btn-primary' : 'btn-secondary');
+  $('tab-grupo').className  = 'btn btn-sm ' + (esAlumno ? 'btn-secondary' : 'btn-primary');
+  if (!esAlumno) cargarGruposSelect();
+}
+
+/* ---- Buscar alumno ---- */
+async function buscarAlumnoPago() {
+  const q = ($('pa-q').value || '').toLowerCase();
+  const cont = $('pa-list');
+  if (!q) { cont.style.display = 'none'; return; }
+  if (!_paSearch.length) _paSearch = await getRecords();
+  const res = _paSearch.filter(r =>
+    (r.folio || '').toLowerCase().includes(q) ||
+    (r.nombre || '').toLowerCase().includes(q) ||
+    (r.curp || '').toLowerCase().includes(q)
+  );
+  cont.style.display = 'block';
+  if (!res.length) { cont.innerHTML = '<div style="text-align:center;padding:18px;color:var(--text-light)">Sin resultados.</div>'; return; }
+  cont.innerHTML = res.map(r => `
+    <div class="sr-item" onclick="seleccionarAlumno('${esc(r.folio)}')">
+      <span class="sr-folio">${esc(r.folio)}</span>
+      <span class="sr-name">${esc(r.nombre || '(sin nombre)')}</span>
+      <span class="sr-meta">${esc(r.curp || '')}</span>
+    </div>`).join('');
+}
+
+async function seleccionarAlumno(folio) {
+  const rec = _paSearch.find(r => r.folio === folio);
+  if (!rec) return;
+  _paAlumno = rec;
+  sv('pa-q', '');
+  $('pa-list').style.display = 'none';
+  $('pa-detalle').style.display = 'block';
+  $('pa-nombre').textContent = rec.nombre || '(sin nombre)';
+  $('pa-meta').textContent = [rec.folio, rec.modalidad].filter(Boolean).join('  ·  ');
+  await refrescarAlumno();
+}
+
+function cerrarDetalleAlumno() {
+  _paAlumno = null;
+  $('pa-detalle').style.display = 'none';
+}
+
+async function refrescarAlumno() {
+  if (!_paAlumno) return;
+  [_paCargos, _paPagos] = await Promise.all([getCargos(_paAlumno.folio), getPagos(_paAlumno.folio)]);
+  renderSaldo();
+  renderCargos();
+  renderPagos();
+}
+
+function renderSaldo() {
+  const { totalCargos, totalPagado, saldo } = calcSaldo(_paCargos, _paPagos);
+  $('pa-saldo-val').textContent = fmtMoney(saldo);
+  $('pa-total-cargos').textContent = fmtMoney(totalCargos);
+  $('pa-total-pagado').textContent = fmtMoney(totalPagado);
+  $('pa-saldo-box').classList.toggle('al-corriente', saldo <= 0);
+}
+
+function badgeEstado(estado) {
+  const map = { pagado: 'badge-green', parcial: 'badge-gold', vencido: 'badge-red', pendiente: 'badge-gray' };
+  const txt = { pagado: 'Pagado', parcial: 'Parcial', vencido: 'Vencido', pendiente: 'Pendiente' };
+  return `<span class="badge ${map[estado]}">${txt[estado]}</span>`;
+}
+
+function renderCargos() {
+  const cont = $('pa-cargos');
+  if (!_paCargos.length) { cont.innerHTML = '<div style="text-align:center;padding:18px;color:var(--text-light)">Sin cargos registrados.</div>'; return; }
+  cont.innerHTML = _paCargos.map(c => {
+    const estado = estadoCargo(c, _paPagos);
+    return `
+    <div class="pago-row">
+      <div class="pago-info">
+        <span class="pago-concepto">${esc(c.descripcion || c.concepto)}</span>
+        <span class="pago-meta">${esc(c.concepto)}${c.fecha_vencimiento ? '  ·  Vence: ' + fmtDate(c.fecha_vencimiento) : ''}</span>
+      </div>
+      <div class="pago-monto">${fmtMoney(c.monto)}</div>
+      ${badgeEstado(estado)}
+      <div class="pago-actions">
+        ${estado !== 'pagado' ? `<button class="btn-sm-tbl bst-gold" onclick="abrirPagoForm(${c.id})"><i class="fas fa-circle-dollar-to-slot"></i> Pagar</button>` : ''}
+        <button class="btn-sm-tbl bst-red" onclick="eliminarCargo(${c.id})"><i class="fas fa-trash"></i></button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderPagos() {
+  const cont = $('pa-pagos');
+  if (!_paPagos.length) { cont.innerHTML = '<div style="text-align:center;padding:18px;color:var(--text-light)">Aún no hay pagos registrados.</div>'; return; }
+  cont.innerHTML = _paPagos.map(p => `
+    <div class="pago-row">
+      <div class="pago-info">
+        <span class="pago-concepto">${esc(p.concepto)}</span>
+        <span class="pago-meta">${fmtDate(p.fecha_pago)}${p.forma_pago ? '  ·  ' + esc(p.forma_pago) : ''}${p.recibio ? '  ·  Recibió: ' + esc(p.recibio) : ''}</span>
+      </div>
+      <div class="pago-monto">${fmtMoney(p.monto)}</div>
+      <div class="pago-actions">
+        ${p.comprobante_url ? `<a class="btn-sm-tbl bst-navy" href="${esc(p.comprobante_url)}" target="_blank"><i class="fas fa-paperclip"></i> Comprobante</a>` : ''}
+        <button class="btn-sm-tbl bst-navy" onclick="imprimirRecibo(${p.id})"><i class="fas fa-print"></i> Recibo</button>
+        <button class="btn-sm-tbl bst-red" onclick="eliminarPago(${p.id})"><i class="fas fa-trash"></i></button>
+      </div>
+    </div>`).join('');
+}
+
+/* ---- Modal: registrar pago ---- */
+function abrirPagoForm(cargoId) {
+  if (!_paAlumno) return;
+  $('pf-cargo').innerHTML = '<option value="">— Pago libre (sin cargo) —</option>' +
+    _paCargos.filter(c => estadoCargo(c, _paPagos) !== 'pagado').map(c =>
+      `<option value="${c.id}">${esc(c.descripcion || c.concepto)} (${fmtMoney(c.monto)})</option>`).join('');
+  sv('pf-cargo', cargoId || '');
+  sv('pf-fecha', today());
+  sv('pf-monto', ''); sv('pf-forma', ''); sv('pf-recibio', '');
+  $('pf-comprobante').value = '';
+  const cargo = cargoId ? _paCargos.find(c => c.id === cargoId) : null;
+  sv('pf-concepto', cargo ? cargo.concepto : '');
+  if (cargo) sv('pf-monto', cargo.monto);
+  openModal('modal-pago-form');
+}
+
+async function guardarPagoForm() {
+  const concepto = gv('pf-concepto'), monto = gv('pf-monto');
+  if (!concepto) { toast('Seleccione el concepto.', 'err'); return; }
+  if (!monto || parseFloat(monto) <= 0) { toast('Indique un monto válido.', 'err'); return; }
+  const btn = $('pf-save');
+  btn.disabled = true;
+  try {
+    let comprobanteUrl = null;
+    const file = $('pf-comprobante').files[0];
+    if (file) comprobanteUrl = await uploadComprobante(file, _paAlumno.folio);
+    await savePago({
+      folio: _paAlumno.folio,
+      cargoId: gv('pf-cargo') || null,
+      concepto, monto,
+      fechaPago: gv('pf-fecha'),
+      formaPago: gv('pf-forma'),
+      recibio: gv('pf-recibio'),
+      comprobanteUrl,
+    });
+    closeModal('modal-pago-form');
+    toast('Pago registrado correctamente.', 'ok');
+    await refrescarAlumno();
+  } catch (e) {
+    toast('Error al guardar el pago: ' + e.message, 'err');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function eliminarPago(id) {
+  confirm2('Eliminar Pago', '¿Eliminar este pago? No se puede deshacer.', async () => {
+    try {
+      await deletePago(id);
+      toast('Pago eliminado.', 'ok');
+      await refrescarAlumno();
+    } catch (e) { toast('Error: ' + e.message, 'err'); }
+  });
+}
+
+function imprimirRecibo(id) {
+  setActivePago(id);
+  setActiveFolio(_paAlumno.folio);
+  window.location.href = 'recibo.html';
+}
+
+/* ---- Modal: agregar cargo ---- */
+function abrirCargoForm() {
+  if (!_paAlumno) return;
+  sv('cf-concepto', ''); sv('cf-descripcion', ''); sv('cf-monto', ''); sv('cf-vencimiento', '');
+  openModal('modal-cargo-form');
+}
+
+async function guardarCargoForm() {
+  const concepto = gv('cf-concepto'), monto = gv('cf-monto');
+  if (!concepto) { toast('Seleccione el concepto.', 'err'); return; }
+  if (!monto || parseFloat(monto) <= 0) { toast('Indique un monto válido.', 'err'); return; }
+  try {
+    await saveCargo({
+      folio: _paAlumno.folio,
+      grupoId: _paAlumno.grupoId || null,
+      concepto,
+      descripcion: gv('cf-descripcion'),
+      monto,
+      fechaVencimiento: gv('cf-vencimiento'),
+    });
+    closeModal('modal-cargo-form');
+    toast('Cargo agregado.', 'ok');
+    await refrescarAlumno();
+  } catch (e) {
+    toast('Error al guardar el cargo: ' + e.message, 'err');
+  }
+}
+
+async function eliminarCargo(id) {
+  confirm2('Eliminar Cargo', '¿Eliminar este cargo? No se puede deshacer.', async () => {
+    try {
+      await deleteCargo(id);
+      toast('Cargo eliminado.', 'ok');
+      await refrescarAlumno();
+    } catch (e) { toast('Error: ' + e.message, 'err'); }
+  });
+}
+
+/* ---- Por grupo ---- */
+async function cargarGruposSelect() {
+  if (_grupos.length) return;
+  _grupos = await getGrupos();
+  $('pg-grupo').innerHTML = '<option value="">— Seleccionar grupo —</option>' +
+    _grupos.map(g => `<option value="${g.id}">${esc(g.nombre)}</option>`).join('');
+}
+
+async function cargarGrupoPagos() {
+  const id = gv('pg-grupo');
+  _pgGrupoId = id || null;
+  if (!id) { $('pg-acciones').style.display = 'none'; $('pg-tabla-card').style.display = 'none'; return; }
+  $('pg-acciones').style.display = 'flex';
+  $('pg-tabla-card').style.display = 'block';
+  $('pg-tbody').innerHTML = `<tr><td colspan="7"><div style="text-align:center;padding:24px"><i class="fas fa-spinner fa-spin" style="color:var(--gold)"></i></div></td></tr>`;
+  try {
+    const alumnos = await getAlumnosByGrupo(id);
+    const filas = await Promise.all(alumnos.map(async a => {
+      const [cargos, pagos] = await Promise.all([getCargos(a.folio), getPagos(a.folio)]);
+      return { alumno: a, ...calcSaldo(cargos, pagos) };
+    }));
+    if (!filas.length) {
+      $('pg-tbody').innerHTML = `<tr><td colspan="7"><div class="empty-state"><i class="fas fa-people-group"></i><p>El grupo no tiene alumnos asignados.</p></div></td></tr>`;
+      return;
+    }
+    $('pg-tbody').innerHTML = filas.map(f => `
+      <tr>
+        <td><span class="badge badge-folio">${esc(f.alumno.folio)}</span></td>
+        <td style="font-weight:500">${esc(f.alumno.nombre || '—')}</td>
+        <td>${fmtMoney(f.totalCargos)}</td>
+        <td>${fmtMoney(f.totalPagado)}</td>
+        <td style="font-weight:600">${fmtMoney(f.saldo)}</td>
+        <td>${f.saldo <= 0 ? '<span class="badge badge-green">Al corriente</span>' : '<span class="badge badge-red">Con adeudo</span>'}</td>
+        <td><button class="btn-sm-tbl bst-gold" onclick="seleccionarAlumnoDesdeGrupo('${esc(f.alumno.folio)}')"><i class="fas fa-arrow-right"></i> Ver</button></td>
+      </tr>`).join('');
+  } catch (e) {
+    $('pg-tbody').innerHTML = `<tr><td colspan="7"><div class="empty-state"><i class="fas fa-triangle-exclamation"></i><p>Error al cargar el grupo.</p></div></td></tr>`;
+  }
+}
+
+async function seleccionarAlumnoDesdeGrupo(folio) {
+  if (!_paSearch.length) _paSearch = await getRecords();
+  cambiarTab('alumno');
+  await seleccionarAlumno(folio);
+}
+
+function abrirGenerarCargo(concepto) {
+  if (!_pgGrupoId) return;
+  _pgConcepto = concepto;
+  const g = _grupos.find(x => String(x.id) === String(_pgGrupoId));
+  $('gg-titulo').textContent = 'Generar Cargo — ' + concepto;
+  sv('gg-descripcion', concepto === 'Colegiatura'
+    ? 'Colegiatura — ' + new Date().toLocaleDateString('es-MX', { month: 'long', year: 'numeric' })
+    : concepto);
+  sv('gg-monto', concepto === 'Colegiatura' ? (g?.monto_colegiatura || '') : (g?.monto_inscripcion || ''));
+  sv('gg-vencimiento', '');
+  openModal('modal-generar-grupo');
+}
+
+async function guardarGenerarGrupo() {
+  const monto = gv('gg-monto');
+  if (!monto || parseFloat(monto) <= 0) { toast('Indique un monto válido.', 'err'); return; }
+  try {
+    const creados = await generarCargosGrupo(_pgGrupoId, {
+      concepto: _pgConcepto,
+      monto,
+      descripcion: gv('gg-descripcion'),
+      fechaVencimiento: gv('gg-vencimiento'),
+    });
+    closeModal('modal-generar-grupo');
+    toast(`Cargo generado para ${creados.length} alumno(s).`, 'ok');
+    await cargarGrupoPagos();
+  } catch (e) {
+    toast('Error al generar el cargo: ' + e.message, 'err');
+  }
+}
+
+/* ---- Init ---- */
+cambiarTab('alumno');
+
+(async function initDeepLink() {
+  const folio = new URLSearchParams(window.location.search).get('folio');
+  if (!folio) return;
+  _paSearch = await getRecords();
+  await seleccionarAlumno(folio);
+})();
+</script>
+</body>
+</html>

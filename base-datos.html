@@ -27,7 +27,12 @@
       <a href="formulario.html" class="sb-item"><i class="fas fa-user-plus"></i><span>Nueva Inscripción</span></a>
       <div class="sb-group-label">Gestión</div>
       <a href="base-datos.html" class="sb-item"><i class="fas fa-table-list"></i><span>Base de Datos</span><span class="sb-badge">0</span></a>
+      <a href="grupos.html" class="sb-item"><i class="fas fa-people-group"></i><span>Grupos</span></a>
+      <a href="pagos.html" class="sb-item"><i class="fas fa-circle-dollar-to-slot"></i><span>Pagos</span></a>
       <a href="recibo.html" class="sb-item"><i class="fas fa-file-invoice"></i><span>Recibo</span></a>
+      <a href="credencial.html" class="sb-item"><i class="fas fa-id-card"></i><span>Credencial</span></a>
+      <div class="sb-group-label">Administración</div>
+      <a href="usuarios.html" class="sb-item"><i class="fas fa-users-gear"></i><span>Usuarios</span></a>
     </nav>
     <div class="sb-footer">
       <i class="fas fa-location-dot"></i> 5 de Febrero 628, Centro, León, Gto.<br>
@@ -105,9 +110,8 @@
                 <th>CURP</th>
                 <th>Teléfono</th>
                 <th>Modalidad</th>
-                <th>Concepto</th>
-                <th>Monto</th>
-                <th>Fecha Pago</th>
+                <th>Grupo</th>
+                <th>Saldo</th>
                 <th>Acciones</th>
               </tr>
             </thead>
@@ -139,23 +143,36 @@
 <script src="js/config.js"></script>
 <script src="js/app.js"></script>
 <script>
-let _records = [];
+let _records   = [];
+let _gruposMap = {};
+let _saldoMap  = {};
 
 /* ---- Stats ---- */
-function calcStats(recs) {
+function calcStats(recs, pagos) {
   const now = new Date(), yy = now.getFullYear(), mm = now.getMonth();
-  let mes = 0, totalMonto = 0;
+  let mes = 0;
   const modalMap = {};
   recs.forEach(r => {
     if (r.registrado && new Date(r.registrado).getFullYear() === yy && new Date(r.registrado).getMonth() === mm) mes++;
-    if (r.monto) totalMonto += parseFloat(r.monto) || 0;
     if (r.modalidad) modalMap[r.modalidad] = (modalMap[r.modalidad] || 0) + 1;
   });
+  const totalMonto = pagos.filter(p => p.estado === 'confirmado').reduce((s, p) => s + (parseFloat(p.monto) || 0), 0);
   const top = Object.entries(modalMap).sort((a,b) => b[1]-a[1])[0];
   $('st-total').textContent = recs.length;
   $('st-mes').textContent   = mes;
   $('st-monto').textContent = totalMonto > 0 ? '$' + totalMonto.toLocaleString('es-MX', {minimumFractionDigits:0}) : '$0';
   $('st-modal').textContent = top ? top[0] : '—';
+}
+
+/* ---- Saldo por alumno (cargos vs. pagos, agregados en memoria) ---- */
+function calcSaldoMap(cargos, pagos) {
+  const map = {};
+  cargos.forEach(c => { map[c.folio] = map[c.folio] || { cargos: 0, pagado: 0 }; map[c.folio].cargos += parseFloat(c.monto) || 0; });
+  pagos.filter(p => p.estado === 'confirmado').forEach(p => {
+    map[p.folio] = map[p.folio] || { cargos: 0, pagado: 0 };
+    map[p.folio].pagado += parseFloat(p.monto) || 0;
+  });
+  return map;
 }
 
 function modalBadge(m) {
@@ -176,34 +193,38 @@ function renderTabla() {
   $('tbl-count').textContent = `${fil.length} de ${_records.length} registro(s)`;
   const tbody = $('tbl-body');
   if (!fil.length) {
-    tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state">
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state">
       <i class="fas fa-inbox"></i>
       <p>${_records.length ? 'Sin coincidencias.' : 'Aún no hay registros. <a href="formulario.html" style="color:var(--gold)">Crear el primero</a>'}</p>
     </div></td></tr>`;
     return;
   }
-  tbody.innerHTML = fil.map(r => `
+  tbody.innerHTML = fil.map(r => {
+    const s = _saldoMap[r.folio] || { cargos: 0, pagado: 0 };
+    const saldo = s.cargos - s.pagado;
+    return `
     <tr>
       <td><span class="badge badge-folio">${esc(r.folio)}</span></td>
       <td style="font-weight:500">${esc(r.nombre || '—')}</td>
       <td style="font-size:12px;color:var(--text-muted);font-family:monospace">${esc(r.curp || '—')}</td>
       <td>${esc(r.tel || '—')}</td>
       <td>${r.modalidad ? modalBadge(r.modalidad) : '—'}</td>
-      <td>${esc(r.concepto || '—')}</td>
-      <td style="font-weight:600">${r.monto ? fmtMoney(r.monto) : '—'}</td>
-      <td style="color:var(--text-muted)">${r.fechaPago ? fmtDate(r.fechaPago) : '—'}</td>
+      <td>${r.grupoId && _gruposMap[r.grupoId] ? esc(_gruposMap[r.grupoId]) : '—'}</td>
+      <td>${!s.cargos ? '<span class="badge badge-gray">Sin cargos</span>' : (saldo > 0 ? `<span class="badge badge-red">Debe ${fmtMoney(saldo)}</span>` : '<span class="badge badge-green">Al corriente</span>')}</td>
       <td>
         <div style="display:flex;gap:4px;flex-wrap:wrap">
           <button class="btn-sm-tbl bst-gold" onclick="editarReg('${esc(r.folio)}')"><i class="fas fa-pen"></i> Editar</button>
-          <button class="btn-sm-tbl bst-navy" onclick="verRecibo('${esc(r.folio)}')"><i class="fas fa-file-invoice"></i> Recibo</button>
+          <button class="btn-sm-tbl bst-navy" onclick="window.location.href='pagos.html?folio=${encodeURIComponent(r.folio)}'"><i class="fas fa-circle-dollar-to-slot"></i> Pagos</button>
+          <button class="btn-sm-tbl bst-navy" onclick="verCredencial('${esc(r.folio)}')"><i class="fas fa-id-card"></i> Credencial</button>
           <button class="btn-sm-tbl bst-red"  onclick="eliminarReg('${esc(r.folio)}')"><i class="fas fa-trash"></i></button>
         </div>
       </td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
 }
 
-function editarReg(folio) { setActiveFolio(folio); window.location.href = 'formulario.html'; }
-function verRecibo(folio) { setActiveFolio(folio); window.location.href = 'recibo.html'; }
+function editarReg(folio)    { setActiveFolio(folio); window.location.href = 'formulario.html'; }
+function verCredencial(folio){ setActiveFolio(folio); window.location.href = 'credencial.html'; }
 
 async function eliminarReg(folio) {
   confirm2('Eliminar Registro', `¿Eliminar el folio ${folio}? No se puede deshacer.`, async () => {
@@ -211,7 +232,7 @@ async function eliminarReg(folio) {
       await deleteRecord(folio);
       if (getActiveFolio() === folio) setActiveFolio(null);
       _records = _records.filter(r => r.folio !== folio);
-      calcStats(_records);
+      calcStats(_records, _allPagos);
       renderTabla();
       await refreshBadge();
       toast('Registro eliminado.', 'ok');
@@ -222,18 +243,25 @@ async function eliminarReg(folio) {
 }
 
 /* ---- Carga inicial ---- */
+let _allPagos = [];
+
 async function loadData() {
-  $('tbl-body').innerHTML = `<tr><td colspan="9"><div style="text-align:center;padding:40px">
+  $('tbl-body').innerHTML = `<tr><td colspan="7"><div style="text-align:center;padding:40px">
     <i class="fas fa-spinner fa-spin" style="font-size:28px;color:var(--gold)"></i>
     <p style="margin-top:12px;color:var(--text-muted)">Cargando registros...</p>
   </div></td></tr>`;
   try {
-    _records = await getRecords();
-    calcStats(_records);
+    const [recs, grupos, cargos, pagos] = await Promise.all([getRecords(), getGrupos(), getAllCargos(), getAllPagos()]);
+    _records = recs;
+    _allPagos = pagos;
+    _gruposMap = {};
+    grupos.forEach(g => { _gruposMap[String(g.id)] = g.nombre; });
+    _saldoMap = calcSaldoMap(cargos, pagos);
+    calcStats(_records, pagos);
     renderTabla();
   } catch(e) {
     toast('Error al cargar datos: ' + e.message, 'err');
-    $('tbl-body').innerHTML = `<tr><td colspan="9"><div class="empty-state">
+    $('tbl-body').innerHTML = `<tr><td colspan="7"><div class="empty-state">
       <i class="fas fa-triangle-exclamation"></i>
       <p>No se pudo conectar a la base de datos.</p>
     </div></td></tr>`;

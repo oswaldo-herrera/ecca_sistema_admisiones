@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ECCA — Grupos</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<div class="layout">
+
+  <!-- ===== SIDEBAR ===== -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-brand">
+      <div class="sb-logo" style="background:#fff;padding:3px">
+        <img src="images/ecca_logo.png" alt="Logo ECCA" style="width:100%;height:100%;object-fit:contain;display:block">
+      </div>
+      <div>
+        <div class="sb-brand-name">ECCA Prepa León</div>
+        <div class="sb-brand-sub">Sistema de Admisiones</div>
+      </div>
+    </div>
+    <nav class="sb-nav">
+      <div class="sb-group-label">Principal</div>
+      <a href="index.html" class="sb-item"><i class="fas fa-house"></i><span>Inicio</span></a>
+      <a href="formulario.html" class="sb-item"><i class="fas fa-user-plus"></i><span>Nueva Inscripción</span></a>
+      <div class="sb-group-label">Gestión</div>
+      <a href="base-datos.html" class="sb-item"><i class="fas fa-table-list"></i><span>Base de Datos</span><span class="sb-badge">0</span></a>
+      <a href="grupos.html" class="sb-item"><i class="fas fa-people-group"></i><span>Grupos</span></a>
+      <a href="pagos.html" class="sb-item"><i class="fas fa-circle-dollar-to-slot"></i><span>Pagos</span></a>
+      <a href="recibo.html" class="sb-item"><i class="fas fa-file-invoice"></i><span>Recibo</span></a>
+      <a href="credencial.html" class="sb-item"><i class="fas fa-id-card"></i><span>Credencial</span></a>
+      <div class="sb-group-label">Administración</div>
+      <a href="usuarios.html" class="sb-item"><i class="fas fa-users-gear"></i><span>Usuarios</span></a>
+    </nav>
+    <div class="sb-footer">
+      <i class="fas fa-location-dot"></i> 5 de Febrero 628, Centro, León, Gto.<br>
+      Tel. 479 153 4007
+    </div>
+  </aside>
+  <div class="sidebar-overlay"></div>
+
+  <!-- ===== MAIN ===== -->
+  <div class="main-content">
+
+    <!-- Topbar -->
+    <header class="topbar">
+      <button class="topbar-hamburger" aria-label="Menú"><i class="fas fa-bars"></i></button>
+      <nav class="topbar-breadcrumb">
+        <a href="index.html"><i class="fas fa-house"></i></a>
+        <span class="sep">›</span>
+        <span class="current">Grupos</span>
+      </nav>
+      <div class="topbar-right">
+        <button class="btn btn-primary btn-sm" onclick="abrirNuevoGrupo()">
+          <i class="fas fa-plus"></i> Nuevo Grupo
+        </button>
+      </div>
+    </header>
+
+    <!-- Page header -->
+    <div class="page-header">
+      <div>
+        <div class="page-title">Grupos</div>
+        <div class="page-sub">Cree grupos y asigne alumnos para organizar el control escolar.</div>
+      </div>
+    </div>
+
+    <div class="page-body">
+      <div class="grupo-grid" id="grupo-grid"></div>
+    </div><!-- /page-body -->
+  </div><!-- /main-content -->
+</div><!-- /layout -->
+
+<!-- ===== MODAL CONFIRM ===== -->
+<div class="modal-ov" id="modal-confirm">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 id="mc-title">Confirmar</h3>
+      <button class="modal-close" onclick="closeModal('modal-confirm')">&#10005;</button>
+    </div>
+    <div class="modal-body"><p id="mc-msg"></p></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary btn-sm" onclick="closeModal('modal-confirm')">Cancelar</button>
+      <button class="btn btn-danger btn-sm" id="mc-ok">Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL CREAR/EDITAR GRUPO ===== -->
+<div class="modal-ov" id="modal-grupo-form">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 id="gf-titulo">Nuevo Grupo</h3>
+      <button class="modal-close" onclick="closeModal('modal-grupo-form')">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <div class="field" style="margin-bottom:12px">
+        <label class="field-label">Nombre del grupo <span class="req">*</span></label>
+        <input class="field-input" id="gf-nombre" type="text" placeholder="Ej. 1A Cuatrimestral">
+      </div>
+      <div class="field" style="margin-bottom:12px">
+        <label class="field-label">Modalidad</label>
+        <select class="field-select" id="gf-modalidad">
+          <option value="">— Seleccionar —</option>
+          <option>Cuatrimestral</option>
+          <option>Semestral</option>
+          <option>Escolarizado</option>
+          <option>Abierto</option>
+          <option>En línea</option>
+        </select>
+      </div>
+      <div class="field" style="margin-bottom:12px">
+        <label class="field-label">Ciclo / Periodo escolar</label>
+        <input class="field-input" id="gf-ciclo" type="text" placeholder="Ej. 2026-1">
+      </div>
+      <div class="field" style="margin-bottom:12px">
+        <label class="field-label">Cupo máximo</label>
+        <input class="field-input" id="gf-cupo" type="number" min="0" placeholder="Sin límite">
+      </div>
+      <div class="form-grid" style="grid-template-columns:1fr 1fr">
+        <div class="field">
+          <label class="field-label">Monto de inscripción ($)</label>
+          <input class="field-input" id="gf-monto-insc" type="number" min="0" step="0.01" placeholder="0.00">
+        </div>
+        <div class="field">
+          <label class="field-label">Monto de colegiatura ($)</label>
+          <input class="field-input" id="gf-monto-cole" type="number" min="0" step="0.01" placeholder="0.00">
+        </div>
+        <div class="field">
+          <label class="field-label">Núm. de colegiaturas del ciclo</label>
+          <input class="field-input" id="gf-num-cole" type="number" min="0" placeholder="Ej. 4">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary btn-sm" onclick="closeModal('modal-grupo-form')">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="guardarGrupoForm()"><i class="fas fa-floppy-disk"></i> Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL DETALLE/GESTIONAR GRUPO ===== -->
+<div class="modal-ov" id="modal-grupo-detalle">
+  <div class="modal-box modal-lg">
+    <div class="modal-header">
+      <h3 id="gd-titulo">Grupo</h3>
+      <button class="modal-close" onclick="closeModal('modal-grupo-detalle')">&#10005;</button>
+    </div>
+    <div class="modal-body" style="padding:14px 18px 0">
+      <div id="gd-info" style="margin-bottom:14px;font-size:12px;color:var(--text-muted)"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <span style="font-weight:600;font-size:13px">Alumnos asignados</span>
+        <button class="btn btn-secondary btn-sm" onclick="abrirAgregarAlumno()"><i class="fas fa-plus"></i> Agregar Alumno</button>
+      </div>
+      <div class="sr-list" id="gd-alumnos" style="max-height:300px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary btn-sm" onclick="exportarGrupoExcel()"><i class="fas fa-file-csv"></i> Excel</button>
+      <button class="btn btn-secondary btn-sm" onclick="exportarGrupoPDF()"><i class="fas fa-file-pdf"></i> PDF</button>
+      <span class="spacer" style="flex:1"></span>
+      <button class="btn btn-secondary btn-sm" onclick="closeModal('modal-grupo-detalle')">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== HOJA IMPRIMIBLE DEL GRUPO (oculta, solo para PDF) ===== -->
+<div id="grupo-print" style="display:none">
+  <div class="grupo-print-hdr">
+    <img src="images/ecca_logo.png" alt="ECCA" class="grupo-print-logo">
+    <div>
+      <h1 id="gp-titulo">Grupo</h1>
+      <p id="gp-meta"></p>
+    </div>
+  </div>
+  <table class="grupo-print-table">
+    <thead><tr><th>#</th><th>Folio</th><th>Nombre</th><th>CURP</th><th>Teléfono</th></tr></thead>
+    <tbody id="gp-tbody"></tbody>
+  </table>
+</div>
+
+<!-- ===== MODAL AGREGAR ALUMNO A GRUPO ===== -->
+<div class="modal-ov" id="modal-agregar-alumno">
+  <div class="modal-box modal-lg">
+    <div class="modal-header">
+      <h3><i class="fas fa-magnifying-glass"></i> Agregar Alumno</h3>
+      <button class="modal-close" onclick="closeModal('modal-agregar-alumno')">&#10005;</button>
+    </div>
+    <div class="modal-body" style="padding:14px 18px 0">
+      <div class="search-box" style="max-width:100%;margin-bottom:12px">
+        <i class="fas fa-magnifying-glass"></i>
+        <input type="text" id="aa-q" placeholder="Nombre, folio o CURP..." oninput="buscarAlumnoParaGrupo()" autocomplete="off">
+      </div>
+      <div class="sr-list" id="aa-list">
+        <div style="text-align:center;padding:24px;color:var(--text-light)">Escriba para buscar...</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary btn-sm" onclick="closeModal('modal-agregar-alumno')">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script src="js/app.js"></script>
+<script>
+let _grupos = [];
+let _editingGrupoId = null;
+let _detalleGrupoId = null;
+let _searchCache = [];
+
+/* ---- Listado de grupos ---- */
+async function cargarGrupos() {
+  $('grupo-grid').innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:40px">
+    <i class="fas fa-spinner fa-spin" style="font-size:26px;color:var(--gold)"></i>
+  </div>`;
+  try {
+    const [grupos, alumnos] = await Promise.all([getGrupos(), getRecords()]);
+    _grupos = grupos;
+    const counts = {};
+    alumnos.forEach(a => { if (a.grupoId) counts[a.grupoId] = (counts[a.grupoId] || 0) + 1; });
+    renderGrupos(counts);
+  } catch (e) {
+    $('grupo-grid').innerHTML = `<div class="empty-state" style="grid-column:1/-1">
+      <i class="fas fa-triangle-exclamation"></i><p>Error al cargar los grupos.</p></div>`;
+  }
+}
+
+function renderGrupos(counts) {
+  const cont = $('grupo-grid');
+  if (!_grupos.length) {
+    cont.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
+      <i class="fas fa-people-group"></i>
+      <p>Aún no hay grupos. <a href="javascript:abrirNuevoGrupo()" style="color:var(--gold)">Crear el primero</a></p>
+    </div>`;
+    return;
+  }
+  cont.innerHTML = _grupos.map(g => {
+    const n    = counts[g.id] || 0;
+    const pct  = g.cupo ? Math.min(100, Math.round(n / g.cupo * 100)) : 0;
+    const over = g.cupo && n > g.cupo;
+    return `
+    <div class="grupo-card">
+      <div class="grupo-card-hdr">
+        <div class="grupo-card-name">${esc(g.nombre)}</div>
+        <div class="grupo-card-meta">${[g.modalidad, g.ciclo].filter(Boolean).map(esc).join(' · ') || '&nbsp;'}</div>
+      </div>
+      <div class="grupo-card-body">
+        <div class="grupo-card-cupo">
+          <span>${n} alumno(s)</span>
+          <span>${g.cupo ? n + ' / ' + g.cupo : 'Sin límite'}</span>
+        </div>
+        ${g.cupo ? `<div class="grupo-card-bar"><div class="grupo-card-bar-fill${over ? ' over' : ''}" style="width:${pct}%"></div></div>` : ''}
+      </div>
+      <div class="grupo-card-ftr">
+        <button class="btn-sm-tbl bst-gold" onclick="abrirDetalleGrupo(${g.id})"><i class="fas fa-users"></i> Gestionar</button>
+        <button class="btn-sm-tbl bst-navy" onclick="abrirEditarGrupo(${g.id})"><i class="fas fa-pen"></i> Editar</button>
+        <button class="btn-sm-tbl bst-red"  onclick="eliminarGrupo(${g.id})"><i class="fas fa-trash"></i></button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ---- Crear / editar grupo ---- */
+function abrirNuevoGrupo() {
+  _editingGrupoId = null;
+  $('gf-titulo').textContent = 'Nuevo Grupo';
+  sv('gf-nombre', ''); sv('gf-modalidad', ''); sv('gf-ciclo', ''); sv('gf-cupo', '');
+  sv('gf-monto-insc', ''); sv('gf-monto-cole', ''); sv('gf-num-cole', '');
+  openModal('modal-grupo-form');
+}
+
+function abrirEditarGrupo(id) {
+  const g = _grupos.find(x => x.id === id);
+  if (!g) return;
+  _editingGrupoId = id;
+  $('gf-titulo').textContent = 'Editar Grupo';
+  sv('gf-nombre', g.nombre); sv('gf-modalidad', g.modalidad || ''); sv('gf-ciclo', g.ciclo || ''); sv('gf-cupo', g.cupo || '');
+  sv('gf-monto-insc', g.monto_inscripcion || ''); sv('gf-monto-cole', g.monto_colegiatura || ''); sv('gf-num-cole', g.num_colegiaturas || '');
+  openModal('modal-grupo-form');
+}
+
+async function guardarGrupoForm() {
+  const nombre = gv('gf-nombre');
+  if (!nombre) { toast('El nombre del grupo es obligatorio.', 'err'); $('gf-nombre').focus(); return; }
+  try {
+    await saveGrupo({
+      id: _editingGrupoId, nombre, modalidad: gv('gf-modalidad'), ciclo: gv('gf-ciclo'), cupo: gv('gf-cupo'),
+      montoInscripcion: gv('gf-monto-insc'), montoColegiatura: gv('gf-monto-cole'), numColegiaturas: gv('gf-num-cole'),
+    });
+    closeModal('modal-grupo-form');
+    toast('Grupo guardado correctamente.', 'ok');
+    await cargarGrupos();
+  } catch (e) {
+    toast('Error al guardar: ' + e.message, 'err');
+  }
+}
+
+function eliminarGrupo(id) {
+  const g = _grupos.find(x => x.id === id);
+  confirm2('Eliminar Grupo', `¿Eliminar el grupo "${g ? g.nombre : ''}"? Los alumnos asignados quedarán sin grupo.`, async () => {
+    try {
+      await deleteGrupo(id);
+      toast('Grupo eliminado.', 'ok');
+      await cargarGrupos();
+    } catch (e) {
+      toast('Error al eliminar: ' + e.message, 'err');
+    }
+  });
+}
+
+/* ---- Gestionar alumnos del grupo ---- */
+async function abrirDetalleGrupo(id) {
+  _detalleGrupoId = id;
+  const g = _grupos.find(x => x.id === id);
+  if (!g) return;
+  $('gd-titulo').textContent = g.nombre;
+  $('gd-info').textContent = [g.modalidad, g.ciclo, g.cupo ? 'Cupo: ' + g.cupo : null].filter(Boolean).join('  ·  ') || 'Sin datos adicionales';
+  $('gd-alumnos').innerHTML = `<div style="text-align:center;padding:24px"><i class="fas fa-spinner fa-spin" style="color:var(--gold)"></i></div>`;
+  openModal('modal-grupo-detalle');
+  await renderAlumnosDeGrupo();
+}
+
+let _detalleAlumnos = [];
+
+async function renderAlumnosDeGrupo() {
+  const alumnos = await getAlumnosByGrupo(_detalleGrupoId);
+  _detalleAlumnos = alumnos;
+  const cont = $('gd-alumnos');
+  if (!alumnos.length) {
+    cont.innerHTML = `<div style="text-align:center;padding:24px;color:var(--text-light)">Sin alumnos asignados todavía.</div>`;
+    return;
+  }
+  cont.innerHTML = alumnos.map(a => `
+    <div class="gd-alumno-row">
+      <div class="gd-alumno-info">
+        <span class="sr-name">${esc(a.nombre || '(sin nombre)')}</span>
+        <span class="sr-folio">${esc(a.folio)}</span>
+      </div>
+      <span class="badge badge-gray" id="gd-saldo-${esc(a.folio)}">—</span>
+      <button class="btn-sm-tbl bst-red" onclick="quitarDeGrupo('${esc(a.folio)}')"><i class="fas fa-xmark"></i> Quitar</button>
+    </div>`).join('');
+  alumnos.forEach(async a => {
+    const [cargos, pagos] = await Promise.all([getCargos(a.folio), getPagos(a.folio)]);
+    const { saldo } = calcSaldo(cargos, pagos);
+    const el = $('gd-saldo-' + a.folio);
+    if (!el) return;
+    el.textContent = saldo > 0 ? 'Debe ' + fmtMoney(saldo) : 'Al corriente';
+    el.className = 'badge ' + (saldo > 0 ? 'badge-red' : 'badge-green');
+  });
+}
+
+/* ---- Exportar grupo ---- */
+function exportarGrupoExcel() {
+  const g = _grupos.find(x => x.id === _detalleGrupoId);
+  if (!_detalleAlumnos.length) { toast('No hay alumnos para exportar.', 'warn'); return; }
+  const hdrs = ['Folio', 'Nombre', 'CURP', 'Teléfono', 'Correo', 'Modalidad'];
+  const rows = _detalleAlumnos.map(a => [a.folio, a.nombre, a.curp, a.tel, a.correo, a.modalidad]);
+  const csv  = [hdrs, ...rows].map(row =>
+    row.map(c => '"' + (c || '').toString().replace(/"/g, '""') + '"').join(',')
+  ).join('\n');
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const nombreArchivo = 'Grupo_' + ((g && g.nombre) || 'grupo').replace(/[^a-z0-9]+/gi, '_') + '.csv';
+  Object.assign(document.createElement('a'), { href: url, download: nombreArchivo }).click();
+  URL.revokeObjectURL(url);
+  toast('Excel exportado correctamente.', 'ok');
+}
+
+function exportarGrupoPDF() {
+  const g = _grupos.find(x => x.id === _detalleGrupoId);
+  if (!_detalleAlumnos.length) { toast('No hay alumnos para exportar.', 'warn'); return; }
+  $('gp-titulo').textContent = (g && g.nombre) || 'Grupo';
+  $('gp-meta').textContent = [g && g.modalidad, g && g.ciclo, g && g.cupo ? 'Cupo: ' + g.cupo : null].filter(Boolean).join('  ·  ');
+  $('gp-tbody').innerHTML = _detalleAlumnos.map((a, i) => `
+    <tr>
+      <td>${i + 1}</td>
+      <td>${esc(a.folio)}</td>
+      <td>${esc(a.nombre || '—')}</td>
+      <td>${esc(a.curp || '—')}</td>
+      <td>${esc(a.tel || '—')}</td>
+    </tr>`).join('');
+  $('grupo-print').style.display = 'block';
+  window.print();
+}
+
+window.addEventListener('afterprint', () => { $('grupo-print').style.display = 'none'; });
+
+async function quitarDeGrupo(folio) {
+  try {
+    await asignarGrupo(folio, null);
+    toast('Alumno removido del grupo.', 'ok');
+    await renderAlumnosDeGrupo();
+    await cargarGrupos();
+  } catch (e) {
+    toast('Error: ' + e.message, 'err');
+  }
+}
+
+/* ---- Buscar y agregar alumno al grupo ---- */
+async function abrirAgregarAlumno() {
+  sv('aa-q', '');
+  $('aa-list').innerHTML = '<div style="text-align:center;padding:30px"><i class="fas fa-spinner fa-spin" style="color:var(--gold);font-size:22px"></i></div>';
+  openModal('modal-agregar-alumno');
+  try {
+    _searchCache = await getRecords();
+    $('aa-list').innerHTML = '<div style="text-align:center;padding:24px;color:var(--text-light)">Escriba para buscar...</div>';
+    setTimeout(() => $('aa-q').focus(), 80);
+  } catch (e) {
+    $('aa-list').innerHTML = '<div style="text-align:center;padding:24px;color:#dc2626">Error al cargar alumnos.</div>';
+  }
+}
+
+function buscarAlumnoParaGrupo() {
+  const q    = ($('aa-q').value || '').toLowerCase();
+  const cont = $('aa-list');
+  if (!q) { cont.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text-light)">Escriba para buscar...</div>'; return; }
+  const res = _searchCache.filter(r =>
+    (r.folio  || '').toLowerCase().includes(q) ||
+    (r.nombre || '').toLowerCase().includes(q) ||
+    (r.curp   || '').toLowerCase().includes(q)
+  );
+  if (!res.length) { cont.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text-light)">Sin resultados.</div>'; return; }
+  cont.innerHTML = res.map(r => `
+    <div class="sr-item" onclick="agregarAlumnoAGrupo('${esc(r.folio)}')">
+      <span class="sr-folio">${esc(r.folio)}</span>
+      <span class="sr-name">${esc(r.nombre || '(sin nombre)')}</span>
+      <span class="sr-meta">${r.grupoId ? 'Ya tiene un grupo asignado (se reasignará)' : 'Sin grupo'}</span>
+    </div>`).join('');
+}
+
+async function agregarAlumnoAGrupo(folio) {
+  try {
+    await asignarGrupo(folio, _detalleGrupoId);
+    closeModal('modal-agregar-alumno');
+    toast('Alumno agregado al grupo.', 'ok');
+    await renderAlumnosDeGrupo();
+    await cargarGrupos();
+  } catch (e) {
+    toast('Error: ' + e.message, 'err');
+  }
+}
+
+/* ---- Init ---- */
+cargarGrupos();
+</script>
+</body>
+</html>

@@ -27,7 +27,12 @@
       <a href="formulario.html" class="sb-item"><i class="fas fa-user-plus"></i><span>Nueva Inscripción</span></a>
       <div class="sb-group-label">Gestión</div>
       <a href="base-datos.html" class="sb-item"><i class="fas fa-table-list"></i><span>Base de Datos</span><span class="sb-badge">0</span></a>
+      <a href="grupos.html" class="sb-item"><i class="fas fa-people-group"></i><span>Grupos</span></a>
+      <a href="pagos.html" class="sb-item"><i class="fas fa-circle-dollar-to-slot"></i><span>Pagos</span></a>
       <a href="recibo.html" class="sb-item"><i class="fas fa-file-invoice"></i><span>Recibo</span></a>
+      <a href="credencial.html" class="sb-item"><i class="fas fa-id-card"></i><span>Credencial</span></a>
+      <div class="sb-group-label">Administración</div>
+      <a href="usuarios.html" class="sb-item"><i class="fas fa-users-gear"></i><span>Usuarios</span></a>
     </nav>
     <div class="sb-footer">
       <i class="fas fa-location-dot"></i>5 de Febrero 628, Centro, León, Gto.<br>
@@ -153,7 +158,7 @@
             <div><div class="ch-title">Modalidad</div></div>
           </div>
           <div class="card-body">
-            <div class="field">
+            <div class="field" style="margin-bottom:12px">
               <label class="field-label">Modalidad de estudio <span class="req">*</span></label>
               <select class="field-select" id="f-modalidad">
                 <option value="">— Seleccionar —</option>
@@ -162,6 +167,12 @@
                 <option>Escolarizado</option>
                 <option>Abierto</option>
                 <option>En línea</option>
+              </select>
+            </div>
+            <div class="field">
+              <label class="field-label">Grupo</label>
+              <select class="field-select" id="f-grupo">
+                <option value="">— Sin grupo asignado —</option>
               </select>
             </div>
           </div>
@@ -184,11 +195,36 @@
               </div>
               <div class="field">
                 <label class="field-label">Deporte</label>
-                <input class="field-input" id="f-deporte" type="text" placeholder="Deporte que practica">
+                <select class="field-select" id="f-deporte">
+                  <option value="">— Seleccionar —</option>
+                  <option>Fútbol</option>
+                  <option>Box</option>
+                  <option>Tocho</option>
+                  <option>Voleibol</option>
+                  <option>Basquetbol</option>
+                  <!-- <option>Béisbol</option>
+                  <option>Natación</option>
+                  <option>Atletismo</option>
+                  <option>Artes marciales</option>
+                  <option>Otro</option> -->
+                  <option>Ninguno</option>
+                </select>
               </div>
               <div class="field full">
                 <label class="field-label">Objetivo principal</label>
                 <input class="field-input" id="f-objetivo" type="text" placeholder="¿Por qué desea estudiar aquí?">
+              </div>
+              <div class="field full">
+                <label class="field-label">¿Cómo se enteró?</label>
+                <select class="field-select" id="f-medio">
+                  <option value="">— Seleccionar —</option>
+                  <option>Redes sociales</option>
+                  <option>Recomendación</option>
+                  <option>Volante / folleto</option>
+                  <option>Internet</option>
+                  <option>Radio / TV</option>
+                  <option>Otro</option>
+                </select>
               </div>
             </div>
           </div>
@@ -239,36 +275,28 @@
         </div>
       </div>
 
-      <!-- CONTROL ADMINISTRATIVO -->
-      <div class="card">
+      <!-- PAGO DE INSCRIPCIÓN -->
+      <div class="card" id="card-insc-pago">
         <div class="card-header">
           <div class="ch-icon ch-gold"><i class="fas fa-circle-dollar-to-slot"></i></div>
-          <div><div class="ch-title">Control Administrativo</div><div class="ch-sub">Registro del pago realizado</div></div>
+          <div>
+            <div class="ch-title">Pago de Inscripción</div>
+            <div class="ch-sub">Opcional — si llenas el monto se registra automáticamente en el historial de pagos</div>
+          </div>
         </div>
         <div class="card-body">
           <div class="form-grid">
             <div class="field">
-              <label class="field-label">Fecha de pago</label>
-              <input class="field-input" id="f-fecha-pago" type="date">
-            </div>
-            <div class="field">
-              <label class="field-label">Concepto</label>
-              <select class="field-select" id="f-concepto">
-                <option value="">— Seleccionar —</option>
-                <option>Inscripción</option>
-                <option>Reinscripción</option>
-                <option>Colegiatura</option>
-                <option>Examen</option>
-                <option>Otro</option>
-              </select>
-            </div>
-            <div class="field">
               <label class="field-label">Monto ($)</label>
-              <input class="field-input" id="f-monto" type="number" placeholder="0.00" step="0.01" min="0">
+              <input class="field-input" id="fi-monto" type="number" placeholder="0.00" step="0.01" min="0">
+            </div>
+            <div class="field">
+              <label class="field-label">Fecha de pago</label>
+              <input class="field-input" id="fi-fecha" type="date">
             </div>
             <div class="field">
               <label class="field-label">Forma de pago</label>
-              <select class="field-select" id="f-fpago">
+              <select class="field-select" id="fi-forma">
                 <option value="">— Seleccionar —</option>
                 <option>Efectivo</option>
                 <option>Transferencia</option>
@@ -279,20 +307,25 @@
             </div>
             <div class="field">
               <label class="field-label">Recibió</label>
-              <input class="field-input" id="f-recibio" type="text" placeholder="Nombre de quien recibe el pago">
+              <input class="field-input" id="fi-recibio" type="text" placeholder="Nombre de quien recibe">
             </div>
-            <div class="field">
-              <label class="field-label">¿Cómo se enteró?</label>
-              <select class="field-select" id="f-medio">
-                <option value="">— Seleccionar —</option>
-                <option>Redes sociales</option>
-                <option>Recomendación</option>
-                <option>Volante / folleto</option>
-                <option>Internet</option>
-                <option>Radio / TV</option>
-                <option>Otro</option>
-              </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- ESTADO DE CUENTA -->
+      <div class="card" id="card-cuenta" style="display:none">
+        <div class="card-header">
+          <div class="ch-icon ch-gold"><i class="fas fa-circle-dollar-to-slot"></i></div>
+          <div><div class="ch-title">Estado de Cuenta</div><div class="ch-sub">Inscripción, colegiaturas y demás cargos del alumno</div></div>
+        </div>
+        <div class="card-body">
+          <div class="saldo-box" id="cuenta-saldo-box">
+            <div>
+              <div class="sb-lbl">Saldo pendiente</div>
+              <div class="sb-val" id="cuenta-saldo-val">$0.00</div>
             </div>
+            <a id="cuenta-link" href="pagos.html"><button class="btn btn-primary btn-sm"><i class="fas fa-circle-dollar-to-slot"></i> Ir a Pagos</button></a>
           </div>
         </div>
       </div>
@@ -354,13 +387,23 @@
 <script src="js/app.js"></script>
 <script>
 let currentFolio = getActiveFolio();
+let _inscPagoYaRegistrado = false;
+
+async function cargarGruposSelect() {
+  try {
+    const grupos = await getGrupos();
+    $('f-grupo').innerHTML = '<option value="">— Sin grupo asignado —</option>' +
+      grupos.map(g => `<option value="${g.id}">${esc(g.nombre)}</option>`).join('');
+  } catch(e) { /* silencioso */ }
+}
 
 // Restaurar registro activo si existe en BD
 (async function init() {
+  await cargarGruposSelect();
   if (currentFolio) {
     try {
       const rec = await getRecord(currentFolio);
-      if (rec) { setForm(rec); return; }
+      if (rec) { setForm(rec); await actualizarCuenta(); return; }
     } catch(e) { /* silencioso */ }
     // Folio en sesión no existe en BD — limpiar para evitar estado inconsistente
     currentFolio = null;
@@ -382,13 +425,15 @@ function setBusy(on) {
 /* ---- CRUD ---- */
 async function nuevoRegistro() {
   limpiarForm(true);
+  _inscPagoYaRegistrado = false;
+  sv('fi-fecha', today());
   setBusy(true);
   try {
     currentFolio = await nextFolio();
     setActiveFolio(currentFolio);
     $('folio-disp').textContent = currentFolio;
     $('bc-folio').textContent   = currentFolio;
-    $('f-fecha-pago').value     = today();
+    await actualizarCuenta();
     toast('Nuevo registro. Folio: ' + currentFolio, 'ok');
   } catch(e) {
     toast('Error al generar folio: ' + e.message, 'err');
@@ -399,12 +444,13 @@ async function nuevoRegistro() {
 
 function limpiarForm(keepFolio = false) {
   ['f-nombre','f-curp','f-fnac','f-edad','f-tel','f-correo','f-escuela',
-   'f-pnombre','f-pocup','f-ptel','f-pcorreo','f-modalidad','f-trabaja',
-   'f-deporte','f-objetivo','d-acta-obs','d-curp-obs','d-cert-obs','d-fotos-obs','d-otro-obs',
-   'f-fecha-pago','f-concepto','f-monto','f-fpago','f-recibio','f-medio']
+   'f-pnombre','f-pocup','f-ptel','f-pcorreo','f-modalidad','f-grupo','f-trabaja',
+   'f-deporte','f-objetivo','f-medio','d-acta-obs','d-curp-obs','d-cert-obs','d-fotos-obs','d-otro-obs',
+   'fi-monto','fi-fecha','fi-forma','fi-recibio']
   .forEach(id => sv(id, ''));
   ['d-acta','d-curp','d-cert','d-fotos','d-otro'].forEach(id => sc(id, false));
   document.querySelectorAll('.doc-card').forEach(c => c.classList.remove('is-checked'));
+  $('card-cuenta').style.display = 'none';
   if (!keepFolio) {
     currentFolio = null; setActiveFolio(null);
     $('folio-disp').textContent = '—';
@@ -421,17 +467,28 @@ function getForm() {
     escuela:   gv('f-escuela'),
     pNombre:   gv('f-pnombre'),  pOcup:     gv('f-pocup'),
     pTel:      gv('f-ptel'),     pCorreo:   gv('f-pcorreo'),
-    modalidad: gv('f-modalidad'),trabaja:   gv('f-trabaja'),
+    modalidad: gv('f-modalidad'),grupoId:   gv('f-grupo'),
+    trabaja:   gv('f-trabaja'),
     deporte:   gv('f-deporte'),  objetivo:  gv('f-objetivo'),
     docActa:   gc('d-acta'),     docActaObs:  gv('d-acta-obs'),
     docCurp:   gc('d-curp'),     docCurpObs:  gv('d-curp-obs'),
     docCert:   gc('d-cert'),     docCertObs:  gv('d-cert-obs'),
     docFotos:  gc('d-fotos'),    docFotosObs: gv('d-fotos-obs'),
     docOtro:   gc('d-otro'),     docOtroObs:  gv('d-otro-obs'),
-    fechaPago: gv('f-fecha-pago'), concepto: gv('f-concepto'),
-    monto:     gv('f-monto'),    fpago:     gv('f-fpago'),
-    recibio:   gv('f-recibio'),  medio:     gv('f-medio'),
+    medio:     gv('f-medio'),
   };
+}
+
+async function actualizarCuenta() {
+  if (!currentFolio) { $('card-cuenta').style.display = 'none'; return; }
+  $('card-cuenta').style.display = 'block';
+  $('cuenta-link').href = 'pagos.html?folio=' + encodeURIComponent(currentFolio);
+  try {
+    const [cargos, pagos] = await Promise.all([getCargos(currentFolio), getPagos(currentFolio)]);
+    const { saldo } = calcSaldo(cargos, pagos);
+    $('cuenta-saldo-val').textContent = fmtMoney(saldo);
+    $('cuenta-saldo-box').classList.toggle('al-corriente', saldo <= 0);
+  } catch (e) { /* silencioso */ }
 }
 
 function setForm(d) {
@@ -440,16 +497,15 @@ function setForm(d) {
   sv('f-escuela',d.escuela);
   sv('f-pnombre',d.pNombre); sv('f-pocup',d.pOcup);
   sv('f-ptel',d.pTel);       sv('f-pcorreo',d.pCorreo);
-  sv('f-modalidad',d.modalidad); sv('f-trabaja',d.trabaja);
+  sv('f-modalidad',d.modalidad); sv('f-grupo',d.grupoId);
+  sv('f-trabaja',d.trabaja);
   sv('f-deporte',d.deporte); sv('f-objetivo',d.objetivo);
+  sv('f-medio',d.medio);
   sc('d-acta',d.docActa);    sv('d-acta-obs',d.docActaObs);
   sc('d-curp',d.docCurp);    sv('d-curp-obs',d.docCurpObs);
   sc('d-cert',d.docCert);    sv('d-cert-obs',d.docCertObs);
   sc('d-fotos',d.docFotos);  sv('d-fotos-obs',d.docFotosObs);
   sc('d-otro',d.docOtro);    sv('d-otro-obs',d.docOtroObs);
-  sv('f-fecha-pago',d.fechaPago); sv('f-concepto',d.concepto);
-  sv('f-monto',d.monto);     sv('f-fpago',d.fpago);
-  sv('f-recibio',d.recibio); sv('f-medio',d.medio);
   $('folio-disp').textContent = d.folio || '—';
   $('bc-folio').textContent   = d.folio || 'Nuevo registro';
   currentFolio = d.folio;
@@ -467,8 +523,29 @@ async function guardarRegistro() {
   setBusy(true);
   try {
     await saveRecord(data);
+    const monto = parseFloat(gv('fi-monto'));
+    if (monto > 0 && !_inscPagoYaRegistrado) {
+      const cargo = await saveCargo({
+        folio: currentFolio,
+        concepto: 'Inscripción',
+        descripcion: 'Inscripción',
+        monto,
+      });
+      await savePago({
+        folio: currentFolio,
+        cargoId: cargo.id,
+        concepto: 'Inscripción',
+        monto,
+        fechaPago: gv('fi-fecha') || today(),
+        formaPago: gv('fi-forma'),
+        recibio: gv('fi-recibio'),
+      });
+      _inscPagoYaRegistrado = true;
+      sv('fi-monto', ''); sv('fi-fecha', ''); sv('fi-forma', ''); sv('fi-recibio', '');
+    }
     toast('Guardado correctamente. (' + currentFolio + ')', 'ok');
     await refreshBadge();
+    await actualizarCuenta();
   } catch(e) {
     toast('Error al guardar: ' + e.message, 'err');
   } finally {
@@ -552,12 +629,14 @@ function buscarAlumno() {
     </div>`).join('');
 }
 
-function selResult(folio) {
+async function selResult(folio) {
   closeModal('modal-buscar');
   const rec = _searchCache.find(r => r.folio === folio);
   if (!rec) return;
+  _inscPagoYaRegistrado = true;
   setForm(rec);
   setActiveFolio(folio);
+  await actualizarCuenta();
   toast('Registro cargado: ' + folio, 'ok');
 }
 </script>

@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ECCA — Credencialización</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<div class="layout">
+
+  <!-- ===== SIDEBAR ===== -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-brand">
+      <div class="sb-logo" style="background:#fff;padding:3px">
+        <img src="images/ecca_logo.png" alt="Logo ECCA" style="width:100%;height:100%;object-fit:contain;display:block">
+      </div>
+      <div>
+        <div class="sb-brand-name">ECCA Prepa León</div>
+        <div class="sb-brand-sub">Sistema de Admisiones</div>
+      </div>
+    </div>
+    <nav class="sb-nav">
+      <div class="sb-group-label">Principal</div>
+      <a href="index.html" class="sb-item"><i class="fas fa-house"></i><span>Inicio</span></a>
+      <a href="formulario.html" class="sb-item"><i class="fas fa-user-plus"></i><span>Nueva Inscripción</span></a>
+      <div class="sb-group-label">Gestión</div>
+      <a href="base-datos.html" class="sb-item"><i class="fas fa-table-list"></i><span>Base de Datos</span><span class="sb-badge">0</span></a>
+      <a href="grupos.html" class="sb-item"><i class="fas fa-people-group"></i><span>Grupos</span></a>
+      <a href="pagos.html" class="sb-item"><i class="fas fa-circle-dollar-to-slot"></i><span>Pagos</span></a>
+      <a href="recibo.html" class="sb-item"><i class="fas fa-file-invoice"></i><span>Recibo</span></a>
+      <a href="credencial.html" class="sb-item"><i class="fas fa-id-card"></i><span>Credencial</span></a>
+      <div class="sb-group-label">Administración</div>
+      <a href="usuarios.html" class="sb-item"><i class="fas fa-users-gear"></i><span>Usuarios</span></a>
+    </nav>
+    <div class="sb-footer">
+      <i class="fas fa-location-dot"></i> 5 de Febrero 628, Centro, León, Gto.<br>
+      Tel. 479 153 4007
+    </div>
+  </aside>
+  <div class="sidebar-overlay"></div>
+
+  <!-- ===== MAIN ===== -->
+  <div class="main-content">
+
+    <!-- Topbar -->
+    <header class="topbar">
+      <button class="topbar-hamburger" aria-label="Menú"><i class="fas fa-bars"></i></button>
+      <nav class="topbar-breadcrumb">
+        <a href="index.html"><i class="fas fa-house"></i></a>
+        <span class="sep">›</span>
+        <span class="current">Credencial</span>
+      </nav>
+      <div class="topbar-right">
+        <div class="topbar-folio">
+          <span class="lbl">Folio</span>
+          <span class="val" id="tb-folio">—</span>
+        </div>
+        <button class="btn btn-primary btn-sm" id="btn-imprimir" onclick="imprimirCred()" disabled>
+          <i class="fas fa-print"></i> Imprimir
+        </button>
+      </div>
+    </header>
+
+    <!-- Page header -->
+    <div class="page-header">
+      <div>
+        <div class="page-title">Credencialización</div>
+        <div class="page-sub">Genere la credencial del alumno con foto y código QR.</div>
+      </div>
+      <div class="page-actions">
+        <button class="btn btn-secondary btn-sm" onclick="abrirBuscar()"><i class="fas fa-magnifying-glass"></i> Buscar Alumno</button>
+      </div>
+    </div>
+
+    <div class="page-body">
+
+      <!-- Empty state -->
+      <div id="cred-empty" class="card">
+        <div class="card-body" style="text-align:center;padding:50px 20px">
+          <i class="fas fa-id-card" style="font-size:48px;color:var(--text-light);display:block;margin-bottom:16px"></i>
+          <div style="font-size:18px;font-weight:700;margin-bottom:8px">Ningún alumno seleccionado</div>
+          <div style="color:var(--text-muted);margin-bottom:24px">Busque un alumno para generar su credencial.</div>
+          <button class="btn btn-primary" onclick="abrirBuscar()"><i class="fas fa-magnifying-glass"></i> Buscar Alumno</button>
+        </div>
+      </div>
+
+      <!-- Contenido cuando hay alumno cargado -->
+      <div id="cred-content" style="display:none">
+
+        <!-- Subir foto -->
+        <div class="card">
+          <div class="card-header">
+            <div class="ch-icon ch-blue"><i class="fas fa-camera"></i></div>
+            <div><div class="ch-title">Foto del Alumno</div><div class="ch-sub">Formatos JPG o PNG</div></div>
+          </div>
+          <div class="card-body">
+            <div class="cred-upload-box">
+              <div class="cred-upload-preview" id="upload-preview"><i class="fas fa-user"></i></div>
+              <div>
+                <input type="file" id="foto-input" accept="image/png,image/jpeg" style="display:none" onchange="onFotoChange(event)">
+                <button class="btn btn-secondary btn-sm" onclick="$('foto-input').click()"><i class="fas fa-upload"></i> Subir Foto</button>
+                <div style="font-size:11.5px;color:var(--text-muted);margin-top:8px" id="upload-status"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Vista previa de credencial -->
+        <div class="card">
+          <div class="card-header">
+            <div class="ch-icon ch-gold"><i class="fas fa-eye"></i></div>
+            <div><div class="ch-title">Vista Previa</div><div class="ch-sub">Frente y reverso de la credencial</div></div>
+          </div>
+          <div class="card-body">
+            <div class="cred-wrap" id="cred-wrap">
+
+              <!-- FRENTE -->
+              <div class="cred-card" id="cred-front">
+                <div class="cred-crest"><img src="images/ecca_logo.png" alt="ECCA"></div>
+                <div class="cred-photo-frame" id="cred-photo-frame"><i class="fas fa-user"></i></div>
+                <div class="cred-name" id="cred-nombre">NOMBRE DEL ALUMNO</div>
+                <div class="cred-matricula" id="cred-matricula">MATRÍCULA: —</div>
+                <div class="cred-programa" id="cred-programa">—</div>
+                <div class="cred-motto">Por Dios, por León, por ECCA</div>
+              </div>
+
+              <!-- REVERSO -->
+              <div class="cred-card" id="cred-back">
+                <div class="cred-back-title">¡Hoy decido<br>quién quiero ser!</div>
+                <div class="cred-oath-label">Hoy juro:</div>
+                <div class="cred-oath-list">
+                  <div class="cred-oath-item"><i class="fas fa-handshake"></i> Ser agradecido</div>
+                  <div class="cred-oath-item"><i class="fas fa-check"></i> Cumplir mi palabra</div>
+                  <div class="cred-oath-item"><i class="fas fa-comment"></i> Hablar con verdad</div>
+                  <div class="cred-oath-item"><i class="fas fa-scale-balanced"></i> Ser honesto</div>
+                  <div class="cred-oath-item"><i class="fas fa-shield-halved"></i> No aprovecharme del débil</div>
+                  <div class="cred-oath-item"><i class="fas fa-fire"></i> Levantarme cuando caiga</div>
+                </div>
+                <div class="cred-back-footer">
+                  <div class="cred-qr-wrap"><img id="cred-qr" alt="QR" width="72" height="72"></div>
+                  <div class="cred-contact">
+                    <div><i class="fas fa-globe"></i> www.eccapreparatoria.com</div>
+                    <div><i class="fas fa-phone"></i> 477 716 7495</div>
+                  </div>
+                  <div class="cred-social">
+                    <span><i class="fab fa-facebook"></i> prepaecca</span>
+                    <span><i class="fab fa-tiktok"></i> preparatoria.ecca</span>
+                    <span><i class="fab fa-youtube"></i> ECCA Preparatoria</span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /cred-content -->
+
+    </div><!-- /page-body -->
+  </div><!-- /main-content -->
+</div><!-- /layout -->
+
+<!-- ===== MODAL BUSCAR ===== -->
+<div class="modal-ov" id="modal-buscar">
+  <div class="modal-box modal-lg">
+    <div class="modal-header">
+      <h3><i class="fas fa-magnifying-glass"></i> Buscar Alumno</h3>
+      <button class="modal-close" onclick="closeModal('modal-buscar')">&#10005;</button>
+    </div>
+    <div class="modal-body" style="padding:14px 18px 0">
+      <div class="search-box" style="max-width:100%;margin-bottom:12px">
+        <i class="fas fa-magnifying-glass"></i>
+        <input type="text" id="buscar-q" placeholder="Nombre, folio o CURP..." oninput="buscarAlumno()" autocomplete="off">
+      </div>
+      <div class="sr-list" id="sr-list">
+        <div style="text-align:center;padding:24px;color:var(--text-light)">Escriba para buscar...</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary btn-sm" onclick="closeModal('modal-buscar')">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script src="js/app.js"></script>
+<script>
+let currentRec  = null;
+let _searchCache = [];
+
+function mostrarVacio() {
+  $('cred-empty').style.display   = 'block';
+  $('cred-content').style.display = 'none';
+  $('btn-imprimir').disabled = true;
+  $('tb-folio').textContent  = '—';
+}
+
+function renderCred(rec) {
+  currentRec = rec;
+  $('cred-empty').style.display   = 'none';
+  $('cred-content').style.display = 'block';
+  $('btn-imprimir').disabled = false;
+  $('tb-folio').textContent  = rec.folio || '—';
+
+  $('cred-nombre').textContent    = (rec.nombre || 'NOMBRE DEL ALUMNO').toUpperCase();
+  $('cred-matricula').textContent = 'MATRÍCULA: ' + (rec.folio || '—');
+  $('cred-programa').textContent  = rec.modalidad || '—';
+
+  const frame = $('cred-photo-frame');
+  frame.innerHTML = rec.fotoUrl
+    ? `<img src="${esc(rec.fotoUrl)}" alt="Foto">`
+    : `<i class="fas fa-user"></i>`;
+
+  const preview = $('upload-preview');
+  preview.innerHTML = rec.fotoUrl
+    ? `<img src="${esc(rec.fotoUrl)}" alt="Foto">`
+    : `<i class="fas fa-user"></i>`;
+  $('upload-status').textContent = '';
+
+  const qrData = `ECCA Prepa León\nAlumno: ${rec.nombre || ''}\nMatrícula: ${rec.folio || ''}\nModalidad: ${rec.modalidad || ''}`;
+  $('cred-qr').src = 'https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=2&data=' + encodeURIComponent(qrData);
+}
+
+async function onFotoChange(e) {
+  const file = e.target.files[0];
+  if (!file || !currentRec) return;
+  $('upload-status').textContent = 'Subiendo...';
+  try {
+    const url = await uploadFoto(file, currentRec.folio);
+    currentRec.fotoUrl = url;
+    await saveRecord(currentRec);
+    renderCred(currentRec);
+    $('upload-status').textContent = 'Foto actualizada.';
+    toast('Foto guardada correctamente.', 'ok');
+  } catch (err) {
+    $('upload-status').textContent = '';
+    toast('Error al subir la foto: ' + err.message, 'err');
+  }
+}
+
+function imprimirCred() { window.print(); }
+
+/* ---- Buscar (carga en caché al abrir, filtra en memoria) ---- */
+async function abrirBuscar() {
+  sv('buscar-q', '');
+  $('sr-list').innerHTML = '<div style="text-align:center;padding:30px"><i class="fas fa-spinner fa-spin" style="color:var(--gold);font-size:22px"></i></div>';
+  openModal('modal-buscar');
+  try {
+    _searchCache = await getRecords();
+    $('sr-list').innerHTML = '<div style="text-align:center;padding:24px;color:var(--text-light)">Escriba para buscar...</div>';
+    setTimeout(() => $('buscar-q').focus(), 80);
+  } catch (e) {
+    $('sr-list').innerHTML = '<div style="text-align:center;padding:24px;color:#dc2626">Error al cargar registros.</div>';
+  }
+}
+
+function buscarAlumno() {
+  const q    = ($('buscar-q').value || '').toLowerCase();
+  const cont = $('sr-list');
+  if (!q) { cont.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text-light)">Escriba para buscar...</div>'; return; }
+  const res = _searchCache.filter(r =>
+    (r.folio  || '').toLowerCase().includes(q) ||
+    (r.nombre || '').toLowerCase().includes(q) ||
+    (r.curp   || '').toLowerCase().includes(q)
+  );
+  if (!res.length) { cont.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text-light)">Sin resultados.</div>'; return; }
+  cont.innerHTML = res.map(r => `
+    <div class="sr-item" onclick="selResult('${esc(r.folio)}')">
+      <span class="sr-folio">${esc(r.folio)}</span>
+      <span class="sr-name">${esc(r.nombre || '(sin nombre)')}</span>
+      <span class="sr-meta">${esc(r.curp || '')} ${r.modalidad ? '&nbsp;·&nbsp;' + esc(r.modalidad) : ''}</span>
+    </div>`).join('');
+}
+
+function selResult(folio) {
+  closeModal('modal-buscar');
+  const rec = _searchCache.find(r => r.folio === folio);
+  if (!rec) return;
+  setActiveFolio(folio);
+  renderCred(rec);
+}
+
+/* ---- Init: restaurar folio activo si existe ---- */
+(async function init() {
+  const folio = getActiveFolio();
+  if (folio) {
+    try {
+      const rec = await getRecord(folio);
+      if (rec) { renderCred(rec); return; }
+    } catch (e) { /* silencioso */ }
+  }
+  mostrarVacio();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ECCA — Iniciar Sesión</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="login-body">
+
+  <div class="login-wrap">
+    <div class="login-card">
+
+      <div class="login-logo">
+        <img src="images/ecca_logo.png" alt="Logo ECCA">
+      </div>
+      <h1 class="login-title">ECCA Preparatoria de León</h1>
+      <p class="login-sub">Sistema de Admisiones — Acceso Administrativo</p>
+
+      <form id="login-form" onsubmit="handleLogin(event)" autocomplete="on">
+        <div class="field" style="margin-bottom:14px">
+          <label class="field-label">Correo electrónico</label>
+          <input class="field-input" id="l-email" type="email" placeholder="usuario@ecca.mx" required autocomplete="username">
+        </div>
+        <div class="field" style="margin-bottom:20px">
+          <label class="field-label">Contraseña</label>
+          <div style="position:relative">
+            <input class="field-input" id="l-pass" type="password" placeholder="••••••••" required autocomplete="current-password" style="padding-right:38px">
+            <button type="button" onclick="togglePass()" tabindex="-1"
+              style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-muted);padding:2px">
+              <i class="fas fa-eye" id="l-eye"></i>
+            </button>
+          </div>
+        </div>
+
+        <div id="l-error" style="display:none;color:#dc2626;font-size:12.5px;margin-bottom:14px;padding:9px 12px;background:#fef2f2;border-radius:var(--r-sm);border:1px solid #fecaca">
+          <i class="fas fa-circle-exclamation"></i> <span id="l-error-msg"></span>
+        </div>
+
+        <button class="btn btn-primary" type="submit" id="l-btn" style="width:100%;justify-content:center">
+          <i class="fas fa-right-to-bracket"></i> Iniciar Sesión
+        </button>
+      </form>
+
+      <p class="login-footer-note">
+        <i class="fas fa-location-dot"></i> 5 de Febrero 628, Centro, León, Gto. &nbsp;|&nbsp; Tel. 479 153 4007
+      </p>
+
+    </div>
+  </div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script>
+const _sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// Si ya hay sesión activa, redirigir al sistema
+(async function() {
+  const { data: { session } } = await _sb.auth.getSession();
+  if (session) window.location.href = 'formulario.html';
+})();
+
+function togglePass() {
+  const inp = document.getElementById('l-pass');
+  const eye = document.getElementById('l-eye');
+  if (inp.type === 'password') {
+    inp.type = 'text';
+    eye.className = 'fas fa-eye-slash';
+  } else {
+    inp.type = 'password';
+    eye.className = 'fas fa-eye';
+  }
+}
+
+function showError(msg) {
+  document.getElementById('l-error-msg').textContent = msg;
+  document.getElementById('l-error').style.display = 'block';
+}
+
+async function handleLogin(e) {
+  e.preventDefault();
+  const email = document.getElementById('l-email').value.trim();
+  const pass  = document.getElementById('l-pass').value;
+  const btn   = document.getElementById('l-btn');
+
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verificando...';
+  document.getElementById('l-error').style.display = 'none';
+
+  try {
+    const { error } = await _sb.auth.signInWithPassword({ email, password: pass });
+    if (error) throw error;
+    window.location.href = 'formulario.html';
+  } catch (err) {
+    const msgs = {
+      'Invalid login credentials': 'Correo o contraseña incorrectos.',
+      'Email not confirmed':        'Confirma tu correo antes de iniciar sesión.',
+      'Too many requests':          'Demasiados intentos. Espera un momento.',
+    };
+    showError(msgs[err.message] || err.message);
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-right-to-bracket"></i> Iniciar Sesión';
+  }
+}
+</script>
+</body>
+</html>
