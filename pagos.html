@@ -316,6 +316,15 @@
   </div>
 </div>
 
+<!-- Área de impresión para comprobante de cargo -->
+<div id="cargo-print-area" style="display:none"></div>
+<style>
+  @media print {
+    body > *:not(#cargo-print-area) { display: none !important; }
+    #cargo-print-area { display: block !important; }
+  }
+</style>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/config.js"></script>
 <script src="js/app.js"></script>
@@ -402,40 +411,42 @@ function badgeEstado(estado) {
 function renderCargos() {
   const cont = $('pa-cargos');
   if (!_paCargos.length) { cont.innerHTML = '<div style="text-align:center;padding:18px;color:var(--text-light)">Sin cargos registrados.</div>'; return; }
-  cont.innerHTML = _paCargos.map(c => {
-    const estado = estadoCargo(c, _paPagos);
-    return `
-    <div class="pago-row">
-      <div class="pago-info">
-        <span class="pago-concepto">${esc(c.descripcion || c.concepto)}</span>
-        <span class="pago-meta">${esc(c.concepto)}${c.fecha_vencimiento ? '  ·  Vence: ' + fmtDate(c.fecha_vencimiento) : ''}</span>
-      </div>
-      <div class="pago-monto">${fmtMoney(c.monto)}</div>
-      ${badgeEstado(estado)}
-      <div class="pago-actions">
-        ${estado !== 'pagado' ? `<button class="btn-sm-tbl bst-gold" onclick="abrirPagoForm(${c.id})"><i class="fas fa-circle-dollar-to-slot"></i> Pagar</button>` : ''}
-        <button class="btn-sm-tbl bst-red" onclick="eliminarCargo(${c.id})"><i class="fas fa-trash"></i></button>
-      </div>
-    </div>`;
-  }).join('');
+  cont.innerHTML = '<div class="pago-col-hdr"><span></span><span>Cantidad</span><span></span></div>' +
+    _paCargos.map(c => {
+      const estado = estadoCargo(c, _paPagos);
+      return `
+      <div class="pago-row">
+        <div class="pago-info">
+          <span class="pago-concepto">${esc(c.descripcion || c.concepto)}</span>
+          <span class="pago-meta">${esc(c.concepto)}${c.fecha_vencimiento ? '  ·  Vence: ' + fmtDate(c.fecha_vencimiento) : ''}</span>
+        </div>
+        <div class="pago-monto">${fmtMoney(c.monto)}</div>
+        <div class="pago-actions">
+          ${badgeEstado(estado)}
+          ${estado !== 'pagado' ? `<button class="btn-sm-tbl bst-gold" onclick="abrirPagoForm(${c.id})"><i class="fas fa-circle-dollar-to-slot"></i> Pagar</button>` : ''}
+          <button class="btn-sm-tbl bst-red" onclick="eliminarCargo(${c.id})"><i class="fas fa-trash"></i></button>
+        </div>
+      </div>`;
+    }).join('');
 }
 
 function renderPagos() {
   const cont = $('pa-pagos');
   if (!_paPagos.length) { cont.innerHTML = '<div style="text-align:center;padding:18px;color:var(--text-light)">Aún no hay pagos registrados.</div>'; return; }
-  cont.innerHTML = _paPagos.map(p => `
-    <div class="pago-row">
-      <div class="pago-info">
-        <span class="pago-concepto">${esc(p.concepto)}</span>
-        <span class="pago-meta">${fmtDate(p.fecha_pago)}${p.forma_pago ? '  ·  ' + esc(p.forma_pago) : ''}${p.recibio ? '  ·  Recibió: ' + esc(p.recibio) : ''}</span>
-      </div>
-      <div class="pago-monto">${fmtMoney(p.monto)}</div>
-      <div class="pago-actions">
-        ${p.comprobante_url ? `<a class="btn-sm-tbl bst-navy" href="${esc(p.comprobante_url)}" target="_blank"><i class="fas fa-paperclip"></i> Comprobante</a>` : ''}
-        <button class="btn-sm-tbl bst-navy" onclick="imprimirRecibo(${p.id})"><i class="fas fa-print"></i> Recibo</button>
-        <button class="btn-sm-tbl bst-red" onclick="eliminarPago(${p.id})"><i class="fas fa-trash"></i></button>
-      </div>
-    </div>`).join('');
+  cont.innerHTML = '<div class="pago-col-hdr"><span></span><span>Cantidad</span><span></span></div>' +
+    _paPagos.map(p => `
+      <div class="pago-row">
+        <div class="pago-info">
+          <span class="pago-concepto">${esc(p.concepto)}</span>
+          <span class="pago-meta">${fmtDate(p.fecha_pago)}${p.forma_pago ? '  ·  ' + esc(p.forma_pago) : ''}${p.recibio ? '  ·  Recibió: ' + esc(p.recibio) : ''}</span>
+        </div>
+        <div class="pago-monto">${fmtMoney(p.monto)}</div>
+        <div class="pago-actions">
+          ${p.comprobante_url ? `<a class="btn-sm-tbl bst-navy" href="${esc(p.comprobante_url)}" target="_blank"><i class="fas fa-paperclip"></i> Comprobante</a>` : ''}
+          <button class="btn-sm-tbl bst-navy" onclick="imprimirRecibo(${p.id})"><i class="fas fa-print"></i> Recibo</button>
+          <button class="btn-sm-tbl bst-red" onclick="eliminarPago(${p.id})"><i class="fas fa-trash"></i></button>
+        </div>
+      </div>`).join('');
 }
 
 /* ---- Modal: registrar pago ---- */
@@ -612,6 +623,44 @@ async function guardarGenerarGrupo() {
   } catch (e) {
     toast('Error al generar el cargo: ' + e.message, 'err');
   }
+}
+
+/* ---- Comprobante PDF de cargo ---- */
+function descargarReciboCargo(cargoId) {
+  const c = _paCargos.find(x => x.id === cargoId);
+  if (!c || !_paAlumno) return;
+  const estado = estadoCargo(c, _paPagos);
+  const estadoLabel = { pagado: 'Pagado', parcial: 'Parcial', vencido: 'Vencido', pendiente: 'Pendiente' }[estado] || estado;
+  const hoy = new Date().toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' });
+  document.getElementById('cargo-print-area').innerHTML = `
+    <div style="max-width:580px;margin:0 auto;font-family:Arial,sans-serif;padding:40px 40px 30px">
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px">
+        <img src="images/ecca_logo.png" style="height:56px;object-fit:contain">
+        <div>
+          <div style="font-size:18px;font-weight:700;color:#0a0a2e">ECCA Preparatoria León</div>
+          <div style="font-size:11px;color:#666">5 de Febrero 628, Centro, León, Gto.  ·  Tel. 477 716 7495</div>
+        </div>
+      </div>
+      <div style="background:#0a0a2e;color:#fff;text-align:center;padding:10px;border-radius:4px;font-size:14px;font-weight:700;letter-spacing:1px;margin-bottom:20px">
+        COMPROBANTE DE CARGO
+      </div>
+      <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:20px">
+        <tr style="background:#f5f5f8"><td style="padding:7px 10px;color:#555;width:38%">Alumno</td><td style="padding:7px 10px;font-weight:700">${esc(_paAlumno.nombre || '—')}</td></tr>
+        <tr><td style="padding:7px 10px;color:#555">Matrícula / Folio</td><td style="padding:7px 10px">${esc(_paAlumno.folio || '—')}</td></tr>
+        <tr style="background:#f5f5f8"><td style="padding:7px 10px;color:#555">Modalidad</td><td style="padding:7px 10px">${esc(_paAlumno.modalidad || '—')}</td></tr>
+      </table>
+      <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:24px">
+        <tr style="background:#f5f5f8"><td style="padding:7px 10px;color:#555;width:38%">Concepto</td><td style="padding:7px 10px;font-weight:700">${esc(c.concepto)}</td></tr>
+        ${c.descripcion ? `<tr><td style="padding:7px 10px;color:#555">Descripción</td><td style="padding:7px 10px">${esc(c.descripcion)}</td></tr>` : ''}
+        <tr style="background:#f5f5f8"><td style="padding:7px 10px;color:#555">Monto</td><td style="padding:7px 10px;font-size:20px;font-weight:700;color:#0a0a2e">${fmtMoney(c.monto)}</td></tr>
+        ${c.fecha_vencimiento ? `<tr><td style="padding:7px 10px;color:#555">Vencimiento</td><td style="padding:7px 10px">${fmtDate(c.fecha_vencimiento)}</td></tr>` : ''}
+        <tr style="background:#f5f5f8"><td style="padding:7px 10px;color:#555">Estado</td><td style="padding:7px 10px;font-weight:700">${estadoLabel}</td></tr>
+      </table>
+      <div style="border-top:1px solid #e0e0e0;padding-top:12px;text-align:center;font-size:10px;color:#aaa">
+        Generado el ${hoy}  ·  www.eccapreparatoria.com
+      </div>
+    </div>`;
+  window.print();
 }
 
 /* ---- Init ---- */

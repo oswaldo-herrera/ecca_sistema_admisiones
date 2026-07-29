@@ -809,16 +809,25 @@ table.dtbl tbody tr:last-child td { border-bottom: none; }
 .grupo-print-table tbody tr:nth-child(even) { background: #f8fafc; }
 
 /* ---- Pagos ---- */
+.pago-col-hdr {
+  display: grid; grid-template-columns: 1fr 130px 210px;
+  gap: 8px; padding: 4px 12px 6px;
+  font-size: 10.5px; font-weight: 700; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: .6px;
+  border-bottom: 1px solid var(--border);
+}
+.pago-col-hdr span:nth-child(2) { text-align: center; }
 .pago-row {
-  display: flex; align-items: center; justify-content: space-between; gap: 10px;
-  padding: 10px 12px; border-bottom: 1px solid var(--border); flex-wrap: wrap;
+  display: grid; grid-template-columns: 1fr 130px 210px;
+  align-items: center; gap: 8px;
+  padding: 10px 12px; border-bottom: 1px solid var(--border);
 }
 .pago-row:last-child { border-bottom: none; }
-.pago-info { display: flex; flex-direction: column; gap: 2px; }
+.pago-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .pago-concepto { font-weight: 600; font-size: 13px; }
 .pago-meta { font-size: 11.5px; color: var(--text-muted); }
-.pago-monto { font-weight: 700; font-size: 14px; color: var(--navy); }
-.pago-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.pago-monto { font-weight: 700; font-size: 14px; color: var(--navy); text-align: center; }
+.pago-actions { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; justify-content: flex-end; }
 .saldo-box {
   display: flex; align-items: center; justify-content: space-between;
   padding: 14px 18px; border-radius: var(--r-sm); margin-bottom: 14px;
