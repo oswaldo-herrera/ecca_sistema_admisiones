@@ -159,6 +159,7 @@
     <div class="modal-footer">
       <button class="btn btn-secondary btn-sm" onclick="exportarGrupoExcel()"><i class="fas fa-file-csv"></i> Excel</button>
       <button class="btn btn-secondary btn-sm" onclick="exportarGrupoPDF()"><i class="fas fa-file-pdf"></i> PDF</button>
+      <button class="btn btn-secondary btn-sm" onclick="exportarListaAsistencia()"><i class="fas fa-clipboard-list"></i> Lista de Asistencia</button>
       <span class="spacer" style="flex:1"></span>
       <button class="btn btn-secondary btn-sm" onclick="closeModal('modal-grupo-detalle')">Cerrar</button>
     </div>
@@ -202,6 +203,7 @@
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/config.js"></script>
 <script src="js/app.js"></script>
@@ -353,20 +355,288 @@ async function renderAlumnosDeGrupo() {
 }
 
 /* ---- Exportar grupo ---- */
-function exportarGrupoExcel() {
+async function exportarGrupoExcel() {
   const g = _grupos.find(x => x.id === _detalleGrupoId);
   if (!_detalleAlumnos.length) { toast('No hay alumnos para exportar.', 'warn'); return; }
-  const hdrs = ['Folio', 'Nombre', 'CURP', 'Teléfono', 'Correo', 'Modalidad'];
-  const rows = _detalleAlumnos.map(a => [a.folio, a.nombre, a.curp, a.tel, a.correo, a.modalidad]);
-  const csv  = [hdrs, ...rows].map(row =>
-    row.map(c => '"' + (c || '').toString().replace(/"/g, '""') + '"').join(',')
-  ).join('\n');
-  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
-  const url  = URL.createObjectURL(blob);
-  const nombreArchivo = 'Grupo_' + ((g && g.nombre) || 'grupo').replace(/[^a-z0-9]+/gi, '_') + '.csv';
-  Object.assign(document.createElement('a'), { href: url, download: nombreArchivo }).click();
-  URL.revokeObjectURL(url);
-  toast('Excel exportado correctamente.', 'ok');
+  try {
+    const grupoNombre = (g && g.nombre) || 'Grupo';
+    const infoMeta    = [g && g.modalidad, g && g.ciclo, g && g.cupo ? 'Cupo: ' + g.cupo : null]
+                          .filter(Boolean).join('  ·  ');
+    const fechaHoy    = new Date().toLocaleDateString('es-MX', { day:'2-digit', month:'long', year:'numeric' });
+
+    const workbook = new ExcelJS.Workbook();
+    const ws       = workbook.addWorksheet(grupoNombre.substring(0, 31));
+
+    // ── Logo ──────────────────────────────────────────────────────
+    let logoId = null;
+    try {
+      const resp = await fetch('images/ecca_logo.png');
+      const blob = await resp.blob();
+      const b64  = await new Promise((res, rej) => {
+        const rd = new FileReader();
+        rd.onloadend = () => res(rd.result.split(',')[1]);
+        rd.onerror   = rej;
+        rd.readAsDataURL(blob);
+      });
+      logoId = workbook.addImage({ base64: b64, extension: 'png' });
+    } catch(e) { /* continúa sin logo si falla la carga */ }
+
+    // ── Anchos de columna ─────────────────────────────────────────
+    ws.columns = [
+      { width: 7  },  // A — espacio para el logo
+      { width: 18 },  // B — Matrícula
+      { width: 36 },  // C — Nombre
+      { width: 22 },  // D — CURP
+      { width: 14 },  // E — Teléfono
+      { width: 30 },  // F — Correo
+    ];
+
+    // ── Paleta ────────────────────────────────────────────────────
+    const NAVY  = { type:'pattern', pattern:'solid', fgColor:{ argb:'FF0A0A2E' } };
+    const GOLD  = { type:'pattern', pattern:'solid', fgColor:{ argb:'FFC9A84C' } };
+    const BLUE  = { type:'pattern', pattern:'solid', fgColor:{ argb:'FF1E3A5F' } };
+    const LGRAY = { type:'pattern', pattern:'solid', fgColor:{ argb:'FFF0F0F6' } };
+    const WHITE = { type:'pattern', pattern:'solid', fgColor:{ argb:'FFFFFFFF' } };
+    const SGRAY = { type:'pattern', pattern:'solid', fgColor:{ argb:'FFE8E8F2' } };
+    const BDR   = {
+      top:    { style:'thin', color:{ argb:'FFCCCCCC' } },
+      bottom: { style:'thin', color:{ argb:'FFCCCCCC' } },
+      left:   { style:'thin', color:{ argb:'FFCCCCCC' } },
+      right:  { style:'thin', color:{ argb:'FFCCCCCC' } },
+    };
+
+    // ── R1: Logo (col A) + Título (col B:F) ──────────────────────
+    ws.getRow(1).height = 48;
+    ws.getCell('A1').fill = NAVY;
+    ws.mergeCells('B1:F1');
+    const r1 = ws.getCell('B1');
+    r1.value     = 'ECCA PREPARATORIA';
+    r1.fill      = NAVY;
+    r1.font      = { name:'Arial', size:16, bold:true, color:{ argb:'FFFFFFFF' } };
+    r1.alignment = { horizontal:'center', vertical:'middle' };
+    if (logoId !== null) {
+      ws.addImage(logoId, { tl:{ col:0.08, row:0.07 }, br:{ col:0.92, row:0.93 }, editAs:'oneCell' });
+    }
+
+    // ── R2: Info del grupo ────────────────────────────────────────
+    ws.getRow(2).height = 22;
+    ws.mergeCells('A2:F2');
+    const r2 = ws.getCell('A2');
+    r2.value     = 'Lista de Alumnos  —  ' + grupoNombre + (infoMeta ? '   |   ' + infoMeta : '');
+    r2.fill      = GOLD;
+    r2.font      = { name:'Arial', size:11, bold:true, color:{ argb:'FF0A0A2E' } };
+    r2.alignment = { horizontal:'center', vertical:'middle' };
+
+    // ── R3: Fecha ─────────────────────────────────────────────────
+    ws.getRow(3).height = 16;
+    ws.mergeCells('A3:F3');
+    const r3 = ws.getCell('A3');
+    r3.value     = 'Generado el: ' + fechaHoy;
+    r3.fill      = SGRAY;
+    r3.font      = { name:'Arial', size:9, italic:true, color:{ argb:'FF555577' } };
+    r3.alignment = { horizontal:'right', vertical:'middle' };
+
+    // ── R4: Separador ─────────────────────────────────────────────
+    ws.getRow(4).height = 6;
+    ws.mergeCells('A4:F4');
+
+    // ── R5: Encabezados ───────────────────────────────────────────
+    ws.getRow(5).height = 20;
+    ['#','Matrícula / Folio','Nombre completo','CURP','Teléfono','Correo electrónico'].forEach((h, i) => {
+      const cell   = ws.getCell(5, i + 1);
+      cell.value     = h;
+      cell.fill      = BLUE;
+      cell.font      = { name:'Arial', size:10, bold:true, color:{ argb:'FFFFFFFF' } };
+      cell.alignment = { horizontal:'center', vertical:'middle' };
+      cell.border    = BDR;
+    });
+
+    // ── R6+: Datos con filas alternas ────────────────────────────
+    _detalleAlumnos.forEach((a, i) => {
+      const rowNum = i + 6;
+      const values = [i + 1, a.folio || '', a.nombre || '', a.curp || '', a.tel || '', a.correo || ''];
+      const fill   = (i % 2 === 0) ? WHITE : LGRAY;
+      ws.getRow(rowNum).height = 16;
+      values.forEach((v, ci) => {
+        const cell   = ws.getCell(rowNum, ci + 1);
+        cell.value     = v;
+        cell.fill      = fill;
+        cell.font      = { name:'Arial', size:10 };
+        cell.alignment = { horizontal: ci === 0 ? 'center' : 'left', vertical:'middle' };
+        cell.border    = BDR;
+      });
+    });
+
+    // ── Generar y descargar ───────────────────────────────────────
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob   = new Blob([buffer], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url    = URL.createObjectURL(blob);
+    Object.assign(document.createElement('a'), {
+      href: url,
+      download: 'ECCA_' + grupoNombre.replace(/[^a-z0-9]+/gi, '_') + '.xlsx'
+    }).click();
+    URL.revokeObjectURL(url);
+    toast('Excel exportado correctamente.', 'ok');
+
+  } catch(e) {
+    console.error('exportarGrupoExcel:', e);
+    toast('Error al generar el Excel: ' + e.message, 'err');
+  }
+}
+
+/* ---- Lista de Asistencia Excel ---- */
+async function exportarListaAsistencia() {
+  const g = _grupos.find(x => x.id === _detalleGrupoId);
+  if (!_detalleAlumnos.length) { toast('No hay alumnos para exportar.', 'warn'); return; }
+  try {
+    const grupoNombre = (g && g.nombre) || 'Grupo';
+    const modalidad   = (g && g.modalidad) || 'Semestral';
+    const ciclo       = (g && g.ciclo) || '';
+    const tipoLista   = /cuatri/i.test(modalidad) ? 'CUATRIMESTRAL' : 'SEMESTRAL';
+    const periodo     = ciclo ? ciclo.toUpperCase() : '';
+
+    const workbook = new ExcelJS.Workbook();
+    const ws = workbook.addWorksheet(grupoNombre.substring(0, 31));
+
+    // ── Logo ─────────────────────────────────────────────────────
+    let logoId = null;
+    try {
+      const resp = await fetch('images/ecca_logo.png');
+      const blob = await resp.blob();
+      const b64  = await new Promise((res, rej) => {
+        const rd = new FileReader();
+        rd.onloadend = () => res(rd.result.split(',')[1]);
+        rd.onerror   = rej;
+        rd.readAsDataURL(blob);
+      });
+      logoId = workbook.addImage({ base64: b64, extension: 'png' });
+    } catch(e) { /* sin logo */ }
+
+    // ── Columnas: A=No./Logo, B=Nombre, C-AG=Días 1-31 ─────────
+    ws.columns = [
+      { width: 18  },                                    // A: No. + logo
+      { width: 34  },                                    // B: Nombre
+      ...Array.from({ length: 31 }, () => ({ width: 3.2 })), // C-AG: Días 1-31
+    ];
+
+    // ── Paleta ────────────────────────────────────────────────────
+    const NAVY = { type:'pattern', pattern:'solid', fgColor:{ argb:'FF0A0A2E' } };
+    const BDR  = {
+      top:    { style:'thin', color:{ argb:'FF999999' } },
+      bottom: { style:'thin', color:{ argb:'FF999999' } },
+      left:   { style:'thin', color:{ argb:'FF999999' } },
+      right:  { style:'thin', color:{ argb:'FF999999' } },
+    };
+    const LINE = { bottom: { style:'medium', color:{ argb:'FF000000' } } };
+
+    // ── R1-R4: Encabezado institucional ──────────────────────────
+    const hdrData = [
+      { row: 1, height: 28, text: 'ECCA',                              sz: 18 },
+      { row: 2, height: 26, text: 'LISTAS DE ASISTENCIA ' + tipoLista, sz: 12 },
+      { row: 3, height: 24, text: 'PERIODO ' + periodo,                sz: 11 },
+      { row: 4, height: 22, text: grupoNombre,                         sz: 11 },
+    ]; // total ~100pt ≈ 133px ≈ cuadrado con col A (width 18 ≈ 126px)
+    hdrData.forEach(({ row, height, text, sz }) => {
+      ws.getRow(row).height = height;
+      ws.mergeCells(row, 2, row, 33); // B:AG — logo solo ocupa col A
+      const c = ws.getCell(row, 2);
+      c.value = text;
+      c.font  = { name:'Arial', size:sz, bold:true, color:{ argb:'FF0A0A2E' } };
+      c.alignment = { horizontal:'center', vertical:'middle' };
+    });
+    // Logo fijo en A1:A4 (ancla ambas esquinas a las celdas)
+    if (logoId !== null) {
+      ws.addImage(logoId, 'A1:A4');
+    }
+
+    // ── R5: MAESTRO ───────────────────────────────────────────────
+    ws.getRow(5).height = 18;
+    const m5 = ws.getCell('A5');
+    m5.value = 'MAESTRO:';
+    m5.font  = { name:'Arial', size:10, bold:true };
+    m5.alignment = { vertical:'bottom' };
+    ws.mergeCells('B5:AG5');
+    ws.getCell('B5').border = LINE;
+
+    // ── R6: GRUPO ─────────────────────────────────────────────────
+    ws.getRow(6).height = 18;
+    const m6 = ws.getCell('A6');
+    m6.value = 'GRUPO: ' + grupoNombre;
+    m6.font  = { name:'Arial', size:10, bold:true };
+    m6.alignment = { vertical:'bottom' };
+    ws.mergeCells('B6:AG6');
+
+    // ── R7: MES ───────────────────────────────────────────────────
+    ws.getRow(7).height = 18;
+    const m7 = ws.getCell('A7');
+    m7.value = 'MES:';
+    m7.font  = { name:'Arial', size:10, bold:true };
+    m7.alignment = { vertical:'bottom' };
+    ws.mergeCells('B7:AG7');
+    ws.getCell('B7').border = LINE;
+
+    // ── R8: Encabezados de columna ────────────────────────────────
+    ws.getRow(8).height = 32;
+    // No.
+    const cNo = ws.getCell('A8');
+    cNo.value = 'No.';
+    cNo.font  = { name:'Arial', size:8, bold:true, color:{ argb:'FF000000' } };
+    cNo.alignment = { horizontal:'center', vertical:'middle', wrapText:true };
+    cNo.border = BDR;
+    // Nombre
+    const cNm = ws.getCell('B8');
+    cNm.value = 'NOMBRE DE LA/EL ALUMNA (O)\n(ORDEN ALFABÉTICO INICIANDO POR APELLIDO)';
+    cNm.font  = { name:'Arial', size:8, bold:true, color:{ argb:'FF000000' } };
+    cNm.alignment = { horizontal:'center', vertical:'middle', wrapText:true };
+    cNm.border = BDR;
+    // Días 1-31
+    for (let d = 1; d <= 31; d++) {
+      const cell = ws.getCell(8, d + 2);
+      cell.value = d;
+      cell.font  = { name:'Arial', size:8, bold:true, color:{ argb:'FF000000' } };
+      cell.alignment = { horizontal:'center', vertical:'middle' };
+      cell.border = BDR;
+    }
+
+    // ── R9+: Alumnos (orden alfabético) ───────────────────────────
+    const lista = [..._detalleAlumnos].sort((a, b) =>
+      (a.nombre || '').localeCompare(b.nombre || '', 'es'));
+    lista.forEach((a, i) => {
+      const r = i + 9;
+      ws.getRow(r).height = 16;
+      // No.
+      const no = ws.getCell(r, 1);
+      no.value = i + 1;
+      no.font  = { name:'Arial', size:9, bold:true };
+      no.alignment = { horizontal:'center', vertical:'middle' };
+      no.border = BDR;
+      // Nombre
+      const nm = ws.getCell(r, 2);
+      nm.value = a.nombre || '';
+      nm.font  = { name:'Arial', size:9 };
+      nm.alignment = { horizontal:'left', vertical:'middle' };
+      nm.border = BDR;
+      // Celdas de asistencia vacías
+      for (let d = 1; d <= 31; d++) {
+        ws.getCell(r, d + 2).border = BDR;
+      }
+    });
+
+    // ── Generar y descargar ───────────────────────────────────────
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob   = new Blob([buffer], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url    = URL.createObjectURL(blob);
+    Object.assign(document.createElement('a'), {
+      href: url,
+      download: 'ECCA_Asistencia_' + grupoNombre.replace(/[^a-z0-9]+/gi, '_') + '.xlsx'
+    }).click();
+    URL.revokeObjectURL(url);
+    toast('Lista de asistencia exportada.', 'ok');
+
+  } catch(e) {
+    console.error('exportarListaAsistencia:', e);
+    toast('Error al generar la lista: ' + e.message, 'err');
+  }
 }
 
 function exportarGrupoPDF() {
