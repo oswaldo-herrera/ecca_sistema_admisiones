@@ -41,6 +41,7 @@ function toDb(d) {
     fpago:         d.fpago         || null,
     recibio:       d.recibio       || null,
     medio:         d.medio         || null,
+    referido_por:  d.referido      || null,
     foto_url:      d.fotoUrl       || null,
   };
 }
@@ -76,6 +77,7 @@ function fromDb(d) {
     fpago:       d.fpago,
     recibio:     d.recibio,
     medio:       d.medio,
+    referido:    d.referido_por,
     fotoUrl:     d.foto_url,
     registrado:  d.created_at,
   };
@@ -549,13 +551,13 @@ window.exportarCSV = async function() {
     const hdrs = ['Folio','Nombre','CURP','Fecha Nac.','Edad','Teléfono','Correo','Escuela',
       'Padre/Tutor','Ocupación','Tel. Padre','Correo Padre','Modalidad','Trabaja','Deporte',
       'Objetivo','Acta','CURP Doc','Certificado','Fotos','Otro',
-      'Fecha Pago','Concepto','Monto','Forma Pago','Recibió','Medio','Registrado'];
+      'Fecha Pago','Concepto','Monto','Forma Pago','Recibió','Medio','Referido por','Registrado'];
     const rows = recs.map(r => [
       r.folio, r.nombre, r.curp, r.fechaNac, r.edad, r.tel, r.correo, r.escuela,
       r.pNombre, r.pOcup, r.pTel, r.pCorreo, r.modalidad, r.trabaja, r.deporte, r.objetivo,
       r.docActa ? 'Sí' : 'No', r.docCurp ? 'Sí' : 'No', r.docCert ? 'Sí' : 'No',
       r.docFotos ? 'Sí' : 'No', r.docOtroObs || '',
-      r.fechaPago, r.concepto, r.monto, r.fpago, r.recibio, r.medio,
+      r.fechaPago, r.concepto, r.monto, r.fpago, r.recibio, r.medio, r.referido,
       r.registrado ? new Date(r.registrado).toLocaleDateString('es-MX') : ''
     ]);
     const csv  = [hdrs, ...rows].map(row =>

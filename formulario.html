@@ -226,6 +226,10 @@
                   <option>Otro</option>
                 </select>
               </div>
+              <div class="field full">
+                <label class="field-label">Referido por <span style="font-weight:400;color:var(--text-light)">(opcional — para comisión)</span></label>
+                <input class="field-input" id="f-referido" type="text" placeholder="Nombre de quien lo refirió">
+              </div>
             </div>
           </div>
         </div>
@@ -445,7 +449,7 @@ async function nuevoRegistro() {
 function limpiarForm(keepFolio = false) {
   ['f-nombre','f-curp','f-fnac','f-edad','f-tel','f-correo','f-escuela',
    'f-pnombre','f-pocup','f-ptel','f-pcorreo','f-modalidad','f-grupo','f-trabaja',
-   'f-deporte','f-objetivo','f-medio','d-acta-obs','d-curp-obs','d-cert-obs','d-fotos-obs','d-otro-obs',
+   'f-deporte','f-objetivo','f-medio','f-referido','d-acta-obs','d-curp-obs','d-cert-obs','d-fotos-obs','d-otro-obs',
    'fi-monto','fi-fecha','fi-forma','fi-recibio']
   .forEach(id => sv(id, ''));
   ['d-acta','d-curp','d-cert','d-fotos','d-otro'].forEach(id => sc(id, false));
@@ -476,6 +480,7 @@ function getForm() {
     docFotos:  gc('d-fotos'),    docFotosObs: gv('d-fotos-obs'),
     docOtro:   gc('d-otro'),     docOtroObs:  gv('d-otro-obs'),
     medio:     gv('f-medio'),
+    referido:  gv('f-referido'),
   };
 }
 
@@ -501,6 +506,7 @@ function setForm(d) {
   sv('f-trabaja',d.trabaja);
   sv('f-deporte',d.deporte); sv('f-objetivo',d.objetivo);
   sv('f-medio',d.medio);
+  sv('f-referido', d.referido || '');
   sc('d-acta',d.docActa);    sv('d-acta-obs',d.docActaObs);
   sc('d-curp',d.docCurp);    sv('d-curp-obs',d.docCurpObs);
   sc('d-cert',d.docCert);    sv('d-cert-obs',d.docCertObs);
@@ -524,6 +530,9 @@ async function guardarRegistro() {
   try {
     await saveRecord(data);
     const monto = parseFloat(gv('fi-monto'));
+    const recibio = gv('fi-recibio').trim();
+    const formaPago = gv('fi-forma');
+    const fechaPago = gv('fi-fecha') || today();
     if (monto > 0 && !_inscPagoYaRegistrado) {
       const cargo = await saveCargo({
         folio: currentFolio,
@@ -536,12 +545,31 @@ async function guardarRegistro() {
         cargoId: cargo.id,
         concepto: 'Inscripción',
         monto,
-        fechaPago: gv('fi-fecha') || today(),
-        formaPago: gv('fi-forma'),
-        recibio: gv('fi-recibio'),
+        fechaPago,
+        formaPago,
+        recibio,
       });
       _inscPagoYaRegistrado = true;
       sv('fi-monto', ''); sv('fi-fecha', ''); sv('fi-forma', ''); sv('fi-recibio', '');
+    } else if (_inscPagoYaRegistrado && (recibio || formaPago)) {
+      const pagosExistentes = await getPagos(currentFolio);
+      if (pagosExistentes.length > 0) {
+        const p = pagosExistentes[0];
+        await savePago({
+          id: p.id,
+          folio: p.folio,
+          cargoId: p.cargo_id,
+          concepto: p.concepto,
+          monto: p.monto,
+          fechaPago: fechaPago || p.fecha_pago,
+          formaPago: formaPago || p.forma_pago,
+          recibio: recibio || p.recibio,
+          comprobanteUrl: p.comprobante_url,
+          metodo: p.metodo,
+          referencia: p.referencia,
+          estado: p.estado,
+        });
+      }
     }
     toast('Guardado correctamente. (' + currentFolio + ')', 'ok');
     await refreshBadge();
@@ -637,6 +665,14 @@ async function selResult(folio) {
   setForm(rec);
   setActiveFolio(folio);
   await actualizarCuenta();
+  const pagosExist = await getPagos(folio);
+  if (pagosExist.length > 0) {
+    const p = pagosExist[0];
+    sv('fi-monto',  p.monto != null ? String(p.monto) : '');
+    sv('fi-fecha',  p.fecha_pago  || '');
+    sv('fi-forma',  p.forma_pago  || '');
+    sv('fi-recibio', p.recibio   || '');
+  }
   toast('Registro cargado: ' + folio, 'ok');
 }
 </script>
