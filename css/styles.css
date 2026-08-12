@@ -463,6 +463,8 @@ table.dtbl tbody tr:last-child td { border-bottom: none; }
 }
 .modal-ov.open { display: flex; }
 #modal-confirm { z-index: 1100; }
+/* Menú Sin Grupo oculto temporalmente */
+a.sb-item[href="sin-grupo.html"] { display: none !important; }
 
 .modal-box {
   background: #fff; border-radius: var(--r-lg);
