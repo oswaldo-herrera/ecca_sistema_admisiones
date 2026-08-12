@@ -28,6 +28,7 @@
       <div class="sb-group-label">Gestión</div>
       <a href="base-datos.html" class="sb-item"><i class="fas fa-table-list"></i><span>Base de Datos</span><span class="sb-badge">0</span></a>
       <a href="grupos.html" class="sb-item"><i class="fas fa-people-group"></i><span>Grupos</span></a>
+      <a href="sin-grupo.html" class="sb-item"><i class="fas fa-user-clock"></i><span>Sin Grupo</span></a>
       <a href="pagos.html" class="sb-item"><i class="fas fa-circle-dollar-to-slot"></i><span>Pagos</span></a>
       <a href="recibo.html" class="sb-item"><i class="fas fa-file-invoice"></i><span>Recibo</span></a>
       <a href="credencial.html" class="sb-item"><i class="fas fa-id-card"></i><span>Credencial</span></a>
@@ -94,7 +95,15 @@
 
       <!-- Table -->
       <div class="table-wrap">
-        <div class="tbl-toolbar">
+        <!-- Chips de filtro -->
+        <div style="display:flex;gap:8px;flex-wrap:wrap;padding:12px 16px 0">
+          <button class="chip active"    data-fil="todos"         onclick="setFiltro('todos')">         <i class="fas fa-users"></i> Todos</button>
+          <button class="chip"           data-fil="Semestral"     onclick="setFiltro('Semestral')">     <i class="fas fa-book-open"></i> Semestral</button>
+          <button class="chip"           data-fil="Cuatrimestral" onclick="setFiltro('Cuatrimestral')"> <i class="fas fa-calendar-days"></i> Cuatrimestral</button>
+          <button class="chip chip-warn" data-fil="sin-grupo"     onclick="setFiltro('sin-grupo')">     <i class="fas fa-user-clock"></i> Sin Grupo <span class="chip-count" id="chip-singrupo">0</span></button>
+          <button class="chip chip-ex"   data-fil="exalumnos"     onclick="setFiltro('exalumnos')">     <i class="fas fa-graduation-cap"></i> Ex-alumnos <span class="chip-count" id="chip-exalumnos">0</span></button>
+        </div>
+        <div class="tbl-toolbar" style="margin-top:10px">
           <div class="search-box">
             <i class="fas fa-magnifying-glass"></i>
             <input type="text" id="tbl-q" placeholder="Buscar por nombre, folio, CURP, teléfono..." oninput="renderTabla()">
@@ -124,6 +133,29 @@
   </div><!-- /main-content -->
 </div><!-- /layout -->
 
+<!-- ===== MODAL ASIGNAR GRUPO ===== -->
+<div class="modal-ov" id="modal-asignar">
+  <div class="modal-box" style="max-width:460px">
+    <div class="modal-header">
+      <h3><i class="fas fa-people-group" style="color:var(--gold)"></i> Asignar Grupo</h3>
+      <button class="modal-close" onclick="closeModal('modal-asignar')">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <p style="margin-bottom:14px;color:var(--text-muted)">Alumno: <strong id="ma-nombre"></strong></p>
+      <div class="field">
+        <label class="field-label">Grupo</label>
+        <select class="field-select" id="ma-grupo">
+          <option value="">— Seleccionar grupo —</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary btn-sm" onclick="closeModal('modal-asignar')">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="confirmarAsignacion()"><i class="fas fa-check"></i> Asignar</button>
+    </div>
+  </div>
+</div>
+
 <!-- ===== MODAL CONFIRM ===== -->
 <div class="modal-ov" id="modal-confirm">
   <div class="modal-box">
@@ -142,10 +174,33 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/config.js"></script>
 <script src="js/app.js"></script>
+<style>
+  .chip { display:inline-flex; align-items:center; gap:6px; padding:6px 14px; border-radius:20px;
+          border:1px solid var(--border); background:var(--bg-card); cursor:pointer;
+          font-size:13px; font-weight:500; color:var(--text-muted); transition:.15s; }
+  .chip:hover  { border-color:var(--gold); color:var(--gold); }
+  .chip.active { background:var(--navy); border-color:var(--navy); color:#fff; }
+  .chip.chip-warn.active { background:#d97706; border-color:#d97706; color:#fff; }
+  .chip.chip-ex.active  { background:#0369a1; border-color:#0369a1; color:#fff; }
+  .chip-count { background:rgba(255,255,255,.25); border-radius:10px; padding:1px 7px;
+                font-size:11px; font-weight:700; min-width:18px; text-align:center; }
+  .chip:not(.active) .chip-count { background:var(--border); color:var(--text-muted); }
+</style>
 <script>
 let _records   = [];
 let _gruposMap = {};
+let _grupos    = [];
 let _saldoMap  = {};
+let _allPagos  = [];
+let _filtro    = 'todos';
+let _maFolio   = null;
+
+/* ---- Chips ---- */
+function setFiltro(val) {
+  _filtro = val;
+  document.querySelectorAll('.chip').forEach(c => c.classList.toggle('active', c.dataset.fil === val));
+  renderTabla();
+}
 
 /* ---- Stats ---- */
 function calcStats(recs, pagos) {
@@ -162,9 +217,13 @@ function calcStats(recs, pagos) {
   $('st-mes').textContent   = mes;
   $('st-monto').textContent = totalMonto > 0 ? '$' + totalMonto.toLocaleString('es-MX', {minimumFractionDigits:0}) : '$0';
   $('st-modal').textContent = top ? top[0] : '—';
+  const sinGrupo  = recs.filter(r => !r.grupoId && !r.exalumno).length;
+  const exAlumnos = recs.filter(r => r.exalumno === true).length;
+  $('chip-singrupo').textContent   = sinGrupo;
+  $('chip-exalumnos').textContent  = exAlumnos;
 }
 
-/* ---- Saldo por alumno (cargos vs. pagos, agregados en memoria) ---- */
+/* ---- Saldo ---- */
 function calcSaldoMap(cargos, pagos) {
   const map = {};
   cargos.forEach(c => { map[c.folio] = map[c.folio] || { cargos: 0, pagado: 0 }; map[c.folio].cargos += parseFloat(c.monto) || 0; });
@@ -180,20 +239,32 @@ function modalBadge(m) {
   return `<span class="badge ${map[m]||'badge-gray'}">${esc(m)}</span>`;
 }
 
-/* ---- Tabla (filtra en memoria sobre _records) ---- */
+/* ---- Tabla ---- */
 function renderTabla() {
-  const q   = ($('tbl-q').value || '').toLowerCase();
-  const fil = _records.filter(r =>
-    !q ||
+  const q = ($('tbl-q').value || '').toLowerCase();
+  let fil = _records;
+
+  if (_filtro === 'exalumnos') {
+    fil = fil.filter(r => r.exalumno === true);
+  } else {
+    // En todos los demás filtros, excluir ex-alumnos
+    fil = fil.filter(r => !r.exalumno);
+    if (_filtro === 'Semestral')     fil = fil.filter(r => r.modalidad === 'Semestral');
+    if (_filtro === 'Cuatrimestral') fil = fil.filter(r => /cuatri/i.test(r.modalidad || ''));
+    if (_filtro === 'sin-grupo')     fil = fil.filter(r => !r.grupoId);
+  }
+
+  if (q) fil = fil.filter(r =>
     (r.folio  || '').toLowerCase().includes(q) ||
     (r.nombre || '').toLowerCase().includes(q) ||
     (r.curp   || '').toLowerCase().includes(q) ||
     (r.tel    || '').toLowerCase().includes(q)
   );
+
   $('tbl-count').textContent = `${fil.length} de ${_records.length} registro(s)`;
   const tbody = $('tbl-body');
   if (!fil.length) {
-    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state">
+    tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state">
       <i class="fas fa-inbox"></i>
       <p>${_records.length ? 'Sin coincidencias.' : 'Aún no hay registros. <a href="formulario.html" style="color:var(--gold)">Crear el primero</a>'}</p>
     </div></td></tr>`;
@@ -202,6 +273,10 @@ function renderTabla() {
   tbody.innerHTML = fil.map(r => {
     const s = _saldoMap[r.folio] || { cargos: 0, pagado: 0 };
     const saldo = s.cargos - s.pagado;
+    const grupoNombre = r.grupoId && _gruposMap[r.grupoId] ? esc(_gruposMap[r.grupoId]) : '';
+    const grupoCell = grupoNombre
+      ? `<span class="badge badge-folio" style="font-size:11px">${grupoNombre}</span>`
+      : `<button class="btn-sm-tbl" style="background:#fff3cd;color:#856404;border:1px solid #ffc107" onclick="abrirAsignar('${esc(r.folio)}','${esc(r.nombre||'')}','${esc(r.modalidad||'')}')"><i class="fas fa-user-clock"></i> Asignar</button>`;
     return `
     <tr>
       <td><span class="badge badge-folio">${esc(r.folio)}</span></td>
@@ -209,7 +284,7 @@ function renderTabla() {
       <td style="font-size:12px;color:var(--text-muted);font-family:monospace">${esc(r.curp || '—')}</td>
       <td>${esc(r.tel || '—')}</td>
       <td>${r.modalidad ? modalBadge(r.modalidad) : '—'}</td>
-      <td>${r.grupoId && _gruposMap[r.grupoId] ? esc(_gruposMap[r.grupoId]) : '—'}</td>
+      <td>${grupoCell}</td>
       <td>${!s.cargos ? '<span class="badge badge-gray">Sin cargos</span>' : (saldo > 0 ? `<span class="badge badge-red">Debe ${fmtMoney(saldo)}</span>` : '<span class="badge badge-green">Al corriente</span>')}</td>
       <td>
         <div style="display:flex;gap:4px;flex-wrap:wrap">
@@ -221,6 +296,41 @@ function renderTabla() {
       </td>
     </tr>`;
   }).join('');
+}
+
+/* ---- Modal asignar grupo ---- */
+function abrirAsignar(folio, nombre, modalidad) {
+  _maFolio = folio;
+  $('ma-nombre').textContent = nombre || folio;
+  const compatibles = _grupos.filter(g => {
+    if (!modalidad) return true;
+    if (/cuatri/i.test(modalidad)) return /cuatri/i.test(g.modalidad || '');
+    if (/semestral/i.test(modalidad)) return /semestral/i.test(g.modalidad || '');
+    return true;
+  });
+  const lista = compatibles.length ? compatibles : _grupos;
+  $('ma-grupo').innerHTML = '<option value="">— Seleccionar grupo —</option>' +
+    lista.map(g => `<option value="${g.id}">${esc(g.nombre)}${g.ciclo ? ' · ' + esc(g.ciclo) : ''}</option>`).join('');
+  openModal('modal-asignar');
+}
+
+async function confirmarAsignacion() {
+  const grupoId = $('ma-grupo').value;
+  if (!grupoId) { toast('Selecciona un grupo.', 'warn'); return; }
+  setBusy(true);
+  try {
+    await asignarGrupo(_maFolio, parseInt(grupoId));
+    const rec = _records.find(r => r.folio === _maFolio);
+    if (rec) { rec.grupoId = grupoId; }
+    calcStats(_records, _allPagos);
+    renderTabla();
+    closeModal('modal-asignar');
+    toast('Grupo asignado correctamente.', 'ok');
+  } catch(e) {
+    toast('Error: ' + e.message, 'err');
+  } finally {
+    setBusy(false);
+  }
 }
 
 function editarReg(folio)    { setActiveFolio(folio); window.location.href = 'formulario.html'; }
@@ -243,16 +353,15 @@ async function eliminarReg(folio) {
 }
 
 /* ---- Carga inicial ---- */
-let _allPagos = [];
-
 async function loadData() {
-  $('tbl-body').innerHTML = `<tr><td colspan="7"><div style="text-align:center;padding:40px">
+  $('tbl-body').innerHTML = `<tr><td colspan="8"><div style="text-align:center;padding:40px">
     <i class="fas fa-spinner fa-spin" style="font-size:28px;color:var(--gold)"></i>
     <p style="margin-top:12px;color:var(--text-muted)">Cargando registros...</p>
   </div></td></tr>`;
   try {
     const [recs, grupos, cargos, pagos] = await Promise.all([getRecords(), getGrupos(), getAllCargos(), getAllPagos()]);
     _records = recs;
+    _grupos  = grupos;
     _allPagos = pagos;
     _gruposMap = {};
     grupos.forEach(g => { _gruposMap[String(g.id)] = g.nombre; });
@@ -261,7 +370,7 @@ async function loadData() {
     renderTabla();
   } catch(e) {
     toast('Error al cargar datos: ' + e.message, 'err');
-    $('tbl-body').innerHTML = `<tr><td colspan="7"><div class="empty-state">
+    $('tbl-body').innerHTML = `<tr><td colspan="8"><div class="empty-state">
       <i class="fas fa-triangle-exclamation"></i>
       <p>No se pudo conectar a la base de datos.</p>
     </div></td></tr>`;

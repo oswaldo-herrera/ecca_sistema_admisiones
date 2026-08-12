@@ -42,6 +42,7 @@ function toDb(d) {
     recibio:       d.recibio       || null,
     medio:         d.medio         || null,
     referido_por:  d.referido      || null,
+    exalumno:      !!d.exalumno,
     foto_url:      d.fotoUrl       || null,
   };
 }
@@ -78,6 +79,7 @@ function fromDb(d) {
     recibio:     d.recibio,
     medio:       d.medio,
     referido:    d.referido_por,
+    exalumno:    !!d.exalumno,
     fotoUrl:     d.foto_url,
     registrado:  d.created_at,
   };
@@ -197,6 +199,17 @@ async function getAlumnosByGrupo(grupoId) {
 async function asignarGrupo(folio, grupoId) {
   const { error } = await _sb.from('inscripciones').update({ grupo_id: grupoId }).eq('folio', folio);
   if (error) throw error;
+}
+
+async function marcarGrupoExAlumnos(grupoId) {
+  const { error } = await _sb.from('inscripciones').update({ exalumno: true }).eq('grupo_id', grupoId);
+  if (error) throw error;
+}
+
+async function getAlumnosSinGrupo() {
+  const { data, error } = await _sb.from('inscripciones').select('*').is('grupo_id', null).order('created_at', { ascending: false });
+  if (error) { console.error('getAlumnosSinGrupo:', error); return []; }
+  return (data || []).map(fromDb);
 }
 
 /* ---- Cargos (lo que se debe) ---- */
@@ -369,10 +382,11 @@ function fmtMoney(n) { if (!n && n !== 0) return '—'; return '$' + parseFloat(
 
 /* ---- Modal confirmar ---- */
 let _mcb = null;
-window.confirm2 = function(title, msg, cb) {
-  const t = $('mc-title'), m = $('mc-msg');
-  if (t) t.textContent = title;
-  if (m) m.textContent = msg;
+window.confirm2 = function(title, msg, cb, okLabel, okClass) {
+  const t = $('mc-title'), m = $('mc-msg'), ok = $('mc-ok');
+  if (t)  t.textContent  = title;
+  if (m)  m.textContent  = msg;
+  if (ok) { ok.textContent = okLabel || 'Eliminar'; ok.className = 'btn btn-sm ' + (okClass || 'btn-danger'); }
   _mcb = cb;
   openModal('modal-confirm');
 };

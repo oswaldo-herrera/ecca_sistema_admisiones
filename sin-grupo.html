@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ECCA — Sin Grupo Asignado</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="css/styles.css">
+<style>
+  .filter-bar { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:16px; }
+  .chip { padding:6px 14px; border-radius:20px; border:1px solid var(--border); background:var(--bg-card);
+          cursor:pointer; font-size:13px; font-weight:500; color:var(--text-muted); transition:.15s; }
+  .chip:hover  { border-color:var(--gold); color:var(--gold); }
+  .chip.active { background:var(--gold); border-color:var(--gold); color:#fff; }
+  .sg-empty { text-align:center; padding:60px 20px; color:var(--text-light); }
+  .sg-empty i { font-size:48px; opacity:.3; display:block; margin-bottom:12px; }
+  .sg-empty p { font-size:15px; }
+  .badge-new { background:#dcfce7; color:#166534; font-size:11px; font-weight:600;
+               padding:2px 7px; border-radius:10px; }
+  .si-orange { background:#fff3e0; color:#e65100; }
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- ===== SIDEBAR ===== -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-brand">
+      <div class="sb-logo" style="background:#fff;padding:3px">
+        <img src="images/ecca_logo.png" alt="Logo ECCA" style="width:100%;height:100%;object-fit:contain;display:block">
+      </div>
+      <div>
+        <div class="sb-brand-name">ECCA Prepa León</div>
+        <div class="sb-brand-sub">Sistema de Admisiones</div>
+      </div>
+    </div>
+    <nav class="sb-nav">
+      <div class="sb-group-label">Principal</div>
+      <a href="index.html" class="sb-item"><i class="fas fa-house"></i><span>Inicio</span></a>
+      <a href="formulario.html" class="sb-item"><i class="fas fa-user-plus"></i><span>Nueva Inscripción</span></a>
+      <div class="sb-group-label">Gestión</div>
+      <a href="base-datos.html" class="sb-item"><i class="fas fa-table-list"></i><span>Base de Datos</span><span class="sb-badge">0</span></a>
+      <a href="grupos.html" class="sb-item"><i class="fas fa-people-group"></i><span>Grupos</span></a>
+      <a href="sin-grupo.html" class="sb-item active"><i class="fas fa-user-clock"></i><span>Sin Grupo</span><span class="sb-badge" id="sb-singrupo-badge">0</span></a>
+      <a href="pagos.html" class="sb-item"><i class="fas fa-circle-dollar-to-slot"></i><span>Pagos</span></a>
+      <a href="recibo.html" class="sb-item"><i class="fas fa-file-invoice"></i><span>Recibo</span></a>
+      <a href="credencial.html" class="sb-item"><i class="fas fa-id-card"></i><span>Credencial</span></a>
+      <div class="sb-group-label">Administración</div>
+      <a href="usuarios.html" class="sb-item"><i class="fas fa-users-gear"></i><span>Usuarios</span></a>
+    </nav>
+    <div class="sb-footer">
+      <i class="fas fa-location-dot"></i> 5 de Febrero 628, Centro, León, Gto.<br>
+      Tel. 479 153 4007
+    </div>
+  </aside>
+  <div class="sidebar-overlay"></div>
+
+  <!-- ===== MAIN ===== -->
+  <div class="main-content">
+
+    <!-- Topbar -->
+    <header class="topbar">
+      <button class="topbar-hamburger" aria-label="Menú"><i class="fas fa-bars"></i></button>
+      <nav class="topbar-breadcrumb">
+        <a href="index.html"><i class="fas fa-house"></i></a>
+        <span class="sep">›</span>
+        <span class="current">Sin Grupo Asignado</span>
+      </nav>
+      <div class="topbar-right">
+        <button class="btn btn-primary btn-sm" onclick="window.location.href='formulario.html'">
+          <i class="fas fa-user-plus"></i> Nueva Inscripción
+        </button>
+      </div>
+    </header>
+
+    <!-- Page header -->
+    <div class="page-header">
+      <div>
+        <div class="page-title">Sin Grupo Asignado</div>
+        <div class="page-sub">Alumnos inscritos que aún no tienen grupo — asígnales uno desde aquí</div>
+      </div>
+    </div>
+
+    <div class="page-body">
+
+      <!-- Stats -->
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-icon si-orange"><i class="fas fa-user-clock"></i></div>
+          <div><div class="stat-val" id="st-total">—</div><div class="stat-lbl">Sin Grupo</div></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon si-green"><i class="fas fa-book-open"></i></div>
+          <div><div class="stat-val" id="st-sem">—</div><div class="stat-lbl">Semestral</div></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon si-blue"><i class="fas fa-calendar-days"></i></div>
+          <div><div class="stat-val" id="st-cuat">—</div><div class="stat-lbl">Cuatrimestral</div></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon si-gold"><i class="fas fa-calendar-plus"></i></div>
+          <div><div class="stat-val" id="st-nuevo">—</div><div class="stat-lbl">Esta Semana</div></div>
+        </div>
+      </div>
+
+      <!-- Tabla -->
+      <div class="table-wrap">
+        <div class="tbl-toolbar" style="flex-wrap:wrap;gap:10px">
+          <div class="filter-bar" style="margin-bottom:0">
+            <button class="chip active" data-fil="todos" onclick="setFiltro('todos')">Todos</button>
+            <button class="chip" data-fil="Semestral" onclick="setFiltro('Semestral')">Semestral</button>
+            <button class="chip" data-fil="Cuatrimestral" onclick="setFiltro('Cuatrimestral')">Cuatrimestral</button>
+          </div>
+          <div class="search-box" style="flex:1;min-width:200px">
+            <i class="fas fa-magnifying-glass"></i>
+            <input type="text" id="tbl-q" placeholder="Buscar por nombre o folio..." oninput="renderTabla()">
+          </div>
+          <span class="tbl-count" id="tbl-count"></span>
+        </div>
+        <div style="overflow-x:auto">
+          <table class="dtbl">
+            <thead>
+              <tr>
+                <th>Folio</th>
+                <th>Nombre del Alumno</th>
+                <th>Modalidad</th>
+                <th>Registrado</th>
+                <th>Referido por</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="tbl-body">
+              <tr><td colspan="6"><div class="sg-empty"><i class="fas fa-spinner fa-spin"></i><p>Cargando...</p></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div><!-- /page-body -->
+  </div><!-- /main-content -->
+</div><!-- /layout -->
+
+<!-- ===== MODAL ASIGNAR GRUPO ===== -->
+<div class="modal-ov" id="modal-asignar">
+  <div class="modal-box" style="max-width:480px">
+    <div class="modal-header">
+      <h3><i class="fas fa-people-group" style="color:var(--gold)"></i> Asignar Grupo</h3>
+      <button class="modal-close" onclick="closeModal('modal-asignar')">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <p style="margin-bottom:14px;color:var(--text-muted)">Selecciona el grupo para <strong id="ma-nombre"></strong></p>
+      <div class="field">
+        <label class="field-label">Grupo</label>
+        <select class="field-select" id="ma-grupo">
+          <option value="">— Seleccionar grupo —</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary btn-sm" onclick="closeModal('modal-asignar')">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="confirmarAsignacion()"><i class="fas fa-check"></i> Asignar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL CONFIRM ===== -->
+<div class="modal-ov" id="modal-confirm">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 id="mc-title">Confirmar</h3>
+      <button class="modal-close" onclick="closeModal('modal-confirm')">&#10005;</button>
+    </div>
+    <div class="modal-body"><p id="mc-msg"></p></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary btn-sm" onclick="closeModal('modal-confirm')">Cancelar</button>
+      <button class="btn btn-danger btn-sm" id="mc-ok">Aceptar</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script src="js/app.js"></script>
+<script>
+let _alumnos  = [];   // sin grupo
+let _grupos   = [];   // todos los grupos disponibles
+let _filtro   = 'todos';
+let _maFolio  = null; // folio del alumno en el modal
+
+/* ---- Filtro chips ---- */
+function setFiltro(val) {
+  _filtro = val;
+  document.querySelectorAll('.chip').forEach(c => c.classList.toggle('active', c.dataset.fil === val));
+  renderTabla();
+}
+
+/* ---- Fecha "hace N días" ---- */
+function estaEnEstaSemana(dateStr) {
+  if (!dateStr) return false;
+  const d = new Date(dateStr);
+  const ahora = new Date();
+  return (ahora - d) / (1000 * 60 * 60 * 24) <= 7;
+}
+
+/* ---- Stats ---- */
+function calcStats(list) {
+  const sem  = list.filter(r => r.modalidad === 'Semestral').length;
+  const cuat = list.filter(r => /cuatri/i.test(r.modalidad || '')).length;
+  const new_ = list.filter(r => estaEnEstaSemana(r.registrado)).length;
+  $('st-total').textContent = list.length;
+  $('st-sem').textContent   = sem;
+  $('st-cuat').textContent  = cuat;
+  $('st-nuevo').textContent = new_;
+  $('sb-singrupo-badge').textContent = list.length;
+}
+
+/* ---- Badge modalidad ---- */
+function modalBadge(m) {
+  if (!m) return '<span style="color:var(--text-light)">—</span>';
+  const map = {'Cuatrimestral':'badge-blue','Semestral':'badge-green','Escolarizado':'badge-gold','Abierto':'badge-gray','En línea':'badge-blue'};
+  return `<span class="badge ${map[m]||'badge-gray'}">${esc(m)}</span>`;
+}
+
+/* ---- Render tabla ---- */
+function renderTabla() {
+  const q   = ($('tbl-q').value || '').toLowerCase();
+  let fil = _alumnos;
+  if (_filtro !== 'todos') fil = fil.filter(r => (r.modalidad || '') === _filtro);
+  if (q) fil = fil.filter(r =>
+    (r.folio  || '').toLowerCase().includes(q) ||
+    (r.nombre || '').toLowerCase().includes(q)
+  );
+  $('tbl-count').textContent = `${fil.length} de ${_alumnos.length} alumno(s) sin grupo`;
+  const tbody = $('tbl-body');
+  if (!fil.length) {
+    const msg = _alumnos.length
+      ? 'No hay coincidencias con esos filtros.'
+      : '¡Todos los alumnos tienen grupo asignado!';
+    tbody.innerHTML = `<tr><td colspan="6"><div class="sg-empty">
+      <i class="fas ${_alumnos.length ? 'fa-search' : 'fa-circle-check'}"></i>
+      <p>${msg}</p>
+    </div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = fil.map(r => {
+    const reg = r.registrado ? new Date(r.registrado).toLocaleDateString('es-MX') : '—';
+    const esNuevo = estaEnEstaSemana(r.registrado);
+    return `
+    <tr>
+      <td><span class="badge badge-folio">${esc(r.folio)}</span></td>
+      <td style="font-weight:500">
+        ${esc(r.nombre || '—')}
+        ${esNuevo ? '<span class="badge-new" style="margin-left:6px">Nuevo</span>' : ''}
+      </td>
+      <td>${modalBadge(r.modalidad)}</td>
+      <td style="font-size:13px;color:var(--text-muted)">${reg}</td>
+      <td style="font-size:13px;color:var(--text-muted)">${esc(r.referido || '—')}</td>
+      <td>
+        <div style="display:flex;gap:4px;flex-wrap:wrap">
+          <button class="btn-sm-tbl bst-gold" onclick="abrirAsignar('${esc(r.folio)}','${esc(r.nombre||'')}','${esc(r.modalidad||'')}')">
+            <i class="fas fa-people-group"></i> Asignar Grupo
+          </button>
+          <button class="btn-sm-tbl bst-navy" onclick="editarReg('${esc(r.folio)}')">
+            <i class="fas fa-pen"></i> Editar
+          </button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+/* ---- Modal asignar ---- */
+function abrirAsignar(folio, nombre, modalidad) {
+  _maFolio = folio;
+  $('ma-nombre').textContent = nombre || folio;
+  // Filtrar grupos compatibles (misma modalidad si la hay, o todos)
+  const compatibles = _grupos.filter(g => {
+    if (!modalidad) return true;
+    if (/cuatri/i.test(modalidad)) return /cuatri/i.test(g.modalidad || '');
+    if (/semestral/i.test(modalidad)) return /semestral/i.test(g.modalidad || '');
+    return true;
+  });
+  const sel = $('ma-grupo');
+  sel.innerHTML = '<option value="">— Seleccionar grupo —</option>' +
+    compatibles.map(g => `<option value="${g.id}">${esc(g.nombre)}${g.ciclo ? ' · ' + esc(g.ciclo) : ''}</option>`).join('');
+  // Si no hay compatibles, mostrar todos con separador
+  if (!compatibles.length) {
+    sel.innerHTML = '<option value="">— Sin grupos de esa modalidad —</option>' +
+      _grupos.map(g => `<option value="${g.id}">${esc(g.nombre)}${g.ciclo ? ' · ' + esc(g.ciclo) : ''}</option>`).join('');
+  }
+  openModal('modal-asignar');
+}
+
+async function confirmarAsignacion() {
+  const grupoId = $('ma-grupo').value;
+  if (!grupoId) { toast('Selecciona un grupo.', 'warn'); return; }
+  if (!_maFolio) return;
+  setBusy(true);
+  try {
+    await asignarGrupo(_maFolio, parseInt(grupoId));
+    closeModal('modal-asignar');
+    toast('Grupo asignado correctamente.', 'ok');
+    // Quitar de la lista local
+    _alumnos = _alumnos.filter(a => a.folio !== _maFolio);
+    calcStats(_alumnos);
+    renderTabla();
+  } catch(e) {
+    toast('Error: ' + e.message, 'err');
+  } finally {
+    setBusy(false);
+  }
+}
+
+function editarReg(folio) { setActiveFolio(folio); window.location.href = 'formulario.html'; }
+
+/* ---- Init ---- */
+(async () => {
+  initSidebar();
+  await refreshBadge();
+  try {
+    [_alumnos, _grupos] = await Promise.all([getAlumnosSinGrupo(), getGrupos()]);
+    calcStats(_alumnos);
+    renderTabla();
+  } catch(e) {
+    toast('Error al cargar datos: ' + e.message, 'err');
+    $('tbl-body').innerHTML = `<tr><td colspan="6"><div class="sg-empty">
+      <i class="fas fa-triangle-exclamation"></i><p>No se pudieron cargar los datos.</p>
+    </div></td></tr>`;
+  }
+})();
+</script>
+</body>
+</html>

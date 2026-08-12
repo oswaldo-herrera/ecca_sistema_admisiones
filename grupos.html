@@ -28,6 +28,7 @@
       <div class="sb-group-label">Gestión</div>
       <a href="base-datos.html" class="sb-item"><i class="fas fa-table-list"></i><span>Base de Datos</span><span class="sb-badge">0</span></a>
       <a href="grupos.html" class="sb-item"><i class="fas fa-people-group"></i><span>Grupos</span></a>
+      <a href="sin-grupo.html" class="sb-item"><i class="fas fa-user-clock"></i><span>Sin Grupo</span></a>
       <a href="pagos.html" class="sb-item"><i class="fas fa-circle-dollar-to-slot"></i><span>Pagos</span></a>
       <a href="recibo.html" class="sb-item"><i class="fas fa-file-invoice"></i><span>Recibo</span></a>
       <a href="credencial.html" class="sb-item"><i class="fas fa-id-card"></i><span>Credencial</span></a>
@@ -149,6 +150,16 @@
       <button class="modal-close" onclick="closeModal('modal-grupo-detalle')">&#10005;</button>
     </div>
     <div class="modal-body" style="padding:14px 18px 0">
+      <!-- Acción: marcar ex-alumnos -->
+      <div id="gd-exalumno-bar" style="background:#fef9ec;border:1px solid #f0c040;border-radius:8px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px">
+        <div>
+          <div style="font-weight:600;color:#856404;font-size:13px"><i class="fas fa-graduation-cap"></i> Egresados / Ciclo terminado</div>
+          <div style="font-size:11px;color:#a07800;margin-top:2px">Marca a todos los alumnos de este grupo con la etiqueta <strong>Ex-alumno</strong></div>
+        </div>
+        <button class="btn btn-sm" style="white-space:nowrap;background:#856404;color:#fff;border:none" onclick="pedirConfirmExAlumnos()">
+          <i class="fas fa-graduation-cap"></i> Marcar Ex-alumnos
+        </button>
+      </div>
       <div id="gd-info" style="margin-bottom:14px;font-size:12px;color:var(--text-muted)"></div>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
         <span style="font-weight:600;font-size:13px">Alumnos asignados</span>
@@ -335,15 +346,18 @@ async function renderAlumnosDeGrupo() {
     cont.innerHTML = `<div style="text-align:center;padding:24px;color:var(--text-light)">Sin alumnos asignados todavía.</div>`;
     return;
   }
-  cont.innerHTML = alumnos.map(a => `
+  cont.innerHTML = alumnos.map(a => {
+    const esEx = !!a.exalumno;
+    return `
     <div class="gd-alumno-row">
       <div class="gd-alumno-info">
-        <span class="sr-name">${esc(a.nombre || '(sin nombre)')}</span>
+        <span class="sr-name">${esc(a.nombre || '(sin nombre)')}${esEx ? ' <span style="background:#e0f2fe;color:#0369a1;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;vertical-align:middle">EX-ALUMNO</span>' : ''}</span>
         <span class="sr-folio">${esc(a.folio)}</span>
       </div>
       <span class="badge badge-gray" id="gd-saldo-${esc(a.folio)}">—</span>
       <button class="btn-sm-tbl bst-red" onclick="quitarDeGrupo('${esc(a.folio)}')"><i class="fas fa-xmark"></i> Quitar</button>
-    </div>`).join('');
+    </div>`;
+  }).join('');
   alumnos.forEach(async a => {
     const [cargos, pagos] = await Promise.all([getCargos(a.folio), getPagos(a.folio)]);
     const { saldo } = calcSaldo(cargos, pagos);
@@ -667,6 +681,26 @@ async function quitarDeGrupo(folio) {
   } catch (e) {
     toast('Error: ' + e.message, 'err');
   }
+}
+
+function pedirConfirmExAlumnos() {
+  if (!_detalleAlumnos.length) { toast('El grupo no tiene alumnos.', 'warn'); return; }
+  const g = _grupos.find(x => x.id === _detalleGrupoId);
+  confirm2(
+    'Marcar como Ex-alumnos',
+    `¿Marcar los ${_detalleAlumnos.length} alumnos del grupo "${g ? g.nombre : ''}" como Ex-alumnos? Esta acción se puede revertir editando cada alumno.`,
+    async () => {
+      try {
+        await marcarGrupoExAlumnos(_detalleGrupoId);
+        toast(`${_detalleAlumnos.length} alumnos marcados como Ex-alumnos.`, 'ok');
+        await renderAlumnosDeGrupo();
+      } catch(e) {
+        toast('Error: ' + e.message, 'err');
+      }
+    },
+    'Marcar Ex-alumnos',
+    'btn-primary'
+  );
 }
 
 /* ---- Buscar y agregar alumno al grupo ---- */

@@ -462,6 +462,7 @@ table.dtbl tbody tr:last-child td { border-bottom: none; }
   backdrop-filter: blur(3px);
 }
 .modal-ov.open { display: flex; }
+#modal-confirm { z-index: 1100; }
 
 .modal-box {
   background: #fff; border-radius: var(--r-lg);
