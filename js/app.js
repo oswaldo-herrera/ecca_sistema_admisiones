@@ -21,7 +21,8 @@ function toDb(d) {
     p_tel:         d.pTel          || null,
     p_correo:      d.pCorreo       || null,
     modalidad:     d.modalidad     || null,
-    grupo_id:      d.grupoId       ? parseInt(d.grupoId) : null,
+    grupo_id:          d.grupoId        ? parseInt(d.grupoId)        : null,
+    grupo_deporte_id:  d.grupoDeporteId ? parseInt(d.grupoDeporteId) : null,
     trabaja:       d.trabaja       || null,
     deporte:       d.deporte       || null,
     objetivo:      d.objetivo      || null,
@@ -63,7 +64,8 @@ function fromDb(d) {
     pTel:        d.p_tel,
     pCorreo:     d.p_correo,
     modalidad:   d.modalidad,
-    grupoId:     d.grupo_id != null ? String(d.grupo_id) : '',
+    grupoId:          d.grupo_id         != null ? String(d.grupo_id)         : '',
+    grupoDeporteId:   d.grupo_deporte_id != null ? String(d.grupo_deporte_id) : '',
     trabaja:     d.trabaja,
     deporte:     d.deporte,
     objetivo:    d.objetivo,
@@ -156,9 +158,49 @@ async function refreshBadge() {
 
 /* ---- Grupos (async) ---- */
 async function getGrupos() {
-  const { data, error } = await _sb.from('grupos').select('*').order('nombre', { ascending: true });
+  const { data, error } = await _sb.from('grupos').select('*')
+    .order('nombre', { ascending: true });
   if (error) { console.error('getGrupos:', error); return []; }
-  return data || [];
+  // Si la columna tipo ya existe, excluir grupos deportivos; si no, devolver todos
+  return (data || []).filter(g => !g.tipo || g.tipo === 'academico');
+}
+
+async function getGruposDeporte() {
+  const { data, error } = await _sb.from('grupos').select('*')
+    .order('nombre', { ascending: true });
+  if (error) { console.error('getGruposDeporte:', error); return []; }
+  return (data || []).filter(g => g.tipo === 'deporte');
+}
+
+async function getAlumnosByGrupoDeporte(grupoId) {
+  const { data, error } = await _sb.from('inscripciones').select('*').eq('grupo_deporte_id', grupoId);
+  if (error) { console.error('getAlumnosByGrupoDeporte:', error); return []; }
+  return (data || []).map(fromDb);
+}
+
+async function asignarGrupoDeporte(folio, grupoId) {
+  const { error } = await _sb.from('inscripciones').update({ grupo_deporte_id: grupoId }).eq('folio', folio);
+  if (error) throw error;
+}
+
+async function quitarGrupoDeporte(folio) {
+  const { error } = await _sb.from('inscripciones').update({ grupo_deporte_id: null }).eq('folio', folio);
+  if (error) throw error;
+}
+
+async function saveGrupoDeporte(g) {
+  const payload = {
+    nombre:  g.nombre,
+    tipo:    'deporte',
+    deporte: g.deporte || null,
+    ciclo:   g.ciclo   || null,
+    cupo:    g.cupo    ? parseInt(g.cupo) : null,
+  };
+  if (g.id) payload.id = parseInt(g.id);
+  const { data, error } = await _sb.from('grupos').upsert(payload).select();
+  if (error) throw error;
+  if (!data || !data.length) throw new Error('No se pudo guardar el grupo deportivo.');
+  return data[0];
 }
 
 async function getGrupo(id) {

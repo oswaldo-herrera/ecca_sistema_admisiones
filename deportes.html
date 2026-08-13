@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ECCA — Grupos Deportivos</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="css/styles.css">
+<style>
+  .dep-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:16px; }
+  .dep-card { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--r-lg);
+              overflow:hidden; display:flex; flex-direction:column; }
+  .dep-card-hdr { padding:18px 20px 14px; display:flex; align-items:center; gap:14px; }
+  .dep-sport-icon { width:46px; height:46px; border-radius:50%; display:flex; align-items:center;
+                    justify-content:center; font-size:20px; flex-shrink:0; }
+  .dep-card-name { font-weight:700; font-size:15px; color:var(--text); line-height:1.2; }
+  .dep-card-meta { font-size:12px; color:var(--text-muted); margin-top:2px; }
+  .dep-card-body { padding:10px 20px 14px; border-top:1px solid var(--border);
+                   display:flex; justify-content:space-between; align-items:center; }
+  .dep-count { font-size:13px; color:var(--text-muted); }
+  .dep-count strong { color:var(--text); font-size:16px; font-weight:700; }
+  .dep-card-footer { padding:10px 14px; border-top:1px solid var(--border);
+                     display:flex; gap:6px; }
+  .dep-card-footer .btn { flex:1; justify-content:center; }
+  .chip-dep { display:inline-flex; align-items:center; gap:6px; padding:5px 12px;
+              border-radius:16px; border:1px solid var(--border); background:var(--bg-card);
+              cursor:pointer; font-size:12px; font-weight:500; color:var(--text-muted); transition:.15s; }
+  .chip-dep:hover  { border-color:var(--gold); color:var(--gold); }
+  .chip-dep.active { background:var(--navy); border-color:var(--navy); color:#fff; }
+  /* sport colors */
+  .sp-futbol     { background:#dcfce7; color:#166534; }
+  .sp-voleibol   { background:#dbeafe; color:#1e40af; }
+  .sp-basquetbol { background:#ffedd5; color:#c2410c; }
+  .sp-tocho      { background:#fee2e2; color:#991b1b; }
+  .sp-porra      { background:#f3e8ff; color:#6b21a8; }
+  .sp-baile      { background:#fce7f3; color:#9d174d; }
+  .sp-box        { background:#fef9c3; color:#854d0e; }
+  .sp-natacion   { background:#cffafe; color:#164e63; }
+  .sp-guitarra   { background:#fef3c7; color:#92400e; }
+  .sp-ajedrez    { background:#f1f5f9; color:#334155; }
+  .sp-otro       { background:#f0fdf4; color:#14532d; }
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- ===== SIDEBAR ===== -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-brand">
+      <div class="sb-logo" style="background:#fff;padding:3px">
+        <img src="images/ecca_logo.png" alt="Logo ECCA" style="width:100%;height:100%;object-fit:contain;display:block">
+      </div>
+      <div>
+        <div class="sb-brand-name">ECCA Prepa León</div>
+        <div class="sb-brand-sub">Sistema de Admisiones</div>
+      </div>
+    </div>
+    <nav class="sb-nav">
+      <div class="sb-group-label">Principal</div>
+      <a href="index.html" class="sb-item"><i class="fas fa-house"></i><span>Inicio</span></a>
+      <a href="formulario.html" class="sb-item"><i class="fas fa-user-plus"></i><span>Nueva Inscripción</span></a>
+      <div class="sb-group-label">Gestión</div>
+      <a href="base-datos.html" class="sb-item"><i class="fas fa-table-list"></i><span>Base de Datos</span><span class="sb-badge">0</span></a>
+      <a href="grupos.html" class="sb-item"><i class="fas fa-people-group"></i><span>Grupos</span></a>
+      <a href="sin-grupo.html" class="sb-item" style="display:none"><i class="fas fa-user-clock"></i><span>Sin Grupo</span></a>
+      <a href="deportes.html" class="sb-item active"><i class="fas fa-futbol"></i><span>Deportes</span></a>
+      <a href="pagos.html" class="sb-item"><i class="fas fa-circle-dollar-to-slot"></i><span>Pagos</span></a>
+      <a href="recibo.html" class="sb-item"><i class="fas fa-file-invoice"></i><span>Recibo</span></a>
+      <a href="credencial.html" class="sb-item"><i class="fas fa-id-card"></i><span>Credencial</span></a>
+      <div class="sb-group-label">Administración</div>
+      <a href="usuarios.html" class="sb-item"><i class="fas fa-users-gear"></i><span>Usuarios</span></a>
+    </nav>
+    <div class="sb-footer">
+      <i class="fas fa-location-dot"></i> 5 de Febrero 628, Centro, León, Gto.<br>
+      Tel. 479 153 4007
+    </div>
+  </aside>
+  <div class="sidebar-overlay"></div>
+
+  <!-- ===== MAIN ===== -->
+  <div class="main-content">
+    <header class="topbar">
+      <button class="topbar-hamburger" aria-label="Menú"><i class="fas fa-bars"></i></button>
+      <nav class="topbar-breadcrumb">
+        <a href="index.html"><i class="fas fa-house"></i></a>
+        <span class="sep">›</span>
+        <span class="current">Deportes</span>
+      </nav>
+      <div class="topbar-right">
+        <button class="btn btn-primary btn-sm" onclick="abrirNuevoGrupoDeporte()">
+          <i class="fas fa-plus"></i> Nuevo Grupo
+        </button>
+      </div>
+    </header>
+
+    <div class="page-header">
+      <div>
+        <div class="page-title">Grupos Deportivos</div>
+        <div class="page-sub">Gestiona los equipos y actividades deportivas — el grupo académico del alumno no se modifica</div>
+      </div>
+    </div>
+
+    <div class="page-body">
+      <!-- Filtro por deporte -->
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px" id="chips-deporte">
+        <button class="chip-dep active" data-dep="todos" onclick="setDepFiltro('todos')"><i class="fas fa-border-all"></i> Todos</button>
+      </div>
+      <!-- Grid de grupos -->
+      <div class="dep-grid" id="dep-grid">
+        <div style="grid-column:1/-1;text-align:center;padding:60px">
+          <i class="fas fa-spinner fa-spin" style="font-size:28px;color:var(--gold)"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL CREAR/EDITAR GRUPO DEPORTIVO ===== -->
+<div class="modal-ov" id="modal-dep-form">
+  <div class="modal-box" style="max-width:440px">
+    <div class="modal-header">
+      <h3 id="df-titulo">Nuevo Grupo Deportivo</h3>
+      <button class="modal-close" onclick="closeModal('modal-dep-form')">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <div class="field" style="margin-bottom:12px">
+        <label class="field-label">Nombre del grupo <span class="req">*</span></label>
+        <input class="field-input" id="df-nombre" type="text" placeholder="Ej. 1A SEM Box">
+      </div>
+      <div class="field" style="margin-bottom:12px">
+        <label class="field-label">Deporte / Actividad <span class="req">*</span></label>
+        <select class="field-select" id="df-deporte">
+          <option value="">— Seleccionar —</option>
+          <option>Fútbol</option>
+          <option>Voleibol</option>
+          <option>Basquetbol</option>
+          <option>Tocho</option>
+          <option>Porra</option>
+          <option>Baile</option>
+          <option>Box</option>
+          <option>Natación</option>
+          <option>Guitarra</option>
+          <option>Ajedrez</option>
+          <option>Otro</option>
+        </select>
+      </div>
+      <div class="field" style="margin-bottom:12px">
+        <label class="field-label">Ciclo / Periodo</label>
+        <input class="field-input" id="df-ciclo" type="text" placeholder="Ej. 2026-2027">
+      </div>
+      <div class="field">
+        <label class="field-label">Cupo máximo</label>
+        <input class="field-input" id="df-cupo" type="number" min="0" placeholder="Sin límite">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary btn-sm" onclick="closeModal('modal-dep-form')">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="guardarGrupoDeporteForm()"><i class="fas fa-floppy-disk"></i> Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL GESTIONAR GRUPO DEPORTIVO ===== -->
+<div class="modal-ov" id="modal-dep-detalle">
+  <div class="modal-box modal-lg">
+    <div class="modal-header">
+      <h3 id="dd-titulo">Grupo</h3>
+      <button class="modal-close" onclick="closeModal('modal-dep-detalle')">&#10005;</button>
+    </div>
+    <div class="modal-body" style="padding:14px 18px 0">
+      <div id="dd-info" style="margin-bottom:12px;font-size:12px;color:var(--text-muted)"></div>
+      <div style="background:#e0f2fe;border:1px solid #7dd3fc;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:#0369a1">
+        <i class="fas fa-circle-info"></i> Asignar o quitar un alumno aquí <strong>no afecta</strong> su grupo académico.
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <span style="font-weight:600;font-size:13px">Alumnos en este grupo</span>
+        <button class="btn btn-secondary btn-sm" onclick="abrirBuscarParaDeporte()"><i class="fas fa-plus"></i> Agregar Alumno</button>
+      </div>
+      <div class="sr-list" id="dd-alumnos" style="max-height:320px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary btn-sm" onclick="closeModal('modal-dep-detalle')">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL BUSCAR ALUMNO PARA DEPORTE ===== -->
+<div class="modal-ov" id="modal-dep-buscar">
+  <div class="modal-box" style="max-width:520px">
+    <div class="modal-header">
+      <h3>Agregar Alumno</h3>
+      <button class="modal-close" onclick="closeModal('modal-dep-buscar')">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <div class="search-box" style="margin-bottom:12px">
+        <i class="fas fa-magnifying-glass"></i>
+        <input type="text" id="db-q" placeholder="Buscar por nombre o folio..." oninput="buscarAlumnoDeporte()">
+      </div>
+      <div class="sr-list" id="db-list" style="max-height:320px">
+        <div style="text-align:center;padding:24px;color:var(--text-light)">Escriba para buscar...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL CONFIRM ===== -->
+<div class="modal-ov" id="modal-confirm">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 id="mc-title">Confirmar</h3>
+      <button class="modal-close" onclick="closeModal('modal-confirm')">&#10005;</button>
+    </div>
+    <div class="modal-body"><p id="mc-msg"></p></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary btn-sm" onclick="closeModal('modal-confirm')">Cancelar</button>
+      <button class="btn btn-danger btn-sm" id="mc-ok">Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script src="js/app.js"></script>
+<script>
+const DEPORTES = ['Fútbol','Voleibol','Basquetbol','Tocho','Porra','Baile','Box','Natación','Guitarra','Ajedrez','Otro'];
+
+const SPORT_ICON = {
+  'Fútbol':'fa-futbol','Voleibol':'fa-volleyball','Basquetbol':'fa-basketball',
+  'Tocho':'fa-football','Porra':'fa-bullhorn','Baile':'fa-music',
+  'Box':'fa-hand-fist','Natación':'fa-person-swimming','Guitarra':'fa-guitar',
+  'Ajedrez':'fa-chess','Otro':'fa-trophy'
+};
+const SPORT_CLASS = {
+  'Fútbol':'sp-futbol','Voleibol':'sp-voleibol','Basquetbol':'sp-basquetbol',
+  'Tocho':'sp-tocho','Porra':'sp-porra','Baile':'sp-baile',
+  'Box':'sp-box','Natación':'sp-natacion','Guitarra':'sp-guitarra',
+  'Ajedrez':'sp-ajedrez','Otro':'sp-otro'
+};
+
+let _grupos      = [];   // sports groups
+let _gruposMap   = {};   // academic groups map id→nombre
+let _todosAlumnos = [];  // all students (for search)
+let _filtrosDep  = 'todos';
+let _detalleId   = null; // current sports group id being managed
+let _editId      = null; // id being edited
+
+/* ---- Filtro chips ---- */
+function setDepFiltro(dep) {
+  _filtrosDep = dep;
+  document.querySelectorAll('.chip-dep').forEach(c => c.classList.toggle('active', c.dataset.dep === dep));
+  renderGrid();
+}
+
+function buildChips() {
+  const deportesUsados = [...new Set(_grupos.map(g => g.deporte).filter(Boolean))].sort();
+  const cont = $('chips-deporte');
+  cont.innerHTML = `<button class="chip-dep active" data-dep="todos" onclick="setDepFiltro('todos')"><i class="fas fa-border-all"></i> Todos</button>` +
+    deportesUsados.map(d => {
+      const ic = SPORT_ICON[d] || 'fa-trophy';
+      return `<button class="chip-dep" data-dep="${esc(d)}" onclick="setDepFiltro('${esc(d)}')"><i class="fas ${ic}"></i> ${esc(d)}</button>`;
+    }).join('');
+}
+
+/* ---- Render grid ---- */
+function renderGrid() {
+  const fil = _filtrosDep === 'todos' ? _grupos : _grupos.filter(g => g.deporte === _filtrosDep);
+  const grid = $('dep-grid');
+  if (!fil.length) {
+    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:60px;color:var(--text-light)">
+      <i class="fas fa-futbol" style="font-size:40px;opacity:.2;display:block;margin-bottom:12px"></i>
+      <p>No hay grupos deportivos. Crea el primero con "+ Nuevo Grupo".</p>
+    </div>`;
+    return;
+  }
+  grid.innerHTML = fil.map(g => {
+    const dep   = g.deporte || 'Otro';
+    const ic    = SPORT_ICON[dep]  || 'fa-trophy';
+    const cls   = SPORT_CLASS[dep] || 'sp-otro';
+    const cupo  = g.cupo ? `${g.alumnos || 0} / ${g.cupo}` : `${g.alumnos || 0} alumnos`;
+    return `
+    <div class="dep-card">
+      <div class="dep-card-hdr">
+        <div class="dep-sport-icon ${cls}"><i class="fas ${ic}"></i></div>
+        <div>
+          <div class="dep-card-name">${esc(g.nombre)}</div>
+          <div class="dep-card-meta">${esc(dep)}${g.ciclo ? ' · ' + esc(g.ciclo) : ''}</div>
+        </div>
+      </div>
+      <div class="dep-card-body">
+        <div class="dep-count"><strong>${g.alumnos || 0}</strong> alumno(s)</div>
+        <span style="font-size:12px;color:var(--text-light)">${g.cupo ? 'Cupo: ' + g.cupo : 'Sin límite'}</span>
+      </div>
+      <div class="dep-card-footer">
+        <button class="btn btn-secondary btn-sm" onclick="gestionarGrupoDeporte(${g.id})"><i class="fas fa-people-group"></i> Gestionar</button>
+        <button class="btn btn-secondary btn-sm" onclick="editarGrupoDeporte(${g.id})"><i class="fas fa-pen"></i> Editar</button>
+        <button class="btn btn-danger btn-sm" style="flex:0;padding:6px 10px" onclick="eliminarGrupoDeporte(${g.id})"><i class="fas fa-trash"></i></button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ---- Cargar conteo de alumnos por grupo (una sola consulta) ---- */
+async function cargarConteos() {
+  try {
+    const { data } = await _sb.from('inscripciones').select('grupo_deporte_id').not('grupo_deporte_id', 'is', null);
+    const counts = {};
+    (data || []).forEach(r => { if (r.grupo_deporte_id) counts[r.grupo_deporte_id] = (counts[r.grupo_deporte_id] || 0) + 1; });
+    _grupos.forEach(g => { g.alumnos = counts[g.id] || 0; });
+  } catch(_) { _grupos.forEach(g => { g.alumnos = 0; }); }
+}
+
+/* ---- Crear / Editar ---- */
+function abrirNuevoGrupoDeporte() {
+  _editId = null;
+  $('df-titulo').textContent = 'Nuevo Grupo Deportivo';
+  ['df-nombre','df-ciclo','df-cupo'].forEach(id => sv(id, ''));
+  sv('df-deporte', '');
+  openModal('modal-dep-form');
+  setTimeout(() => $('df-nombre').focus(), 80);
+}
+
+function editarGrupoDeporte(id) {
+  const g = _grupos.find(x => x.id === id);
+  if (!g) return;
+  _editId = id;
+  $('df-titulo').textContent = 'Editar Grupo Deportivo';
+  sv('df-nombre',  g.nombre  || '');
+  sv('df-deporte', g.deporte || '');
+  sv('df-ciclo',   g.ciclo   || '');
+  sv('df-cupo',    g.cupo    ? String(g.cupo) : '');
+  openModal('modal-dep-form');
+}
+
+async function guardarGrupoDeporteForm() {
+  const nombre  = gv('df-nombre').trim();
+  const deporte = gv('df-deporte');
+  if (!nombre)  { toast('El nombre es obligatorio.', 'warn'); return; }
+  if (!deporte) { toast('Selecciona el deporte.', 'warn'); return; }
+  try {
+    const payload = { nombre, deporte, ciclo: gv('df-ciclo'), cupo: gv('df-cupo') };
+    if (_editId) payload.id = _editId;
+    await saveGrupoDeporte(payload);
+    closeModal('modal-dep-form');
+    toast('Grupo guardado.', 'ok');
+    await recargar();
+  } catch(e) { toast('Error: ' + e.message, 'err'); }
+}
+
+/* ---- Eliminar ---- */
+function eliminarGrupoDeporte(id) {
+  const g = _grupos.find(x => x.id === id);
+  confirm2('Eliminar Grupo', `¿Eliminar el grupo "${g ? g.nombre : ''}"? Los alumnos quedarán sin grupo deportivo.`,
+    async () => {
+      try {
+        await deleteGrupo(id);
+        toast('Grupo eliminado.', 'ok');
+        await recargar();
+      } catch(e) { toast('Error: ' + e.message, 'err'); }
+    });
+}
+
+/* ---- Gestionar (ver y agregar alumnos) ---- */
+let _detalleAlumnosD = [];
+
+async function gestionarGrupoDeporte(id) {
+  _detalleId = id;
+  const g = _grupos.find(x => x.id === id);
+  $('dd-titulo').textContent = g ? g.nombre : 'Grupo';
+  $('dd-info').textContent   = g ? [(g.deporte || ''), (g.ciclo || ''), g.cupo ? 'Cupo: ' + g.cupo : null].filter(Boolean).join('  ·  ') : '';
+  $('dd-alumnos').innerHTML  = '<div style="text-align:center;padding:24px"><i class="fas fa-spinner fa-spin" style="color:var(--gold)"></i></div>';
+  openModal('modal-dep-detalle');
+  await renderAlumnosDeporte();
+}
+
+async function renderAlumnosDeporte() {
+  _detalleAlumnosD = await getAlumnosByGrupoDeporte(_detalleId);
+  const cont = $('dd-alumnos');
+  if (!_detalleAlumnosD.length) {
+    cont.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text-light)">Sin alumnos asignados todavía.</div>';
+    return;
+  }
+  cont.innerHTML = _detalleAlumnosD.map(a => {
+    const grupoAcad = a.grupoId && _gruposMap[a.grupoId] ? _gruposMap[a.grupoId] : '—';
+    return `
+    <div class="gd-alumno-row">
+      <div class="gd-alumno-info">
+        <span class="sr-name">${esc(a.nombre || '(sin nombre)')}</span>
+        <span class="sr-folio">${esc(a.folio)} · Grupo académico: <strong>${esc(grupoAcad)}</strong></span>
+      </div>
+      <button class="btn-sm-tbl bst-red" onclick="quitarAlumnoDeporte('${esc(a.folio)}')"><i class="fas fa-xmark"></i> Quitar</button>
+    </div>`;
+  }).join('');
+  // update counter on card
+  const g = _grupos.find(x => x.id === _detalleId);
+  if (g) { g.alumnos = _detalleAlumnosD.length; renderGrid(); }
+}
+
+async function quitarAlumnoDeporte(folio) {
+  try {
+    await quitarGrupoDeporte(folio);
+    toast('Alumno removido del grupo deportivo.', 'ok');
+    await renderAlumnosDeporte();
+  } catch(e) { toast('Error: ' + e.message, 'err'); }
+}
+
+/* ---- Buscar alumno para agregar ---- */
+async function abrirBuscarParaDeporte() {
+  sv('db-q', '');
+  $('db-list').innerHTML = '<div style="text-align:center;padding:24px;color:var(--text-light)">Escriba para buscar...</div>';
+  openModal('modal-dep-buscar');
+  if (!_todosAlumnos.length) _todosAlumnos = await getRecords();
+  setTimeout(() => $('db-q').focus(), 80);
+}
+
+function buscarAlumnoDeporte() {
+  const q = ($('db-q').value || '').toLowerCase();
+  if (!q) { $('db-list').innerHTML = '<div style="text-align:center;padding:24px;color:var(--text-light)">Escriba para buscar...</div>'; return; }
+  // Excluir los que ya están en este grupo
+  const yaAsignados = new Set(_detalleAlumnosD.map(a => a.folio));
+  const res = _todosAlumnos.filter(r =>
+    !yaAsignados.has(r.folio) && (
+      (r.nombre || '').toLowerCase().includes(q) ||
+      (r.folio  || '').toLowerCase().includes(q)
+    )
+  ).slice(0, 30);
+  if (!res.length) { $('db-list').innerHTML = '<div style="text-align:center;padding:24px;color:var(--text-light)">Sin resultados.</div>'; return; }
+  $('db-list').innerHTML = res.map(r => {
+    const grupoAcad = r.grupoId && _gruposMap[r.grupoId] ? _gruposMap[r.grupoId] : 'Sin grupo';
+    return `
+    <div class="sr-item" onclick="agregarAlumnoDeporte('${esc(r.folio)}')">
+      <span class="sr-folio">${esc(r.folio)}</span>
+      <span class="sr-name">${esc(r.nombre || '(sin nombre)')}</span>
+      <span class="sr-meta">${esc(grupoAcad)}</span>
+    </div>`;
+  }).join('');
+}
+
+async function agregarAlumnoDeporte(folio) {
+  try {
+    await asignarGrupoDeporte(folio, _detalleId);
+    closeModal('modal-dep-buscar');
+    toast('Alumno agregado al grupo deportivo.', 'ok');
+    _todosAlumnos = []; // reset cache
+    await renderAlumnosDeporte();
+  } catch(e) { toast('Error: ' + e.message, 'err'); }
+}
+
+/* ---- Init ---- */
+async function recargar() {
+  _grupos = await getGruposDeporte();
+  await cargarConteos();
+  buildChips();
+  setDepFiltro(_filtrosDep);
+}
+
+(async () => {
+  try {
+    const [gruposAcad] = await Promise.all([getGrupos()]);
+    gruposAcad.forEach(g => { _gruposMap[String(g.id)] = g.nombre; });
+    await recargar();
+  } catch(e) {
+    toast('Error al cargar datos: ' + e.message, 'err');
+  }
+})();
+</script>
+</body>
+</html>
