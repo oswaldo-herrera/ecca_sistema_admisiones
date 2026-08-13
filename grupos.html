@@ -469,7 +469,7 @@ async function exportarGrupoExcel() {
     // ── R6+: Datos con filas alternas ────────────────────────────
     _detalleAlumnos.forEach((a, i) => {
       const rowNum = i + 6;
-      const values = [i + 1, a.folio || '', a.nombre || '', a.curp || '', a.tel || '', a.correo || ''];
+      const values = [i + 1, a.folio || '', (a.nombre || '').toUpperCase(), a.curp || '', a.tel || '', a.correo || ''];
       const fill   = (i % 2 === 0) ? WHITE : LGRAY;
       ws.getRow(rowNum).height = 16;
       values.forEach((v, ci) => {
@@ -627,7 +627,7 @@ async function exportarListaAsistencia() {
       no.border = BDR;
       // Nombre
       const nm = ws.getCell(r, 2);
-      nm.value = a.nombre || '';
+      nm.value = (a.nombre || '').toUpperCase();
       nm.font  = { name:'Arial', size:9 };
       nm.alignment = { horizontal:'left', vertical:'middle' };
       nm.border = BDR;
@@ -663,7 +663,7 @@ function exportarGrupoPDF() {
     <tr>
       <td>${i + 1}</td>
       <td>${esc(a.folio)}</td>
-      <td>${esc(a.nombre || '—')}</td>
+      <td>${esc(a.nombre ? a.nombre.toUpperCase() : '—')}</td>
       <td>${esc(a.curp || '—')}</td>
       <td>${esc(a.tel || '—')}</td>
     </tr>`).join('');
