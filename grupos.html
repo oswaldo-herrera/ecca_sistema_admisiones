@@ -234,7 +234,13 @@ async function cargarGrupos() {
     const [grupos, alumnos] = await Promise.all([getGrupos(), getRecords()]);
     _grupos = grupos;
     const counts = {};
-    alumnos.forEach(a => { if (a.grupoId) counts[a.grupoId] = (counts[a.grupoId] || 0) + 1; });
+    alumnos.forEach(a => {
+      if (!a.grupoId) return;
+      if (!counts[a.grupoId]) counts[a.grupoId] = { n: 0, h: 0, m: 0 };
+      counts[a.grupoId].n++;
+      if (a.sexo === 'H') counts[a.grupoId].h++;
+      else if (a.sexo === 'M') counts[a.grupoId].m++;
+    });
     renderGrupos(counts);
   } catch (e) {
     $('grupo-grid').innerHTML = `<div class="empty-state" style="grid-column:1/-1">
@@ -252,13 +258,22 @@ function renderGrupos(counts) {
     return;
   }
   cont.innerHTML = _grupos.map(g => {
-    const n    = counts[g.id] || 0;
+    const c    = counts[g.id] || { n: 0, h: 0, m: 0 };
+    const n    = c.n;
     const pct  = g.cupo ? Math.min(100, Math.round(n / g.cupo * 100)) : 0;
     const over = g.cupo && n > g.cupo;
+    const hmTag = (c.h || c.m)
+      ? `<span style="font-size:11px;font-weight:600;color:var(--text-muted);white-space:nowrap">
+           <span style="color:#3b82f6">H:${c.h}</span> <span style="color:#ec4899">M:${c.m}</span>
+         </span>`
+      : '';
     return `
     <div class="grupo-card">
       <div class="grupo-card-hdr">
-        <div class="grupo-card-name">${esc(g.nombre)}</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+          <div class="grupo-card-name">${esc(g.nombre)}</div>
+          ${hmTag}
+        </div>
         <div class="grupo-card-meta">${[g.modalidad, g.ciclo].filter(Boolean).map(esc).join(' · ') || '&nbsp;'}</div>
       </div>
       <div class="grupo-card-body">

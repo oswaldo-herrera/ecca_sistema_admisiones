@@ -107,6 +107,14 @@
               <label class="field-label">Edad</label>
               <input class="field-input" id="f-edad" type="number" placeholder="0" min="0" max="99">
             </div>
+            <div class="field" style="max-width:120px">
+              <label class="field-label">Sexo</label>
+              <select class="field-select" id="f-sexo">
+                <option value="">—</option>
+                <option value="H">H — Hombre</option>
+                <option value="M">M — Mujer</option>
+              </select>
+            </div>
             <div class="field">
               <label class="field-label">Teléfono</label>
               <input class="field-input" id="f-tel" type="tel" placeholder="10 dígitos">
@@ -449,7 +457,7 @@ async function nuevoRegistro() {
 }
 
 function limpiarForm(keepFolio = false) {
-  ['f-nombre','f-curp','f-fnac','f-edad','f-tel','f-correo','f-escuela',
+  ['f-nombre','f-curp','f-fnac','f-edad','f-sexo','f-tel','f-correo','f-escuela',
    'f-pnombre','f-pocup','f-ptel','f-pcorreo','f-modalidad','f-grupo','f-trabaja',
    'f-deporte','f-objetivo','f-medio','f-referido','d-acta-obs','d-curp-obs','d-cert-obs','d-fotos-obs','d-otro-obs',
    'fi-monto','fi-fecha','fi-forma','fi-recibio']
@@ -473,6 +481,7 @@ function getForm() {
     escuela:   gv('f-escuela'),
     pNombre:   gv('f-pnombre'),  pOcup:     gv('f-pocup'),
     pTel:      gv('f-ptel'),     pCorreo:   gv('f-pcorreo'),
+    sexo:      gv('f-sexo'),
     modalidad: gv('f-modalidad'),grupoId:   gv('f-grupo'),
     trabaja:   gv('f-trabaja'),
     deporte:   gv('f-deporte'),  objetivo:  gv('f-objetivo'),
@@ -504,6 +513,7 @@ function setForm(d) {
   sv('f-escuela',d.escuela);
   sv('f-pnombre',d.pNombre); sv('f-pocup',d.pOcup);
   sv('f-ptel',d.pTel);       sv('f-pcorreo',d.pCorreo);
+  sv('f-sexo',d.sexo || '');
   sv('f-modalidad',d.modalidad); sv('f-grupo',d.grupoId);
   sv('f-trabaja',d.trabaja);
   sv('f-deporte',d.deporte); sv('f-objetivo',d.objetivo);
