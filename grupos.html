@@ -373,6 +373,7 @@ function renderListaAlumnos(lista) {
         <span class="sr-folio">${esc(a.folio)}</span>
       </div>
       <span class="badge badge-gray" id="gd-saldo-${esc(a.folio)}">—</span>
+      <button class="btn-sm-tbl bst-navy" onclick="editarAlumno('${esc(a.folio)}')"><i class="fas fa-pen"></i></button>
       <button class="btn-sm-tbl bst-red" onclick="quitarDeGrupo('${esc(a.folio)}')"><i class="fas fa-xmark"></i> Quitar</button>
     </div>`;
   }).join('');
@@ -710,6 +711,11 @@ function exportarGrupoPDF() {
 }
 
 window.addEventListener('afterprint', () => { $('grupo-print').style.display = 'none'; });
+
+function editarAlumno(folio) {
+  setActiveFolio(folio);
+  window.location.href = 'formulario.html';
+}
 
 async function quitarDeGrupo(folio) {
   try {
