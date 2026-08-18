@@ -107,11 +107,14 @@
                 </div>
               </div>
 
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-                <span style="font-weight:600;font-size:13px">Cargos</span>
-                <button class="btn btn-secondary btn-sm" onclick="abrirCargoForm()"><i class="fas fa-plus"></i> Agregar Cargo</button>
+              <!-- Sección Cargos oculta temporalmente — código intacto, no afecta cálculo de saldo -->
+              <div style="display:none">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                  <span style="font-weight:600;font-size:13px">Cargos</span>
+                  <button class="btn btn-secondary btn-sm" onclick="abrirCargoForm()"><i class="fas fa-plus"></i> Agregar Cargo</button>
+                </div>
+                <div class="sr-list" id="pa-cargos" style="margin-bottom:18px"></div>
               </div>
-              <div class="sr-list" id="pa-cargos" style="margin-bottom:18px"></div>
 
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
                 <span style="font-weight:600;font-size:13px">Historial de pagos</span>
@@ -188,11 +191,9 @@
       <button class="modal-close" onclick="closeModal('modal-pago-form')">&#10005;</button>
     </div>
     <div class="modal-body">
-      <div class="field" style="margin-bottom:12px">
-        <label class="field-label">Cargo relacionado</label>
-        <select class="field-select" id="pf-cargo">
-          <option value="">— Pago libre (sin cargo) —</option>
-        </select>
+      <!-- Campo "Cargo relacionado" oculto temporalmente — select conservado para no romper lógica -->
+      <div style="display:none">
+        <select id="pf-cargo"><option value="">— Pago libre (sin cargo) —</option></select>
       </div>
       <div class="field" style="margin-bottom:12px">
         <label class="field-label">Concepto <span class="req">*</span></label>
@@ -203,7 +204,10 @@
           <option>Colegiatura</option>
           <option>Examen</option>
           <option>Certificado</option>
+          <option>Certificado Parcial</option>
+          <option>Constancia</option>
           <option>Credencial</option>
+          <option>Uniforme</option>
           <option>Otro</option>
         </select>
       </div>
@@ -261,7 +265,10 @@
           <option>Colegiatura</option>
           <option>Examen</option>
           <option>Certificado</option>
+          <option>Certificado Parcial</option>
+          <option>Constancia</option>
           <option>Credencial</option>
+          <option>Uniforme</option>
           <option>Otro</option>
         </select>
       </div>

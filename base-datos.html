@@ -100,7 +100,7 @@
         <div style="display:flex;gap:8px;flex-wrap:wrap;padding:12px 16px 0">
           <button class="chip active"    data-fil="todos"         onclick="setFiltro('todos')">         <i class="fas fa-users"></i> Todos</button>
           <button class="chip"           data-fil="Semestral"     onclick="setFiltro('Semestral')">     <i class="fas fa-book-open"></i> Semestral</button>
-          <button class="chip"           data-fil="Cuatrimestral" onclick="setFiltro('Cuatrimestral')"> <i class="fas fa-calendar-days"></i> Cuatrimestral</button>
+          <button class="chip"           data-fil="Cuatrimestral" onclick="setFiltro('Cuatrimestral')"> <i class="fas fa-calendar-days"></i> Cuatrimestre</button>
           <button class="chip chip-warn" data-fil="sin-grupo"     onclick="setFiltro('sin-grupo')">     <i class="fas fa-user-clock"></i> Sin Grupo <span class="chip-count" id="chip-singrupo">0</span></button>
           <button class="chip chip-ex"   data-fil="exalumnos"     onclick="setFiltro('exalumnos')">     <i class="fas fa-graduation-cap"></i> Ex-alumnos <span class="chip-count" id="chip-exalumnos">0</span></button>
         </div>
@@ -236,7 +236,7 @@ function calcSaldoMap(cargos, pagos) {
 }
 
 function modalBadge(m) {
-  const map = {'Cuatrimestral':'badge-blue','Semestral':'badge-green','Escolarizado':'badge-gold','Abierto':'badge-gray','En línea':'badge-blue'};
+  const map = {'Cuatrimestre T1':'badge-blue','Cuatrimestre T2':'badge-blue','Cuatrimestral':'badge-blue','Semestral':'badge-green','Sabatino':'badge-gold','Escolarizado':'badge-gold','Abierto':'badge-gray','En línea':'badge-blue'};
   return `<span class="badge ${map[m]||'badge-gray'}">${esc(m)}</span>`;
 }
 

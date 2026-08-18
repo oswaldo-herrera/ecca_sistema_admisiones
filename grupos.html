@@ -166,7 +166,11 @@
         <span style="font-weight:600;font-size:13px">Alumnos asignados</span>
         <button class="btn btn-secondary btn-sm" onclick="abrirAgregarAlumno()"><i class="fas fa-plus"></i> Agregar Alumno</button>
       </div>
-      <div class="sr-list" id="gd-alumnos" style="max-height:300px"></div>
+      <div class="search-box" style="margin-bottom:8px">
+        <i class="fas fa-magnifying-glass"></i>
+        <input type="text" id="gd-buscar" placeholder="Buscar alumno por nombre o folio…" oninput="filtrarAlumnosGrupo()">
+      </div>
+      <div class="sr-list" id="gd-alumnos" style="max-height:280px"></div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-secondary btn-sm" onclick="exportarGrupoExcel()"><i class="fas fa-file-csv"></i> Excel</button>
@@ -354,15 +358,13 @@ async function abrirDetalleGrupo(id) {
 
 let _detalleAlumnos = [];
 
-async function renderAlumnosDeGrupo() {
-  const alumnos = await getAlumnosByGrupo(_detalleGrupoId);
-  _detalleAlumnos = alumnos;
+function renderListaAlumnos(lista) {
   const cont = $('gd-alumnos');
-  if (!alumnos.length) {
-    cont.innerHTML = `<div style="text-align:center;padding:24px;color:var(--text-light)">Sin alumnos asignados todavía.</div>`;
+  if (!lista.length) {
+    cont.innerHTML = `<div style="text-align:center;padding:24px;color:var(--text-light)">Sin resultados.</div>`;
     return;
   }
-  cont.innerHTML = alumnos.map(a => {
+  cont.innerHTML = lista.map(a => {
     const esEx = !!a.exalumno;
     return `
     <div class="gd-alumno-row">
@@ -374,7 +376,7 @@ async function renderAlumnosDeGrupo() {
       <button class="btn-sm-tbl bst-red" onclick="quitarDeGrupo('${esc(a.folio)}')"><i class="fas fa-xmark"></i> Quitar</button>
     </div>`;
   }).join('');
-  alumnos.forEach(async a => {
+  lista.forEach(async a => {
     const [cargos, pagos] = await Promise.all([getCargos(a.folio), getPagos(a.folio)]);
     const { saldo } = calcSaldo(cargos, pagos);
     const el = $('gd-saldo-' + a.folio);
@@ -382,6 +384,27 @@ async function renderAlumnosDeGrupo() {
     el.textContent = saldo > 0 ? 'Debe ' + fmtMoney(saldo) : 'Al corriente';
     el.className = 'badge ' + (saldo > 0 ? 'badge-red' : 'badge-green');
   });
+}
+
+function filtrarAlumnosGrupo() {
+  const q = ($('gd-buscar').value || '').toLowerCase();
+  if (!q) { renderListaAlumnos(_detalleAlumnos); return; }
+  const fil = _detalleAlumnos.filter(a =>
+    (a.nombre || '').toLowerCase().includes(q) ||
+    (a.folio  || '').toLowerCase().includes(q)
+  );
+  renderListaAlumnos(fil);
+}
+
+async function renderAlumnosDeGrupo() {
+  const alumnos = await getAlumnosByGrupo(_detalleGrupoId);
+  _detalleAlumnos = alumnos;
+  sv('gd-buscar', '');
+  if (!alumnos.length) {
+    $('gd-alumnos').innerHTML = `<div style="text-align:center;padding:24px;color:var(--text-light)">Sin alumnos asignados todavía.</div>`;
+    return;
+  }
+  renderListaAlumnos(alumnos);
 }
 
 /* ---- Exportar grupo ---- */
