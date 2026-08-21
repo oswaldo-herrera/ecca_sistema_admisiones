@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ECCA — Documentos</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="css/styles.css">
+<style>
+  .doc-stats { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:12px; margin-bottom:18px; }
+  .doc-stat-card { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--r-md);
+                   padding:14px 16px; display:flex; flex-direction:column; gap:4px; }
+  .doc-stat-num  { font-size:22px; font-weight:700; }
+  .doc-stat-lbl  { font-size:11px; color:var(--text-muted); text-transform:uppercase; letter-spacing:.5px; }
+  .doc-stat-bar  { height:4px; border-radius:2px; margin-top:6px; background:var(--border); overflow:hidden; }
+  .doc-stat-bar-fill { height:100%; border-radius:2px; transition:width .4s; }
+
+  .chips-row { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px; }
+  .chip-doc  { display:inline-flex; align-items:center; gap:6px; padding:5px 12px; border-radius:16px;
+               border:1px solid var(--border); background:var(--bg-card); cursor:pointer;
+               font-size:12px; font-weight:500; color:var(--text-muted); transition:.15s; white-space:nowrap; }
+  .chip-doc:hover  { border-color:var(--gold); color:var(--gold); }
+  .chip-doc.active { background:var(--navy); border-color:var(--navy); color:#fff; }
+  .chip-doc.chip-ok   { }
+  .chip-doc.chip-warn { }
+
+  /* Tabla de documentos */
+  .doc-table { width:100%; border-collapse:collapse; font-size:13px; }
+  .doc-table th { background:var(--navy); color:#fff; padding:9px 12px; text-align:left;
+                  font-size:11px; font-weight:600; letter-spacing:.4px; text-transform:uppercase;
+                  position:sticky; top:0; z-index:1; }
+  .doc-table th.center { text-align:center; }
+  .doc-table td { padding:9px 12px; border-bottom:1px solid var(--border); vertical-align:middle; }
+  .doc-table tr:hover td { background:var(--bg-hover); }
+  .doc-table .td-name { font-weight:600; }
+  .doc-table .td-folio { font-size:11px; color:var(--gold); font-weight:600; }
+  .doc-table .td-doc   { text-align:center; }
+
+  .doc-icon-ok   { color:#16a34a; font-size:16px; }
+  .doc-icon-no   { color:#dc2626; font-size:14px; opacity:.7; }
+  .doc-icon-na   { color:var(--border); font-size:13px; }
+
+  .doc-table-wrap { overflow-x:auto; border:1px solid var(--border); border-radius:var(--r-md); }
+  .pending-badge  { display:inline-flex; align-items:center; justify-content:center;
+                    width:20px; height:20px; border-radius:50%; font-size:10px; font-weight:700;
+                    background:#fef2f2; color:#dc2626; }
+  .complete-badge { display:inline-flex; align-items:center; justify-content:center;
+                    width:20px; height:20px; border-radius:50%; font-size:10px; font-weight:700;
+                    background:#f0fdf4; color:#16a34a; }
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- ===== SIDEBAR ===== -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-brand">
+      <div class="sb-logo" style="background:#fff;padding:3px">
+        <img src="images/ecca_logo.png" alt="Logo ECCA" style="width:100%;height:100%;object-fit:contain;display:block">
+      </div>
+      <div>
+        <div class="sb-brand-name">ECCA Prepa León</div>
+        <div class="sb-brand-sub">Sistema de Admisiones</div>
+      </div>
+    </div>
+    <nav class="sb-nav">
+      <div class="sb-group-label">Principal</div>
+      <a href="index.html" class="sb-item"><i class="fas fa-house"></i><span>Inicio</span></a>
+      <a href="formulario.html" class="sb-item"><i class="fas fa-user-plus"></i><span>Nueva Inscripción</span></a>
+      <div class="sb-group-label">Gestión</div>
+      <a href="base-datos.html" class="sb-item"><i class="fas fa-table-list"></i><span>Base de Datos</span><span class="sb-badge">0</span></a>
+      <a href="grupos.html" class="sb-item"><i class="fas fa-people-group"></i><span>Grupos</span></a>
+      <a href="sin-grupo.html" class="sb-item" style="display:none"><i class="fas fa-user-clock"></i><span>Sin Grupo</span></a>
+      <a href="deportes.html" class="sb-item"><i class="fas fa-futbol"></i><span>Deportes</span></a>
+      <a href="documentos.html" class="sb-item active"><i class="fas fa-folder-open"></i><span>Documentos</span></a>
+      <a href="pagos.html" class="sb-item"><i class="fas fa-circle-dollar-to-slot"></i><span>Pagos</span></a>
+      <a href="recibo.html" class="sb-item"><i class="fas fa-file-invoice"></i><span>Recibo</span></a>
+      <a href="credencial.html" class="sb-item"><i class="fas fa-id-card"></i><span>Credencial</span></a>
+      <div class="sb-group-label">Administración</div>
+      <a href="usuarios.html" class="sb-item"><i class="fas fa-users-gear"></i><span>Usuarios</span></a>
+    </nav>
+    <div class="sb-footer">
+      <i class="fas fa-location-dot"></i> 5 de Febrero 628, Centro, León, Gto.<br>
+      Tel. 479 153 4007
+    </div>
+  </aside>
+  <div class="sidebar-overlay"></div>
+
+  <!-- ===== MAIN ===== -->
+  <div class="main-content">
+    <header class="topbar">
+      <button class="topbar-hamburger" aria-label="Menú"><i class="fas fa-bars"></i></button>
+      <nav class="topbar-breadcrumb">
+        <a href="index.html"><i class="fas fa-house"></i></a>
+        <span class="sep">›</span>
+        <span class="current">Documentos</span>
+      </nav>
+    </header>
+
+    <div class="page-header">
+      <div>
+        <div class="page-title">Control de Documentos</div>
+        <div class="page-sub">Seguimiento de expedientes por alumno — acta, CURP, certificado y fotografías</div>
+      </div>
+      <div class="page-actions">
+        <button class="btn btn-secondary btn-sm" onclick="descargarExcel()">
+          <i class="fas fa-file-excel"></i> Excel
+        </button>
+        <button class="btn btn-secondary btn-sm" onclick="descargarPDF()">
+          <i class="fas fa-file-pdf"></i> PDF
+        </button>
+      </div>
+    </div>
+
+    <div class="page-body">
+
+      <!-- Stats -->
+      <div class="doc-stats" id="doc-stats">
+        <div class="doc-stat-card">
+          <div class="doc-stat-num" id="st-total">—</div>
+          <div class="doc-stat-lbl">Total alumnos</div>
+        </div>
+        <div class="doc-stat-card">
+          <div class="doc-stat-num" style="color:#16a34a" id="st-completos">—</div>
+          <div class="doc-stat-lbl">Expediente completo</div>
+          <div class="doc-stat-bar"><div class="doc-stat-bar-fill" id="bar-completos" style="background:#16a34a;width:0%"></div></div>
+        </div>
+        <div class="doc-stat-card">
+          <div class="doc-stat-num" style="color:#dc2626" id="st-incompletos">—</div>
+          <div class="doc-stat-lbl">Con documentos pendientes</div>
+          <div class="doc-stat-bar"><div class="doc-stat-bar-fill" id="bar-incompletos" style="background:#dc2626;width:0%"></div></div>
+        </div>
+        <div class="doc-stat-card">
+          <div class="doc-stat-num" id="st-acta">—</div>
+          <div class="doc-stat-lbl"><i class="fas fa-xmark" style="color:#dc2626;font-size:10px"></i> Falta Acta</div>
+        </div>
+        <div class="doc-stat-card">
+          <div class="doc-stat-num" id="st-curp">—</div>
+          <div class="doc-stat-lbl"><i class="fas fa-xmark" style="color:#dc2626;font-size:10px"></i> Falta CURP</div>
+        </div>
+        <div class="doc-stat-card">
+          <div class="doc-stat-num" id="st-cert">—</div>
+          <div class="doc-stat-lbl"><i class="fas fa-xmark" style="color:#dc2626;font-size:10px"></i> Falta Certificado</div>
+        </div>
+        <div class="doc-stat-card">
+          <div class="doc-stat-num" id="st-fotos">—</div>
+          <div class="doc-stat-lbl"><i class="fas fa-xmark" style="color:#dc2626;font-size:10px"></i> Falta Fotos</div>
+        </div>
+      </div>
+
+      <!-- Filtros -->
+      <div class="chips-row">
+        <button class="chip-doc active" data-fil="todos"       onclick="setFil('todos')"><i class="fas fa-users"></i> Todos</button>
+        <button class="chip-doc"        data-fil="completos"   onclick="setFil('completos')"><i class="fas fa-circle-check" style="color:#16a34a"></i> Completos</button>
+        <button class="chip-doc"        data-fil="incompletos" onclick="setFil('incompletos')"><i class="fas fa-circle-exclamation" style="color:#dc2626"></i> Incompletos</button>
+        <button class="chip-doc"        data-fil="falta-acta"  onclick="setFil('falta-acta')"><i class="fas fa-scroll"></i> Falta Acta</button>
+        <button class="chip-doc"        data-fil="falta-curp"  onclick="setFil('falta-curp')"><i class="fas fa-id-card"></i> Falta CURP</button>
+        <button class="chip-doc"        data-fil="falta-cert"  onclick="setFil('falta-cert')"><i class="fas fa-graduation-cap"></i> Falta Certificado</button>
+        <button class="chip-doc"        data-fil="falta-fotos" onclick="setFil('falta-fotos')"><i class="fas fa-camera"></i> Falta Fotos</button>
+      </div>
+
+      <!-- Filtro grupo + búsqueda -->
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+        <div style="display:flex;align-items:center;gap:6px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r-sm);padding:6px 12px">
+          <i class="fas fa-people-group" style="color:var(--text-muted);font-size:13px"></i>
+          <select id="doc-grupo-fil" style="border:none;background:transparent;font-size:13px;color:var(--text);outline:none;cursor:pointer;min-width:180px" onchange="setGrupoFil(this.value)">
+            <option value="">— Todos los grupos —</option>
+          </select>
+        </div>
+        <div class="search-box" style="flex:1;min-width:200px;margin-bottom:0">
+          <i class="fas fa-magnifying-glass"></i>
+          <input type="text" id="doc-q" placeholder="Buscar alumno por nombre o folio…" oninput="renderTabla()">
+        </div>
+      </div>
+
+      <!-- Tabla -->
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <thead>
+            <tr>
+              <th>Alumno</th>
+              <th>Folio</th>
+              <th>Grupo</th>
+              <th class="center">Acta</th>
+              <th class="center">CURP</th>
+              <th class="center">Certificado</th>
+              <th class="center">Fotos</th>
+              <th class="center">Pendientes</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="doc-tbody">
+            <tr><td colspan="9" style="text-align:center;padding:40px">
+              <i class="fas fa-spinner fa-spin" style="font-size:24px;color:var(--gold)"></i>
+            </td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div id="doc-count" style="font-size:12px;color:var(--text-muted);margin-top:8px;text-align:right"></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+<script src="js/config.js"></script>
+<script src="js/app.js"></script>
+<script>
+let _todos = [];
+let _filtro = 'todos';
+let _grupoFil = '';
+let _gruposMap = {};
+
+const DOCS = [
+  { key:'docActa',  label:'Acta',        icon:'fa-scroll' },
+  { key:'docCurp',  label:'CURP',        icon:'fa-id-card' },
+  { key:'docCert',  label:'Certificado', icon:'fa-graduation-cap' },
+  { key:'docFotos', label:'Fotos',       icon:'fa-camera' },
+];
+
+function pendientes(r) { return DOCS.filter(d => !r[d.key]).length; }
+function completo(r)   { return pendientes(r) === 0; }
+
+function getFiltered() {
+  const q = ($('doc-q').value || '').toLowerCase();
+  let fil = _todos;
+  if (_grupoFil) fil = fil.filter(r => String(r.grupoId || '') === _grupoFil);
+  if (_filtro === 'completos')   fil = fil.filter(completo);
+  if (_filtro === 'incompletos') fil = fil.filter(r => !completo(r));
+  if (_filtro === 'falta-acta')  fil = fil.filter(r => !r.docActa);
+  if (_filtro === 'falta-curp')  fil = fil.filter(r => !r.docCurp);
+  if (_filtro === 'falta-cert')  fil = fil.filter(r => !r.docCert);
+  if (_filtro === 'falta-fotos') fil = fil.filter(r => !r.docFotos);
+  if (q) fil = fil.filter(r =>
+    (r.nombre || '').toLowerCase().includes(q) ||
+    (r.folio  || '').toLowerCase().includes(q)
+  );
+  return fil;
+}
+
+/* ---- Stats (refleja filtro de grupo si está activo) ---- */
+function calcStats() {
+  const base = _grupoFil ? _todos.filter(r => String(r.grupoId || '') === _grupoFil) : _todos;
+  const total = base.length;
+  const comp  = base.filter(completo).length;
+  const incomp = total - comp;
+  $('st-total').textContent      = total;
+  $('st-completos').textContent  = comp;
+  $('st-incompletos').textContent= incomp;
+  $('st-acta').textContent  = base.filter(r => !r.docActa).length;
+  $('st-curp').textContent  = base.filter(r => !r.docCurp).length;
+  $('st-cert').textContent  = base.filter(r => !r.docCert).length;
+  $('st-fotos').textContent = base.filter(r => !r.docFotos).length;
+  const pct = total ? Math.round(comp / total * 100) : 0;
+  $('bar-completos').style.width   = pct + '%';
+  $('bar-incompletos').style.width = (100 - pct) + '%';
+}
+
+/* ---- Filtros ---- */
+function setFil(f) {
+  _filtro = f;
+  document.querySelectorAll('.chip-doc').forEach(c => c.classList.toggle('active', c.dataset.fil === f));
+  calcStats();
+  renderTabla();
+}
+
+function setGrupoFil(val) {
+  _grupoFil = val;
+  calcStats();
+  renderTabla();
+}
+
+/* ---- Render tabla ---- */
+function renderTabla() {
+  const fil = getFiltered();
+
+  const tbody = $('doc-tbody');
+  if (!fil.length) {
+    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:36px;color:var(--text-light)">Sin resultados.</td></tr>`;
+    $('doc-count').textContent = '';
+    return;
+  }
+
+  tbody.innerHTML = fil.map(r => {
+    const pend = pendientes(r);
+    const badgeHtml = pend === 0
+      ? `<span class="complete-badge"><i class="fas fa-check"></i></span>`
+      : `<span class="pending-badge">${pend}</span>`;
+
+    function docCell(val) {
+      return val
+        ? `<td class="td-doc"><i class="fas fa-circle-check doc-icon-ok" title="Entregado"></i></td>`
+        : `<td class="td-doc"><i class="fas fa-circle-xmark doc-icon-no" title="Pendiente"></i></td>`;
+    }
+
+    const grupoNom = _gruposMap[String(r.grupoId || '')] || '—';
+
+    return `<tr>
+      <td>
+        <div class="td-name">${esc(r.nombre || '(sin nombre)')}</div>
+        ${r.docActaObs || r.docCurpObs || r.docCertObs || r.docFotosObs
+          ? `<div style="font-size:10px;color:var(--text-muted);margin-top:2px">
+               ${[r.docActaObs,r.docCurpObs,r.docCertObs,r.docFotosObs].filter(Boolean).map(o=>`<span>${esc(o)}</span>`).join(' · ')}
+             </div>` : ''}
+      </td>
+      <td class="td-folio">${esc(r.folio)}</td>
+      <td style="font-size:12px;color:var(--text-muted)">${esc(grupoNom)}</td>
+      ${docCell(r.docActa)}
+      ${docCell(r.docCurp)}
+      ${docCell(r.docCert)}
+      ${docCell(r.docFotos)}
+      <td class="td-doc">${badgeHtml}</td>
+      <td>
+        <button class="btn-sm-tbl bst-navy" onclick="editarReg('${esc(r.folio)}')"><i class="fas fa-pen"></i></button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  $('doc-count').textContent = fil.length + ' alumno' + (fil.length !== 1 ? 's' : '');
+}
+
+function editarReg(folio) {
+  setActiveFolio(folio);
+  window.location.href = 'formulario.html';
+}
+
+/* ---- Descargar PDF ---- */
+function descargarPDF() {
+  if (!window.jspdf) { toast('Librería PDF no cargada. Intente de nuevo.', 'err'); return; }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'letter' });
+  const W = doc.internal.pageSize.getWidth();
+  const H = doc.internal.pageSize.getHeight();
+
+  const fil = getFiltered();
+  const total = _todos.length;
+  const comp  = _todos.filter(completo).length;
+  const incomp = total - comp;
+
+  const NAVY  = [15, 23, 42];
+  const GOLD  = [180, 140, 50];
+  const GREEN = [22, 163, 74];
+  const RED   = [220, 38, 38];
+  const GRAY  = [100, 100, 100];
+
+  /* ─── Cabecera ─── */
+  doc.setFillColor(...NAVY);
+  doc.rect(0, 0, W, 64, 'F');
+  doc.setFillColor(...GOLD);
+  doc.rect(0, 64, W, 3, 'F');
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(17);
+  doc.setTextColor(255, 255, 255);
+  doc.text('ECCA PREPARATORIA DE LEÓN', 32, 30);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(10);
+  doc.setTextColor(200, 200, 200);
+  doc.text('Control de Documentos', 32, 48);
+
+  const fechaStr = new Date().toLocaleDateString('es-MX', { day:'2-digit', month:'long', year:'numeric' });
+  doc.setFontSize(9);
+  doc.text(fechaStr, W - 32, 30, { align:'right' });
+
+  const grupoNombrePDF = _grupoFil ? (_gruposMap[_grupoFil] || 'Grupo') : 'Todos los grupos';
+  const filtroNombre = {
+    todos:'Todos los alumnos', completos:'Expediente completo',
+    incompletos:'Con documentos pendientes', 'falta-acta':'Falta Acta',
+    'falta-curp':'Falta CURP', 'falta-cert':'Falta Certificado', 'falta-fotos':'Falta Fotos'
+  }[_filtro] || 'Todos';
+  doc.text(`Grupo: ${grupoNombrePDF}  ·  Filtro: ${filtroNombre}`, W - 32, 48, { align:'right' });
+
+  /* ─── Resumen estadístico ─── */
+  const statY = 78;
+  doc.setFillColor(245, 247, 250);
+  doc.rect(0, 67, W, 44, 'F');
+
+  const base = _grupoFil ? _todos.filter(r => String(r.grupoId||'') === _grupoFil) : _todos;
+  const stats = [
+    { label:'Total alumnos', value: String(base.length),  color: NAVY },
+    { label:'Completos',     value: String(base.filter(completo).length),   color: GREEN },
+    { label:'Incompletos',   value: String(base.filter(r=>!completo(r)).length), color: RED },
+    { label:'Sin Acta',      value: String(base.filter(r=>!r.docActa).length),  color: GRAY },
+    { label:'Sin CURP',      value: String(base.filter(r=>!r.docCurp).length),  color: GRAY },
+    { label:'Sin Certificado',value:String(base.filter(r=>!r.docCert).length),  color: GRAY },
+    { label:'Sin Fotos',     value: String(base.filter(r=>!r.docFotos).length), color: GRAY },
+  ];
+  const step = W / stats.length;
+  stats.forEach((s, i) => {
+    const x = 32 + i * step;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.setTextColor(...s.color);
+    doc.text(s.value, x, statY);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(120, 120, 120);
+    doc.text(s.label, x, statY + 13);
+  });
+
+  /* ─── Tabla ─── */
+  doc.autoTable({
+    startY: 120,
+    margin: { left: 32, right: 32 },
+    head: [['#', 'Alumno', 'Folio', 'Grupo', 'Acta', 'CURP', 'Certificado', 'Fotos', 'Estado']],
+    body: fil.map((r, i) => [
+      i + 1,
+      (r.nombre || '(sin nombre)').toUpperCase(),
+      r.folio || '',
+      _gruposMap[String(r.grupoId||'')] || '—',
+      r.docActa  ? '✓' : '✗',
+      r.docCurp  ? '✓' : '✗',
+      r.docCert  ? '✓' : '✗',
+      r.docFotos ? '✓' : '✗',
+      pendientes(r) === 0 ? 'Completo' : pendientes(r) + ' faltante' + (pendientes(r)>1?'s':''),
+    ]),
+    theme: 'grid',
+    styles: { fontSize: 8.5, cellPadding: 5, valign: 'middle', lineColor: [210, 215, 220], lineWidth: 0.3 },
+    headStyles: { fillColor: NAVY, textColor: 255, fontStyle: 'bold', halign: 'center', fontSize: 9 },
+    alternateRowStyles: { fillColor: [248, 250, 252] },
+    columnStyles: {
+      0: { halign:'center', cellWidth:26 },
+      2: { halign:'center', cellWidth:56, fontSize:8 },
+      3: { halign:'center', cellWidth:60, fontSize:8 },
+      4: { halign:'center', cellWidth:34, fontSize:13 },
+      5: { halign:'center', cellWidth:34, fontSize:13 },
+      6: { halign:'center', cellWidth:56, fontSize:13 },
+      7: { halign:'center', cellWidth:34, fontSize:13 },
+      8: { halign:'center', cellWidth:68, fontStyle:'bold', fontSize:8.5 },
+    },
+    didParseCell(data) {
+      if (data.section !== 'body') return;
+      const col = data.column.index;
+      if ([4,5,6,7].includes(col)) {
+        data.cell.styles.textColor = data.cell.raw === '✓' ? GREEN : RED;
+        data.cell.styles.fontStyle = 'bold';
+      }
+      if (col === 8) {
+        data.cell.styles.textColor = data.cell.raw === 'Completo' ? GREEN : RED;
+      }
+    },
+    didDrawPage(data) {
+      const pageCount = doc.internal.getNumberOfPages();
+      doc.setFontSize(7.5);
+      doc.setTextColor(160, 160, 160);
+      doc.setFont('helvetica', 'normal');
+      doc.text(
+        'ECCA Preparatoria de León  ·  5 de Febrero 628, Centro, León, Gto.  ·  Tel. 479 153 4007',
+        W / 2, H - 14, { align:'center' }
+      );
+      doc.text(`Pág. ${data.pageNumber} / ${pageCount}`, W - 32, H - 14, { align:'right' });
+    }
+  });
+
+  const hoyPDF = new Date().toISOString().slice(0,10);
+  const grupoSlug = grupoNombrePDF.replace(/\s+/g,'-');
+  doc.save(`ECCA-Documentos-${grupoSlug}-${hoyPDF}.pdf`);
+}
+
+/* ---- Descargar Excel ---- */
+async function descargarExcel() {
+  if (!window.ExcelJS) { toast('Librería Excel no cargada. Intente de nuevo.', 'err'); return; }
+  const fil = getFiltered();
+  if (!fil.length) { toast('Sin datos para exportar.', 'err'); return; }
+
+  const grupoNombre = _grupoFil ? (_gruposMap[_grupoFil] || 'Grupo') : 'Todos los grupos';
+  const fechaStr = new Date().toLocaleDateString('es-MX', { day:'2-digit', month:'long', year:'numeric' });
+
+  const wb = new ExcelJS.Workbook();
+  wb.creator = 'ECCA Sistema de Admisión';
+  const ws = wb.addWorksheet('Documentos', { pageSetup: { orientation:'landscape', fitToPage:true } });
+
+  const NAVY = { argb:'FF0F1728' };
+  const GOLD = { argb:'FFB48C32' };
+  const GREEN_BG = { argb:'FFf0fdf4' };
+  const GREEN_FG = { argb:'FF16a34a' };
+  const RED_BG   = { argb:'FFfef2f2' };
+  const RED_FG   = { argb:'FFdc2626' };
+  const GRAY_HDR = { argb:'FFe2e8f0' };
+
+  ws.columns = [
+    { width: 5  },   // #
+    { width: 38 },   // Alumno
+    { width: 14 },   // Folio
+    { width: 18 },   // Grupo
+    { width: 10 },   // Acta
+    { width: 10 },   // CURP
+    { width: 14 },   // Certificado
+    { width: 10 },   // Fotos
+    { width: 16 },   // Estado
+  ];
+
+  /* Título */
+  ws.mergeCells('A1:I1');
+  const t1 = ws.getCell('A1');
+  t1.value = 'ECCA PREPARATORIA DE LEÓN';
+  t1.font  = { bold:true, size:14, color:{argb:'FFFFFFFF'} };
+  t1.fill  = { type:'pattern', pattern:'solid', fgColor: NAVY };
+  t1.alignment = { vertical:'middle', horizontal:'center' };
+  ws.getRow(1).height = 26;
+
+  ws.mergeCells('A2:I2');
+  const t2 = ws.getCell('A2');
+  t2.value = `Control de Documentos — ${grupoNombre} — ${fechaStr}`;
+  t2.font  = { italic:true, size:10, color:{argb:'FF94a3b8'} };
+  t2.fill  = { type:'pattern', pattern:'solid', fgColor: NAVY };
+  t2.alignment = { vertical:'middle', horizontal:'center' };
+  ws.getRow(2).height = 18;
+
+  /* Stats */
+  const base = _grupoFil ? _todos.filter(r => String(r.grupoId||'') === _grupoFil) : _todos;
+  const stTotal = base.length;
+  const stComp  = base.filter(completo).length;
+  const stIncomp= stTotal - stComp;
+  ws.mergeCells('A3:I3');
+  const t3 = ws.getCell('A3');
+  t3.value = `Total: ${stTotal}   |   Completos: ${stComp}   |   Con pendientes: ${stIncomp}   |   Sin Acta: ${base.filter(r=>!r.docActa).length}   |   Sin CURP: ${base.filter(r=>!r.docCurp).length}   |   Sin Certificado: ${base.filter(r=>!r.docCert).length}   |   Sin Fotos: ${base.filter(r=>!r.docFotos).length}`;
+  t3.font  = { bold:true, size:9, color:{argb:'FF334155'} };
+  t3.fill  = { type:'pattern', pattern:'solid', fgColor:{ argb:'FFf1f5f9' } };
+  t3.alignment = { vertical:'middle', horizontal:'center' };
+  ws.getRow(3).height = 18;
+
+  /* Fila separadora */
+  ws.getRow(4).height = 4;
+  ['A4','B4','C4','D4','E4','F4','G4','H4','I4'].forEach(c => {
+    ws.getCell(c).fill = { type:'pattern', pattern:'solid', fgColor: GOLD };
+  });
+
+  /* Encabezados */
+  const headers = ['#', 'Alumno', 'Folio', 'Grupo', 'Acta', 'CURP', 'Certificado', 'Fotos', 'Estado'];
+  const hRow = ws.addRow(headers);
+  hRow.height = 22;
+  hRow.eachCell(cell => {
+    cell.font      = { bold:true, size:10, color:{argb:'FFFFFFFF'} };
+    cell.fill      = { type:'pattern', pattern:'solid', fgColor: NAVY };
+    cell.alignment = { vertical:'middle', horizontal:'center', wrapText:false };
+    cell.border    = { bottom:{ style:'thin', color:{ argb:'FFfbbf24' } } };
+  });
+
+  /* Datos */
+  fil.forEach((r, i) => {
+    const pend = pendientes(r);
+    const estado = pend === 0 ? 'Completo' : `${pend} faltante${pend>1?'s':''}`;
+    const grupoNom = _gruposMap[String(r.grupoId||'')] || '—';
+    const row = ws.addRow([
+      i + 1,
+      (r.nombre || '(sin nombre)').toUpperCase(),
+      r.folio || '',
+      grupoNom,
+      r.docActa  ? '✓' : '✗',
+      r.docCurp  ? '✓' : '✗',
+      r.docCert  ? '✓' : '✗',
+      r.docFotos ? '✓' : '✗',
+      estado,
+    ]);
+    row.height = 18;
+    const altFill = i % 2 === 0
+      ? { type:'pattern', pattern:'solid', fgColor:{ argb:'FFFFFFFF' } }
+      : { type:'pattern', pattern:'solid', fgColor:{ argb:'FFf8fafc' } };
+    row.eachCell((cell, colN) => {
+      cell.alignment = { vertical:'middle', horizontal: colN <= 4 ? (colN === 2 ? 'left' : 'center') : 'center' };
+      cell.fill = altFill;
+      cell.border = { bottom:{ style:'hair', color:{ argb:'FFe2e8f0' } } };
+    });
+    // doc cells color
+    [5,6,7,8].forEach(colN => {
+      const cell = row.getCell(colN);
+      const ok = cell.value === '✓';
+      cell.font = { bold:true, size:12, color: ok ? GREEN_FG : RED_FG };
+      cell.fill = { type:'pattern', pattern:'solid', fgColor: ok ? GREEN_BG : RED_BG };
+    });
+    // estado
+    const estCell = row.getCell(9);
+    const comp = estado === 'Completo';
+    estCell.font = { bold:true, size:9, color: comp ? GREEN_FG : RED_FG };
+    estCell.fill = { type:'pattern', pattern:'solid', fgColor: comp ? GREEN_BG : RED_BG };
+  });
+
+  /* Guardar */
+  const hoy = new Date().toISOString().slice(0,10);
+  const nombreArchivo = `ECCA-Documentos-${grupoNombre.replace(/\s+/g,'-')}-${hoy}.xlsx`;
+  const buf = await wb.xlsx.writeBuffer();
+  const blob = new Blob([buf], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = nombreArchivo; a.click();
+  URL.revokeObjectURL(url);
+}
+
+/* ---- Actualizar header PDF con nombre de grupo ---- */
+
+/* ---- Init ---- */
+(async () => {
+  try {
+    const [recs, grupos] = await Promise.all([getRecords(), getGrupos()]);
+    grupos.forEach(g => { _gruposMap[String(g.id)] = g.nombre; });
+
+    /* Poblar select de grupos */
+    const sel = $('doc-grupo-fil');
+    grupos.forEach(g => {
+      const opt = document.createElement('option');
+      opt.value = String(g.id);
+      opt.textContent = g.nombre;
+      sel.appendChild(opt);
+    });
+
+    _todos = recs.filter(r => !r.exalumno);
+    calcStats();
+    renderTabla();
+  } catch(e) {
+    toast('Error al cargar datos: ' + e.message, 'err');
+  }
+})();
+</script>
+</body>
+</html>
