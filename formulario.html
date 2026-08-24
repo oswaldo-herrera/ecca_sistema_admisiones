@@ -188,6 +188,15 @@
                 <option value="">— Sin grupo asignado —</option>
               </select>
             </div>
+            <div class="field" style="margin-top:12px">
+              <label class="field-label">Grupo deportivo asignado</label>
+              <div id="f-grupo-deporte-display" style="display:flex;align-items:center;gap:8px;min-height:36px;
+                   padding:6px 10px;border:1px solid var(--border);border-radius:var(--r-sm);
+                   background:var(--bg);font-size:13px;color:var(--text-muted)">
+                <i class="fas fa-futbol" style="opacity:.4;font-size:11px"></i>
+                <span id="f-grupo-deporte-nombre">Sin deporte asignado</span>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -405,13 +414,24 @@
 <script>
 let currentFolio = getActiveFolio();
 let _inscPagoYaRegistrado = false;
+let _deportesMap = {}; // id → nombre de grupo deportivo
 
 async function cargarGruposSelect() {
   try {
-    const grupos = await getGrupos();
+    const [grupos, deportes] = await Promise.all([getGrupos(), getGruposDeporte()]);
     $('f-grupo').innerHTML = '<option value="">— Sin grupo asignado —</option>' +
       grupos.map(g => `<option value="${g.id}">${esc(g.nombre)}</option>`).join('');
+    deportes.forEach(g => { _deportesMap[String(g.id)] = g.nombre; });
   } catch(e) { /* silencioso */ }
+}
+
+function mostrarGrupoDeporte(grupoDeporteId) {
+  const el = $('f-grupo-deporte-nombre');
+  if (!el) return;
+  const nombre = grupoDeporteId ? (_deportesMap[String(grupoDeporteId)] || 'Grupo #' + grupoDeporteId) : null;
+  el.textContent = nombre || 'Sin deporte asignado';
+  el.style.color = nombre ? 'var(--text)' : 'var(--text-muted)';
+  el.style.fontWeight = nombre ? '600' : '';
 }
 
 // Restaurar registro activo si existe en BD
@@ -467,6 +487,7 @@ function limpiarForm(keepFolio = false) {
   .forEach(id => sv(id, ''));
   ['d-acta','d-curp','d-cert','d-fotos','d-otro'].forEach(id => sc(id, false));
   document.querySelectorAll('.doc-card').forEach(c => c.classList.remove('is-checked'));
+  mostrarGrupoDeporte(null);
   $('card-cuenta').style.display = 'none';
   if (!keepFolio) {
     currentFolio = null; setActiveFolio(null);
@@ -518,6 +539,7 @@ function setForm(d) {
   sv('f-ptel',d.pTel);       sv('f-pcorreo',d.pCorreo);
   sv('f-sexo',d.sexo || '');
   sv('f-modalidad',d.modalidad); sv('f-grupo',d.grupoId);
+  mostrarGrupoDeporte(d.grupoDeporteId);
   sv('f-trabaja',d.trabaja);
   sv('f-deporte',d.deporte); sv('f-objetivo',d.objetivo);
   sv('f-medio',d.medio);
