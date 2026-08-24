@@ -177,10 +177,17 @@
         <span style="font-weight:600;font-size:13px">Alumnos en este grupo</span>
         <button class="btn btn-secondary btn-sm" onclick="abrirBuscarParaDeporte()"><i class="fas fa-plus"></i> Agregar Alumno</button>
       </div>
-      <div class="sr-list" id="dd-alumnos" style="max-height:320px"></div>
+      <div class="search-box" style="margin-bottom:10px">
+        <i class="fas fa-magnifying-glass"></i>
+        <input type="text" id="dd-q" placeholder="Buscar por nombre o folio..." oninput="filtrarListaDeporte()">
+      </div>
+      <div class="sr-list" id="dd-alumnos" style="max-height:280px"></div>
     </div>
-    <div class="modal-footer">
-      <button class="btn btn-secondary btn-sm" onclick="closeModal('modal-dep-detalle')">Cerrar</button>
+    <div class="modal-footer" style="gap:6px;flex-wrap:wrap">
+      <button class="btn btn-secondary btn-sm" onclick="descargarExcelDeporte()"><i class="fas fa-file-excel"></i> Excel</button>
+      <button class="btn btn-secondary btn-sm" onclick="descargarPDFDeporte()"><i class="fas fa-file-pdf"></i> PDF</button>
+      <button class="btn btn-secondary btn-sm" onclick="descargarAsistenciaDeporte()"><i class="fas fa-clipboard-list"></i> Lista de Asistencia</button>
+      <button class="btn btn-secondary btn-sm" style="margin-left:auto" onclick="closeModal('modal-dep-detalle')">Cerrar</button>
     </div>
   </div>
 </div>
@@ -219,6 +226,9 @@
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/config.js"></script>
 <script src="js/app.js"></script>
@@ -375,22 +385,9 @@ async function gestionarGrupoDeporte(id) {
 
 async function renderAlumnosDeporte() {
   _detalleAlumnosD = await getAlumnosByGrupoDeporte(_detalleId);
-  const cont = $('dd-alumnos');
-  if (!_detalleAlumnosD.length) {
-    cont.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text-light)">Sin alumnos asignados todavía.</div>';
-    return;
-  }
-  cont.innerHTML = _detalleAlumnosD.map(a => {
-    const grupoAcad = a.grupoId && _gruposMap[a.grupoId] ? _gruposMap[a.grupoId] : '—';
-    return `
-    <div class="gd-alumno-row">
-      <div class="gd-alumno-info">
-        <span class="sr-name">${esc(a.nombre || '(sin nombre)')}</span>
-        <span class="sr-folio">${esc(a.folio)} · Grupo académico: <strong>${esc(grupoAcad)}</strong></span>
-      </div>
-      <button class="btn-sm-tbl bst-red" onclick="quitarAlumnoDeporte('${esc(a.folio)}')"><i class="fas fa-xmark"></i> Quitar</button>
-    </div>`;
-  }).join('');
+  // Limpiar búsqueda al recargar
+  if ($('dd-q')) { $('dd-q').value = ''; _ddQ = ''; }
+  renderFilaAlumnos();
   // update counter on card
   const g = _grupos.find(x => x.id === _detalleId);
   if (g) { g.alumnos = _detalleAlumnosD.length; renderGrid(); }
@@ -444,6 +441,189 @@ async function agregarAlumnoDeporte(folio) {
     _todosAlumnos = []; // reset cache
     await renderAlumnosDeporte();
   } catch(e) { toast('Error: ' + e.message, 'err'); }
+}
+
+/* ---- Búsqueda en modal detalle ---- */
+let _ddQ = '';
+function filtrarListaDeporte() {
+  _ddQ = ($('dd-q').value || '').toLowerCase();
+  renderFilaAlumnos();
+}
+
+function renderFilaAlumnos() {
+  const lista = _ddQ
+    ? _detalleAlumnosD.filter(a =>
+        (a.nombre || '').toLowerCase().includes(_ddQ) ||
+        (a.folio  || '').toLowerCase().includes(_ddQ))
+    : _detalleAlumnosD;
+  const cont = $('dd-alumnos');
+  if (!lista.length) {
+    cont.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text-light)">Sin resultados.</div>';
+    return;
+  }
+  cont.innerHTML = lista.map(a => {
+    const grupoAcad = a.grupoId && _gruposMap[a.grupoId] ? _gruposMap[a.grupoId] : '—';
+    return `
+    <div class="gd-alumno-row">
+      <div class="gd-alumno-info">
+        <span class="sr-name">${esc(a.nombre || '(sin nombre)')}</span>
+        <span class="sr-folio">${esc(a.folio)} · Grupo académico: <strong>${esc(grupoAcad)}</strong></span>
+      </div>
+      <button class="btn-sm-tbl bst-red" onclick="quitarAlumnoDeporte('${esc(a.folio)}')"><i class="fas fa-xmark"></i> Quitar</button>
+    </div>`;
+  }).join('');
+}
+
+/* ---- Descargar PDF (lista completa) ---- */
+function descargarPDFDeporte() {
+  const g = _grupos.find(x => x.id === _detalleId);
+  const nombreGrupo = g ? g.nombre : 'Grupo';
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'letter' });
+  const hoy = new Date().toLocaleDateString('es-MX', { day:'2-digit', month:'long', year:'numeric' });
+
+  // Encabezado
+  doc.setFillColor(15, 40, 80);
+  doc.rect(0, 0, 216, 28, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(14); doc.setFont(undefined, 'bold');
+  doc.text('ECCA Preparatoria de León', 12, 11);
+  doc.setFontSize(11); doc.setFont(undefined, 'normal');
+  doc.text(`Grupo Deportivo: ${nombreGrupo}`, 12, 19);
+  doc.setFontSize(9);
+  doc.text(`Fecha: ${hoy}   |   Total: ${_detalleAlumnosD.length} alumno(s)`, 12, 25);
+
+  // Tabla
+  doc.autoTable({
+    startY: 32,
+    head: [['#', 'Nombre', 'Folio', 'Grupo Académico']],
+    body: _detalleAlumnosD.map((a, i) => [
+      i + 1,
+      a.nombre || '(sin nombre)',
+      a.folio  || '—',
+      (a.grupoId && _gruposMap[a.grupoId]) ? _gruposMap[a.grupoId] : '—'
+    ]),
+    styles: { fontSize: 9, cellPadding: 3 },
+    headStyles: { fillColor: [15, 40, 80], textColor: 255, fontStyle: 'bold' },
+    alternateRowStyles: { fillColor: [245, 247, 250] },
+    columnStyles: { 0: { halign: 'center', cellWidth: 10 }, 2: { cellWidth: 28 }, 3: { cellWidth: 36 } },
+    didDrawPage: (d) => {
+      doc.setFontSize(8); doc.setTextColor(120);
+      doc.text(`Página ${d.pageNumber}`, 200, 272, { align: 'right' });
+    }
+  });
+
+  doc.save(`ECCA-${nombreGrupo.replace(/\s+/g, '-')}.pdf`);
+}
+
+/* ---- Descargar Lista de Asistencia PDF ---- */
+function descargarAsistenciaDeporte() {
+  const g = _grupos.find(x => x.id === _detalleId);
+  const nombreGrupo = g ? g.nombre : 'Grupo';
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'letter' });
+  const hoy = new Date().toLocaleDateString('es-MX', { day:'2-digit', month:'long', year:'numeric' });
+
+  // Encabezado
+  doc.setFillColor(15, 40, 80);
+  doc.rect(0, 0, 216, 28, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(14); doc.setFont(undefined, 'bold');
+  doc.text('ECCA Preparatoria de León', 12, 11);
+  doc.setFontSize(11); doc.setFont(undefined, 'normal');
+  doc.text(`Lista de Asistencia — ${nombreGrupo}`, 12, 19);
+  doc.setFontSize(9);
+  doc.text(`Fecha: ${hoy}   |   Total: ${_detalleAlumnosD.length} alumno(s)`, 12, 25);
+
+  doc.autoTable({
+    startY: 32,
+    head: [['#', 'Nombre', 'Folio', 'Grupo Acad.', 'Firma / ✓']],
+    body: _detalleAlumnosD.map((a, i) => [
+      i + 1,
+      a.nombre || '(sin nombre)',
+      a.folio  || '—',
+      (a.grupoId && _gruposMap[a.grupoId]) ? _gruposMap[a.grupoId] : '—',
+      ''
+    ]),
+    styles: { fontSize: 9, cellPadding: 3 },
+    headStyles: { fillColor: [15, 40, 80], textColor: 255, fontStyle: 'bold' },
+    alternateRowStyles: { fillColor: [245, 247, 250] },
+    columnStyles: {
+      0: { halign: 'center', cellWidth: 10 },
+      2: { cellWidth: 26 },
+      3: { cellWidth: 32 },
+      4: { cellWidth: 30, halign: 'center' }
+    },
+    didDrawPage: (d) => {
+      doc.setFontSize(8); doc.setTextColor(120);
+      doc.text(`Página ${d.pageNumber}`, 200, 272, { align: 'right' });
+    }
+  });
+
+  doc.save(`Asistencia-${nombreGrupo.replace(/\s+/g, '-')}.pdf`);
+}
+
+/* ---- Descargar Excel ---- */
+async function descargarExcelDeporte() {
+  const g = _grupos.find(x => x.id === _detalleId);
+  const nombreGrupo = g ? g.nombre : 'Grupo';
+  const hoy = new Date().toLocaleDateString('es-MX', { day:'2-digit', month:'long', year:'numeric' });
+
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet(nombreGrupo.substring(0, 31));
+
+  // Título
+  ws.mergeCells('A1:D1');
+  const t = ws.getCell('A1');
+  t.value = `ECCA Preparatoria de León — ${nombreGrupo}`;
+  t.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 13 };
+  t.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F2850' } };
+  t.alignment = { horizontal: 'center', vertical: 'middle' };
+  ws.getRow(1).height = 26;
+
+  // Subtítulo
+  ws.mergeCells('A2:D2');
+  const s = ws.getCell('A2');
+  s.value = `Fecha: ${hoy}   |   Total: ${_detalleAlumnosD.length} alumno(s)`;
+  s.font = { italic: true, size: 10 };
+  s.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE8ECF3' } };
+  s.alignment = { horizontal: 'center' };
+  ws.getRow(2).height = 18;
+
+  // Encabezados
+  const headers = ['#', 'Nombre', 'Folio', 'Grupo Académico'];
+  const hRow = ws.addRow(headers);
+  hRow.height = 18;
+  hRow.eachCell(cell => {
+    cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F2850' } };
+    cell.alignment = { horizontal: 'center', vertical: 'middle' };
+  });
+
+  // Datos
+  _detalleAlumnosD.forEach((a, i) => {
+    const grupoAcad = (a.grupoId && _gruposMap[a.grupoId]) ? _gruposMap[a.grupoId] : '—';
+    const row = ws.addRow([i + 1, a.nombre || '(sin nombre)', a.folio || '—', grupoAcad]);
+    row.height = 15;
+    if (i % 2 === 1) {
+      row.eachCell(cell => {
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF5F7FA' } };
+      });
+    }
+  });
+
+  // Anchos de columna
+  ws.getColumn(1).width = 6;
+  ws.getColumn(2).width = 40;
+  ws.getColumn(3).width = 18;
+  ws.getColumn(4).width = 22;
+
+  const buf = await wb.xlsx.writeBuffer();
+  const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `ECCA-${nombreGrupo.replace(/\s+/g, '-')}.xlsx`;
+  a.click(); URL.revokeObjectURL(url);
 }
 
 /* ---- Init ---- */
