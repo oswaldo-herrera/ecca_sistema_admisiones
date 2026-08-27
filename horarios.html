@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
@@ -98,6 +98,7 @@
       <a href="recibo.html" class="sb-item"><i class="fas fa-file-invoice"></i><span>Recibo</span></a>
       <a href="credencial.html" class="sb-item"><i class="fas fa-id-card"></i><span>Credencial</span></a>
       <div class="sb-group-label">Administración</div>
+      <a href="bitacora.html" class="sb-item"><i class="fas fa-clipboard-list"></i><span>Bitácora</span></a>
       <a href="usuarios.html" class="sb-item"><i class="fas fa-users-gear"></i><span>Usuarios</span></a>
     </nav>
     <div class="sb-footer">
@@ -494,6 +495,7 @@ async function guardarMaestro() {
     });
     closeModal('modal-maestro');
     toast('Maestro guardado.', 'ok');
+    logActividad(_editMaestro ? 'EDITAR MAESTRO' : 'NUEVO MAESTRO', 'Horarios', null, nombre);
     await recargar();
   } catch(e) { toast('Error: ' + e.message, 'err'); }
 }
@@ -561,6 +563,7 @@ async function guardarMateria() {
     });
     closeModal('modal-materia');
     toast('Materia guardada.', 'ok');
+    logActividad(_editMateria ? 'EDITAR MATERIA' : 'NUEVA MATERIA', 'Horarios', null, nombre);
     await recargar();
   } catch(e) { toast('Error: ' + e.message, 'err'); }
 }
@@ -712,6 +715,8 @@ async function guardarHorario() {
     });
     closeModal('modal-horario');
     toast('Horario guardado.', 'ok');
+    const _matLog = _materias.find(m => String(m.id) === materia);
+    logActividad(_editHorario ? 'EDITAR HORARIO' : 'NUEVO HORARIO', 'Horarios', null, (_matLog?.nombre || '') + ' ' + DIAS_NOM[parseInt(dia)] + ' ' + inicio);
     await recargar();
   } catch(e) { toast('Error: ' + e.message, 'err'); }
 }
@@ -790,3 +795,4 @@ async function recargar() {
 </script>
 </body>
 </html>
+

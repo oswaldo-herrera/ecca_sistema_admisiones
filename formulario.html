@@ -36,6 +36,7 @@
       <a href="recibo.html" class="sb-item"><i class="fas fa-file-invoice"></i><span>Recibo</span></a>
       <a href="credencial.html" class="sb-item"><i class="fas fa-id-card"></i><span>Credencial</span></a>
       <div class="sb-group-label">Administración</div>
+      <a href="bitacora.html" class="sb-item"><i class="fas fa-clipboard-list"></i><span>Bitácora</span></a>
       <a href="usuarios.html" class="sb-item"><i class="fas fa-users-gear"></i><span>Usuarios</span></a>
     </nav>
     <div class="sb-footer">
@@ -473,6 +474,7 @@ async function nuevoRegistro() {
     $('bc-folio').textContent   = currentFolio;
     await actualizarCuenta();
     toast('Nuevo registro. Folio: ' + currentFolio, 'ok');
+    logActividad('NUEVA INSCRIPCION', 'Inscripciones', currentFolio, 'Folio generado');
   } catch(e) {
     toast('Error al generar folio: ' + e.message, 'err');
   } finally {
@@ -610,6 +612,7 @@ async function guardarRegistro() {
       }
     }
     toast('Guardado correctamente. (' + currentFolio + ')', 'ok');
+    logActividad('EDITAR INSCRIPCION', 'Inscripciones', currentFolio, data.nombre || '');
     await refreshBadge();
     await actualizarCuenta();
   } catch(e) {
@@ -627,6 +630,7 @@ async function eliminarRegistro() {
       setBusy(true);
       try {
         await deleteRecord(currentFolio);
+        logActividad('ELIMINAR INSCRIPCION', 'Inscripciones', currentFolio, '');
         limpiarForm();
         toast('Registro eliminado.', 'ok');
         await refreshBadge();
@@ -716,4 +720,5 @@ async function selResult(folio) {
 </script>
 </body>
 </html>
+
 

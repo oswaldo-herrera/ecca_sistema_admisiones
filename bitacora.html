@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ECCA — Bitácora</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="css/styles.css">
+<style>
+.filtros-bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
+.filtros-bar select,.filtros-bar input{height:34px;padding:0 10px;border:1px solid var(--border);
+  border-radius:var(--r-sm);background:var(--bg-card);color:var(--text);font-size:13px}
+.filtros-bar input{width:180px}
+.tbl-scroll{overflow-x:auto;border:1px solid var(--border);border-radius:var(--r-sm)}
+.data-table{width:100%;border-collapse:collapse;font-size:13px}
+.data-table th{background:var(--navy);color:#fff;padding:9px 12px;text-align:left;
+  font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
+.data-table td{padding:9px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
+.data-table tr:last-child td{border-bottom:none}
+.data-table tr:hover td{background:var(--bg)}
+.accion-badge{display:inline-block;padding:2px 9px;border-radius:10px;font-size:11px;
+  font-weight:700;letter-spacing:.3px}
+/* Colores por tipo de accion */
+.ab-ins{background:#dbeafe;color:#1e40af}
+.ab-edit{background:#fef9c3;color:#854d0e}
+.ab-del{background:#fee2e2;color:#991b1b}
+.ab-pago{background:#dcfce7;color:#166534}
+.ab-cargo{background:#e0f2fe;color:#0369a1}
+.ab-grupo{background:#f3e8ff;color:#6b21a8}
+.ab-deporte{background:#fce7f3;color:#9d174d}
+.ab-hora{background:#f0fdf4;color:#14532d}
+.ab-default{background:var(--bg);color:var(--text-muted)}
+
+/* Stats */
+.stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px}
+.stat-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r-sm);
+  padding:14px 16px;display:flex;align-items:center;gap:12px}
+.stat-icon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px}
+.stat-val{font-size:22px;font-weight:700;line-height:1}
+.stat-lbl{font-size:11px;color:var(--text-muted);margin-top:2px}
+
+/* Paginacion */
+.paginacion{display:flex;gap:6px;align-items:center;justify-content:flex-end;margin-top:12px;flex-wrap:wrap}
+.paginacion button{padding:5px 12px;border:1px solid var(--border);border-radius:var(--r-sm);
+  background:var(--bg-card);color:var(--text);font-size:12px;cursor:pointer}
+.paginacion button.active{background:var(--navy);color:#fff;border-color:var(--navy)}
+.paginacion button:disabled{opacity:.4;cursor:default}
+.pg-info{font-size:12px;color:var(--text-muted)}
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- ===== SIDEBAR ===== -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-brand">
+      <div class="sb-logo" style="background:#fff;padding:3px">
+        <img src="images/ecca_logo.png" alt="Logo ECCA" style="width:100%;height:100%;object-fit:contain;display:block">
+      </div>
+      <div>
+        <div class="sb-brand-name">ECCA Prepa León</div>
+        <div class="sb-brand-sub">Sistema de Admisiones</div>
+      </div>
+    </div>
+    <nav class="sb-nav">
+      <div class="sb-group-label">Principal</div>
+      <a href="index.html" class="sb-item"><i class="fas fa-house"></i><span>Inicio</span></a>
+      <a href="formulario.html" class="sb-item"><i class="fas fa-user-plus"></i><span>Nueva Inscripción</span></a>
+      <div class="sb-group-label">Gestión</div>
+      <a href="base-datos.html" class="sb-item"><i class="fas fa-table-list"></i><span>Base de Datos</span><span class="sb-badge">0</span></a>
+      <a href="grupos.html" class="sb-item"><i class="fas fa-people-group"></i><span>Grupos</span></a>
+      <a href="sin-grupo.html" class="sb-item" style="display:none"><i class="fas fa-user-clock"></i><span>Sin Grupo</span></a>
+      <a href="deportes.html" class="sb-item"><i class="fas fa-futbol"></i><span>Deportes</span></a>
+      <a href="documentos.html" class="sb-item"><i class="fas fa-folder-open"></i><span>Documentos</span></a>
+      <a href="horarios.html" class="sb-item"><i class="fas fa-calendar-week"></i><span>Horarios</span></a>
+      <a href="pagos.html" class="sb-item"><i class="fas fa-circle-dollar-to-slot"></i><span>Pagos</span></a>
+      <a href="recibo.html" class="sb-item"><i class="fas fa-file-invoice"></i><span>Recibo</span></a>
+      <a href="credencial.html" class="sb-item"><i class="fas fa-id-card"></i><span>Credencial</span></a>
+      <div class="sb-group-label">Administración</div>
+      <a href="bitacora.html" class="sb-item active"><i class="fas fa-clipboard-list"></i><span>Bitácora</span></a>
+      <a href="usuarios.html" class="sb-item"><i class="fas fa-users-gear"></i><span>Usuarios</span></a>
+    </nav>
+    <div class="sb-footer">
+      <i class="fas fa-location-dot"></i> 5 de Febrero 628, Centro, León, Gto.<br>
+      Tel. 479 153 4007
+    </div>
+  </aside>
+  <div class="sidebar-overlay"></div>
+
+  <!-- ===== MAIN ===== -->
+  <div class="main-content">
+    <header class="topbar">
+      <button class="topbar-hamburger" aria-label="Menú"><i class="fas fa-bars"></i></button>
+      <nav class="topbar-breadcrumb">
+        <a href="index.html"><i class="fas fa-house"></i></a>
+        <span class="sep">›</span><span class="current">Bitácora</span>
+      </nav>
+      <div class="topbar-right" id="topbar-actions"></div>
+    </header>
+
+    <div class="page-header">
+      <div>
+        <div class="page-title">Bitácora de Actividad</div>
+        <div class="page-sub">Registro de todas las acciones realizadas en el sistema</div>
+      </div>
+      <button class="btn btn-secondary btn-sm" onclick="cargar()">
+        <i class="fas fa-rotate-right"></i> Actualizar
+      </button>
+    </div>
+
+    <div class="page-body">
+
+      <!-- Stats -->
+      <div class="stats-row" id="stats-row"></div>
+
+      <!-- Filtros -->
+      <div class="filtros-bar">
+        <input type="date" id="f-desde" onchange="cargar()" title="Desde">
+        <input type="date" id="f-hasta" onchange="cargar()" title="Hasta">
+        <select id="f-modulo" onchange="cargar()">
+          <option value="">— Todos los módulos —</option>
+          <option>Inscripciones</option>
+          <option>Pagos</option>
+          <option>Grupos</option>
+          <option>Deportes</option>
+          <option>Horarios</option>
+          <option>Usuarios</option>
+        </select>
+        <select id="f-usuario" onchange="cargar()">
+          <option value="">— Todos los usuarios —</option>
+        </select>
+        <button class="btn btn-secondary btn-sm" onclick="limpiarFiltros()">
+          <i class="fas fa-filter-circle-xmark"></i> Limpiar
+        </button>
+      </div>
+
+      <!-- Tabla -->
+      <div class="tbl-scroll">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Fecha y hora</th>
+              <th>Usuario</th>
+              <th>Acción</th>
+              <th>Módulo</th>
+              <th>Folio / Ref.</th>
+              <th>Detalle</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-bitacora">
+            <tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-muted)">
+              <i class="fas fa-spinner fa-spin"></i>
+            </td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Paginacion -->
+      <div class="paginacion" id="paginacion"></div>
+
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script src="js/app.js"></script>
+<script>
+const POR_PAG = 50;
+let _pagina   = 1;
+let _total    = 0;
+let _usuarios = [];
+
+/* ── Badge por tipo de acción ── */
+function badgeClass(accion) {
+  const a = (accion || '').toUpperCase();
+  if (a.includes('NUEVA INSCRIPCION') || a.includes('NUEVA INSC')) return 'ab-ins';
+  if (a.includes('EDITAR INSCRIPCION'))    return 'ab-edit';
+  if (a.includes('ELIMINAR INSCRIPCION'))  return 'ab-del';
+  if (a.includes('PAGO'))   return 'ab-pago';
+  if (a.includes('CARGO'))  return 'ab-cargo';
+  if (a.includes('GRUPO') && !a.includes('DEPORTE')) return 'ab-grupo';
+  if (a.includes('DEPORTE')) return 'ab-deporte';
+  if (a.includes('MAESTRO') || a.includes('MATERIA') || a.includes('HORARIO')) return 'ab-hora';
+  if (a.includes('ELIMINAR')) return 'ab-del';
+  if (a.includes('EDITAR'))   return 'ab-edit';
+  return 'ab-default';
+}
+
+function fmtFechaHora(ts) {
+  if (!ts) return '—';
+  const d = new Date(ts);
+  return d.toLocaleDateString('es-MX', {day:'2-digit',month:'2-digit',year:'numeric'}) +
+    ' ' + d.toLocaleTimeString('es-MX', {hour:'2-digit',minute:'2-digit'});
+}
+
+/* ── Estadísticas del día ── */
+async function cargarStats() {
+  const hoy = new Date().toISOString().split('T')[0];
+  const { data } = await _sb.from('actividad')
+    .select('modulo, accion')
+    .gte('created_at', hoy + 'T00:00:00')
+    .lte('created_at', hoy + 'T23:59:59');
+  if (!data) return;
+  const stats = {
+    total: data.length,
+    inscripciones: data.filter(r => r.modulo === 'INSCRIPCIONES').length,
+    pagos:         data.filter(r => r.modulo === 'PAGOS').length,
+    grupos:        data.filter(r => r.modulo === 'GRUPOS' || r.modulo === 'DEPORTES').length,
+  };
+  $('stats-row').innerHTML = `
+    <div class="stat-card">
+      <div class="stat-icon" style="background:#dbeafe;color:#1e40af"><i class="fas fa-bolt"></i></div>
+      <div><div class="stat-val">${stats.total}</div><div class="stat-lbl">Acciones hoy</div></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background:#dbeafe;color:#1e40af"><i class="fas fa-user-plus"></i></div>
+      <div><div class="stat-val">${stats.inscripciones}</div><div class="stat-lbl">Inscripciones hoy</div></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background:#dcfce7;color:#166534"><i class="fas fa-dollar-sign"></i></div>
+      <div><div class="stat-val">${stats.pagos}</div><div class="stat-lbl">Pagos hoy</div></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background:#f3e8ff;color:#6b21a8"><i class="fas fa-people-group"></i></div>
+      <div><div class="stat-val">${stats.grupos}</div><div class="stat-lbl">Grupos/Deportes hoy</div></div>
+    </div>`;
+}
+
+/* ── Carga principal ── */
+async function cargar() {
+  const tbody = $('tbody-bitacora');
+  tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-muted)">
+    <i class="fas fa-spinner fa-spin"></i>
+  </td></tr>`;
+
+  const desde   = $('f-desde').value;
+  const hasta   = $('f-hasta').value;
+  const modulo  = $('f-modulo').value.toUpperCase();
+  const usuario = $('f-usuario').value;
+  const offset  = (_pagina - 1) * POR_PAG;
+
+  let q = _sb.from('actividad').select('*', { count: 'exact' })
+    .order('created_at', { ascending: false })
+    .range(offset, offset + POR_PAG - 1);
+
+  if (desde)   q = q.gte('created_at', desde + 'T00:00:00');
+  if (hasta)   q = q.lte('created_at', hasta + 'T23:59:59');
+  if (modulo)  q = q.eq('modulo', modulo);
+  if (usuario) q = q.eq('user_nombre', usuario);
+
+  const { data, count, error } = await q;
+  if (error) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:30px;color:#dc2626">
+      Error al cargar: ${esc(error.message)}
+    </td></tr>`;
+    return;
+  }
+
+  _total = count || 0;
+  if (!data || !data.length) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-muted)">
+      Sin actividad registrada para los filtros seleccionados.
+    </td></tr>`;
+    renderPaginacion();
+    return;
+  }
+
+  tbody.innerHTML = data.map(r => `
+    <tr>
+      <td style="white-space:nowrap;font-size:12px">${esc(fmtFechaHora(r.created_at))}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:7px">
+          <div style="width:28px;height:28px;border-radius:50%;background:var(--navy);color:#fff;
+               display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">
+            ${esc((r.user_nombre || '?').charAt(0).toUpperCase())}
+          </div>
+          <span style="font-weight:500">${esc(r.user_nombre || '—')}</span>
+        </div>
+      </td>
+      <td><span class="accion-badge ${badgeClass(r.accion)}">${esc(r.accion)}</span></td>
+      <td style="color:var(--text-muted);font-size:12px">${esc(r.modulo || '—')}</td>
+      <td style="font-family:monospace;font-size:12px">${r.referencia ? esc(r.referencia) : '<span style="color:var(--text-muted)">—</span>'}</td>
+      <td style="font-size:12px;color:var(--text-muted);max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"
+          title="${esc(r.detalle || '')}">${esc(r.detalle || '—')}</td>
+    </tr>`).join('');
+
+  renderPaginacion();
+}
+
+/* ── Paginación ── */
+function renderPaginacion() {
+  const total_pag = Math.ceil(_total / POR_PAG);
+  const el = $('paginacion');
+  if (total_pag <= 1) { el.innerHTML = `<span class="pg-info">${_total} registro(s)</span>`; return; }
+
+  let html = `<span class="pg-info">${_total} registros · Pág. ${_pagina} de ${total_pag}</span>`;
+  html += `<button onclick="irPag(1)" ${_pagina===1?'disabled':''} title="Primera"><i class="fas fa-angles-left"></i></button>`;
+  html += `<button onclick="irPag(${_pagina-1})" ${_pagina===1?'disabled':''} title="Anterior"><i class="fas fa-angle-left"></i></button>`;
+
+  const desde = Math.max(1, _pagina - 2);
+  const hasta = Math.min(total_pag, _pagina + 2);
+  for (let i = desde; i <= hasta; i++) {
+    html += `<button class="${i===_pagina?'active':''}" onclick="irPag(${i})">${i}</button>`;
+  }
+
+  html += `<button onclick="irPag(${_pagina+1})" ${_pagina===total_pag?'disabled':''} title="Siguiente"><i class="fas fa-angle-right"></i></button>`;
+  html += `<button onclick="irPag(${total_pag})" ${_pagina===total_pag?'disabled':''} title="Última"><i class="fas fa-angles-right"></i></button>`;
+  el.innerHTML = html;
+}
+
+function irPag(n) { _pagina = n; cargar(); window.scrollTo(0,0); }
+
+/* ── Filtros ── */
+function limpiarFiltros() {
+  sv('f-desde', ''); sv('f-hasta', ''); sv('f-modulo', ''); sv('f-usuario', '');
+  _pagina = 1;
+  cargar();
+}
+
+/* ── Cargar lista de usuarios para el select ── */
+async function cargarUsuarios() {
+  const { data } = await _sb.from('actividad')
+    .select('user_nombre')
+    .order('user_nombre');
+  if (!data) return;
+  const uniq = [...new Set(data.map(r => r.user_nombre).filter(Boolean))];
+  _usuarios = uniq;
+  const sel = $('f-usuario');
+  sel.innerHTML = '<option value="">— Todos los usuarios —</option>' +
+    uniq.map(u => `<option value="${esc(u)}">${esc(u)}</option>`).join('');
+}
+
+/* ── Init ── */
+(async () => {
+  // Poner fecha de hoy por defecto
+  const hoy = new Date().toISOString().split('T')[0];
+  sv('f-hasta', hoy);
+  await Promise.all([cargar(), cargarStats(), cargarUsuarios()]);
+})();
+</script>
+</body>
+</html>

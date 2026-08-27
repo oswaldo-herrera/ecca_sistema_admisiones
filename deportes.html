@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
@@ -70,6 +70,7 @@
       <a href="recibo.html" class="sb-item"><i class="fas fa-file-invoice"></i><span>Recibo</span></a>
       <a href="credencial.html" class="sb-item"><i class="fas fa-id-card"></i><span>Credencial</span></a>
       <div class="sb-group-label">Administración</div>
+      <a href="bitacora.html" class="sb-item"><i class="fas fa-clipboard-list"></i><span>Bitácora</span></a>
       <a href="usuarios.html" class="sb-item"><i class="fas fa-users-gear"></i><span>Usuarios</span></a>
     </nav>
     <div class="sb-footer">
@@ -354,6 +355,7 @@ async function guardarGrupoDeporteForm() {
     await saveGrupoDeporte(payload);
     closeModal('modal-dep-form');
     toast('Grupo guardado.', 'ok');
+    logActividad(_editId ? 'EDITAR GRUPO DEPORTE' : 'NUEVO GRUPO DEPORTE', 'Deportes', null, nombre + ' - ' + deporte);
     await recargar();
   } catch(e) { toast('Error: ' + e.message, 'err'); }
 }
@@ -397,6 +399,7 @@ async function renderAlumnosDeporte() {
 async function quitarAlumnoDeporte(folio) {
   try {
     await quitarGrupoDeporte(folio);
+    logActividad('QUITAR GRUPO DEPORTE', 'Deportes', folio, '');
     toast('Alumno removido del grupo deportivo.', 'ok');
     await renderAlumnosDeporte();
   } catch(e) { toast('Error: ' + e.message, 'err'); }
@@ -437,6 +440,8 @@ function buscarAlumnoDeporte() {
 async function agregarAlumnoDeporte(folio) {
   try {
     await asignarGrupoDeporte(folio, _detalleId);
+    const gd = _grupos.find(x => x.id === _detalleId);
+    logActividad('ASIGNAR GRUPO DEPORTE', 'Deportes', folio, gd?.nombre || '');
     closeModal('modal-dep-buscar');
     toast('Alumno agregado al grupo deportivo.', 'ok');
     _todosAlumnos = []; // reset cache
@@ -647,3 +652,4 @@ async function recargar() {
 </script>
 </body>
 </html>
+

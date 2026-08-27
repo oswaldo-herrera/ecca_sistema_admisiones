@@ -36,6 +36,7 @@
       <a href="recibo.html" class="sb-item"><i class="fas fa-file-invoice"></i><span>Recibo</span></a>
       <a href="credencial.html" class="sb-item"><i class="fas fa-id-card"></i><span>Credencial</span></a>
       <div class="sb-group-label">Administración</div>
+      <a href="bitacora.html" class="sb-item"><i class="fas fa-clipboard-list"></i><span>Bitácora</span></a>
       <a href="usuarios.html" class="sb-item"><i class="fas fa-users-gear"></i><span>Usuarios</span></a>
     </nav>
     <div class="sb-footer">
@@ -497,6 +498,7 @@ async function guardarPagoForm() {
     });
     closeModal('modal-pago-form');
     toast('Pago registrado correctamente.', 'ok');
+    logActividad('NUEVO PAGO', 'Pagos', _paAlumno.folio, concepto + ' $' + parseFloat(monto).toFixed(2));
     await refrescarAlumno();
   } catch (e) {
     toast('Error al guardar el pago: ' + e.message, 'err');
@@ -509,6 +511,7 @@ async function eliminarPago(id) {
   confirm2('Eliminar Pago', '¿Eliminar este pago? No se puede deshacer.', async () => {
     try {
       await deletePago(id);
+      logActividad('ELIMINAR PAGO', 'Pagos', _paAlumno?.folio || '', '');
       toast('Pago eliminado.', 'ok');
       await refrescarAlumno();
     } catch (e) { toast('Error: ' + e.message, 'err'); }
@@ -543,6 +546,7 @@ async function guardarCargoForm() {
     });
     closeModal('modal-cargo-form');
     toast('Cargo agregado.', 'ok');
+    logActividad('NUEVO CARGO', 'Pagos', _paAlumno.folio, concepto + ' $' + parseFloat(monto).toFixed(2));
     await refrescarAlumno();
   } catch (e) {
     toast('Error al guardar el cargo: ' + e.message, 'err');
@@ -686,4 +690,5 @@ cambiarTab('alumno');
 </script>
 </body>
 </html>
+
 

@@ -702,6 +702,21 @@ async function deleteHorario(id) {
   if (error) throw error;
 }
 
+/* ---- Bitácora de actividad ---- */
+async function logActividad(accion, modulo, referencia, detalle) {
+  try {
+    const { data: { user } } = await _sb.auth.getUser();
+    await _sb.from('actividad').insert({
+      user_id:     user?.id || null,
+      user_nombre: sessionStorage.getItem('ecca_nombre') || 'Sistema',
+      accion:      sinAcento(accion),
+      modulo:      sinAcento(modulo),
+      referencia:  referencia || null,
+      detalle:     detalle    || null,
+    });
+  } catch(_) { /* silencioso — no bloquea el flujo principal */ }
+}
+
 /* ---- Auto-mayúsculas en inputs con data-mayus ---- */
 document.addEventListener('input', e => {
   const el = e.target;

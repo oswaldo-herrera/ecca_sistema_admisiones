@@ -36,6 +36,7 @@
       <a href="recibo.html" class="sb-item"><i class="fas fa-file-invoice"></i><span>Recibo</span></a>
       <a href="credencial.html" class="sb-item"><i class="fas fa-id-card"></i><span>Credencial</span></a>
       <div class="sb-group-label">Administración</div>
+      <a href="bitacora.html" class="sb-item"><i class="fas fa-clipboard-list"></i><span>Bitácora</span></a>
       <a href="usuarios.html" class="sb-item"><i class="fas fa-users-gear"></i><span>Usuarios</span></a>
     </nav>
     <div class="sb-footer">
@@ -327,6 +328,7 @@ async function guardarGrupoForm() {
     });
     closeModal('modal-grupo-form');
     toast('Grupo guardado correctamente.', 'ok');
+    logActividad(_editingGrupoId ? 'EDITAR GRUPO' : 'NUEVO GRUPO', 'Grupos', null, nombre);
     await cargarGrupos();
   } catch (e) {
     toast('Error al guardar: ' + e.message, 'err');
@@ -722,6 +724,7 @@ function editarAlumno(folio) {
 async function quitarDeGrupo(folio) {
   try {
     await asignarGrupo(folio, null);
+    logActividad('QUITAR DE GRUPO', 'Grupos', folio, '');
     toast('Alumno removido del grupo.', 'ok');
     await renderAlumnosDeGrupo();
     await cargarGrupos();
@@ -785,6 +788,8 @@ function buscarAlumnoParaGrupo() {
 async function agregarAlumnoAGrupo(folio) {
   try {
     await asignarGrupo(folio, _detalleGrupoId);
+    const g = _grupos.find(x => x.id === _detalleGrupoId);
+    logActividad('ASIGNAR GRUPO', 'Grupos', folio, g?.nombre || '');
     closeModal('modal-agregar-alumno');
     toast('Alumno agregado al grupo.', 'ok');
     await renderAlumnosDeGrupo();
@@ -799,4 +804,5 @@ cargarGrupos();
 </script>
 </body>
 </html>
+
 
