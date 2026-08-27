@@ -398,8 +398,10 @@ async function renderAlumnosDeporte() {
 
 async function quitarAlumnoDeporte(folio) {
   try {
+    const alumno = _detalleAlumnosD.find(a => a.folio === folio);
+    const gd = _grupos.find(x => x.id === _detalleId);
     await quitarGrupoDeporte(folio);
-    logActividad('QUITAR GRUPO DEPORTE', 'Deportes', folio, '');
+    logActividad('QUITAR GRUPO DEPORTE', 'Deportes', folio, (alumno?.nombre || folio) + ' de ' + (gd?.nombre || ''));
     toast('Alumno removido del grupo deportivo.', 'ok');
     await renderAlumnosDeporte();
   } catch(e) { toast('Error: ' + e.message, 'err'); }
@@ -441,7 +443,8 @@ async function agregarAlumnoDeporte(folio) {
   try {
     await asignarGrupoDeporte(folio, _detalleId);
     const gd = _grupos.find(x => x.id === _detalleId);
-    logActividad('ASIGNAR GRUPO DEPORTE', 'Deportes', folio, gd?.nombre || '');
+    const alumnoD = _todosAlumnos.find(a => a.folio === folio);
+    logActividad('ASIGNAR GRUPO DEPORTE', 'Deportes', folio, (alumnoD?.nombre || folio) + ' → ' + (gd?.nombre || ''));
     closeModal('modal-dep-buscar');
     toast('Alumno agregado al grupo deportivo.', 'ok');
     _todosAlumnos = []; // reset cache

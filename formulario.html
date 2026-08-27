@@ -630,7 +630,7 @@ async function eliminarRegistro() {
       setBusy(true);
       try {
         await deleteRecord(currentFolio);
-        logActividad('ELIMINAR INSCRIPCION', 'Inscripciones', currentFolio, '');
+        logActividad('ELIMINAR INSCRIPCION', 'Inscripciones', currentFolio, gv('f-nombre') || '');
         limpiarForm();
         toast('Registro eliminado.', 'ok');
         await refreshBadge();

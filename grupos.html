@@ -723,8 +723,10 @@ function editarAlumno(folio) {
 
 async function quitarDeGrupo(folio) {
   try {
+    const alumno = _detalleAlumnos.find(a => a.folio === folio);
+    const g = _grupos.find(x => x.id === _detalleGrupoId);
     await asignarGrupo(folio, null);
-    logActividad('QUITAR DE GRUPO', 'Grupos', folio, '');
+    logActividad('QUITAR DE GRUPO', 'Grupos', folio, (alumno?.nombre || folio) + ' de ' + (g?.nombre || ''));
     toast('Alumno removido del grupo.', 'ok');
     await renderAlumnosDeGrupo();
     await cargarGrupos();
@@ -787,9 +789,10 @@ function buscarAlumnoParaGrupo() {
 
 async function agregarAlumnoAGrupo(folio) {
   try {
+    const alumnoSrc = _searchCache.find(a => a.folio === folio);
     await asignarGrupo(folio, _detalleGrupoId);
     const g = _grupos.find(x => x.id === _detalleGrupoId);
-    logActividad('ASIGNAR GRUPO', 'Grupos', folio, g?.nombre || '');
+    logActividad('ASIGNAR GRUPO', 'Grupos', folio, (alumnoSrc?.nombre || folio) + ' → ' + (g?.nombre || ''));
     closeModal('modal-agregar-alumno');
     toast('Alumno agregado al grupo.', 'ok');
     await renderAlumnosDeGrupo();

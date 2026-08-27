@@ -498,7 +498,7 @@ async function guardarPagoForm() {
     });
     closeModal('modal-pago-form');
     toast('Pago registrado correctamente.', 'ok');
-    logActividad('NUEVO PAGO', 'Pagos', _paAlumno.folio, concepto + ' $' + parseFloat(monto).toFixed(2));
+    logActividad('NUEVO PAGO', 'Pagos', _paAlumno.folio, (_paAlumno.nombre ? _paAlumno.nombre + ' - ' : '') + concepto + ' $' + parseFloat(monto).toFixed(2));
     await refrescarAlumno();
   } catch (e) {
     toast('Error al guardar el pago: ' + e.message, 'err');
@@ -508,10 +508,12 @@ async function guardarPagoForm() {
 }
 
 async function eliminarPago(id) {
+  const pago = _paPagos.find(p => p.id === id);
   confirm2('Eliminar Pago', '¿Eliminar este pago? No se puede deshacer.', async () => {
     try {
       await deletePago(id);
-      logActividad('ELIMINAR PAGO', 'Pagos', _paAlumno?.folio || '', '');
+      const det = (_paAlumno?.nombre || '') + (pago ? ' - ' + pago.concepto + ' $' + parseFloat(pago.monto).toFixed(2) : '');
+      logActividad('ELIMINAR PAGO', 'Pagos', _paAlumno?.folio || '', det);
       toast('Pago eliminado.', 'ok');
       await refrescarAlumno();
     } catch (e) { toast('Error: ' + e.message, 'err'); }
@@ -546,7 +548,7 @@ async function guardarCargoForm() {
     });
     closeModal('modal-cargo-form');
     toast('Cargo agregado.', 'ok');
-    logActividad('NUEVO CARGO', 'Pagos', _paAlumno.folio, concepto + ' $' + parseFloat(monto).toFixed(2));
+    logActividad('NUEVO CARGO', 'Pagos', _paAlumno.folio, (_paAlumno.nombre ? _paAlumno.nombre + ' - ' : '') + concepto + ' $' + parseFloat(monto).toFixed(2));
     await refrescarAlumno();
   } catch (e) {
     toast('Error al guardar el cargo: ' + e.message, 'err');
