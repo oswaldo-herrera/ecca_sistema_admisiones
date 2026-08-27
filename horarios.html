@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ECCA — Horarios</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="css/styles.css">
+<style>
+/* ── Tabs ── */
+.tabs-bar{display:flex;gap:2px;border-bottom:2px solid var(--border);margin-bottom:18px}
+.tab-btn{padding:8px 20px;border:none;background:none;color:var(--text-muted);font-size:13px;
+  font-weight:500;cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;
+  border-radius:6px 6px 0 0;transition:.15s;display:flex;align-items:center;gap:7px}
+.tab-btn:hover{color:var(--text);background:var(--bg-card)}
+.tab-btn.active{color:var(--navy);border-bottom-color:var(--navy);background:var(--bg-card)}
+
+/* ── Data table ── */
+.data-table{width:100%;border-collapse:collapse;font-size:13px}
+.data-table th{background:var(--bg-card);border-bottom:2px solid var(--border);
+  padding:9px 12px;text-align:left;font-weight:600;color:var(--text-muted);
+  font-size:11px;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
+.data-table td{padding:9px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
+.data-table tr:last-child td{border-bottom:none}
+.data-table tr:hover td{background:var(--bg)}
+.tbl-scroll{overflow-x:auto;border:1px solid var(--border);border-radius:var(--r-sm)}
+
+/* ── Badges ── */
+.badge-si{display:inline-block;padding:2px 9px;border-radius:10px;font-size:11px;
+  font-weight:600;background:#dcfce7;color:#166534}
+.badge-no{display:inline-block;padding:2px 9px;border-radius:10px;font-size:11px;
+  font-weight:600;background:#fee2e2;color:#991b1b}
+
+/* ── Horario grid ── */
+.hgrid-wrap{overflow-x:auto}
+.hgrid{width:100%;border-collapse:collapse;font-size:12px;min-width:700px}
+.hgrid th{background:var(--navy);color:#fff;font-weight:600;padding:7px 8px;text-align:center;
+  position:sticky;top:0;z-index:2;white-space:nowrap}
+.hgrid th:first-child{width:58px;min-width:58px;background:#0a1f40}
+.hgrid td{border:1px solid var(--border);vertical-align:top;padding:3px;min-width:130px;height:52px}
+.hora-td{background:var(--bg-card);text-align:center;font-size:11px;font-weight:700;
+  color:var(--text-muted);padding:4px 2px !important;white-space:nowrap;height:auto!important}
+.cell-empty{cursor:pointer;transition:.12s}
+.cell-empty:hover{background:color-mix(in srgb,var(--gold) 12%,transparent)}
+.he{border-radius:5px;padding:4px 7px;margin-bottom:2px;cursor:pointer;transition:.12s;
+  color:#fff;font-size:11px}
+.he:hover{opacity:.82}
+.he:last-child{margin-bottom:0}
+.he-mat{font-weight:700;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.he-mae{display:block;opacity:.8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.he-info{display:block;opacity:.65;font-size:10px}
+/* palette cycling */
+.hc0{background:#1e3a5f} .hc1{background:#14532d} .hc2{background:#7c2d12}
+.hc3{background:#4c1d95} .hc4{background:#0c4a6e} .hc5{background:#713f12}
+.hc6{background:#134e4a} .hc7{background:#1e1b4b} .hc8{background:#881337}
+.hc9{background:#052e16}
+
+/* ── Filtros ── */
+.filtros-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+.filtros-row select,.filtros-row input{height:34px;padding:0 10px;border:1px solid var(--border);
+  border-radius:var(--r-sm);background:var(--bg-card);color:var(--text);font-size:13px}
+.view-toggle{display:flex;border:1px solid var(--border);border-radius:var(--r-sm);overflow:hidden;margin-left:auto}
+.view-toggle button{padding:5px 13px;border:none;background:var(--bg-card);color:var(--text-muted);
+  font-size:12px;cursor:pointer;transition:.12s}
+.view-toggle button.active{background:var(--navy);color:#fff}
+
+/* ── Lista view ── */
+.dia-badge{display:inline-block;padding:1px 8px;border-radius:8px;font-size:11px;
+  font-weight:600;background:var(--navy);color:#fff}
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- ===== SIDEBAR ===== -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-brand">
+      <div class="sb-logo" style="background:#fff;padding:3px">
+        <img src="images/ecca_logo.png" alt="Logo ECCA" style="width:100%;height:100%;object-fit:contain;display:block">
+      </div>
+      <div>
+        <div class="sb-brand-name">ECCA Prepa León</div>
+        <div class="sb-brand-sub">Sistema de Admisiones</div>
+      </div>
+    </div>
+    <nav class="sb-nav">
+      <div class="sb-group-label">Principal</div>
+      <a href="index.html" class="sb-item"><i class="fas fa-house"></i><span>Inicio</span></a>
+      <a href="formulario.html" class="sb-item"><i class="fas fa-user-plus"></i><span>Nueva Inscripción</span></a>
+      <div class="sb-group-label">Gestión</div>
+      <a href="base-datos.html" class="sb-item"><i class="fas fa-table-list"></i><span>Base de Datos</span><span class="sb-badge">0</span></a>
+      <a href="grupos.html" class="sb-item"><i class="fas fa-people-group"></i><span>Grupos</span></a>
+      <a href="sin-grupo.html" class="sb-item" style="display:none"><i class="fas fa-user-clock"></i><span>Sin Grupo</span></a>
+      <a href="deportes.html" class="sb-item"><i class="fas fa-futbol"></i><span>Deportes</span></a>
+      <a href="documentos.html" class="sb-item"><i class="fas fa-folder-open"></i><span>Documentos</span></a>
+      <a href="horarios.html" class="sb-item active"><i class="fas fa-calendar-week"></i><span>Horarios</span></a>
+      <a href="pagos.html" class="sb-item"><i class="fas fa-circle-dollar-to-slot"></i><span>Pagos</span></a>
+      <a href="recibo.html" class="sb-item"><i class="fas fa-file-invoice"></i><span>Recibo</span></a>
+      <a href="credencial.html" class="sb-item"><i class="fas fa-id-card"></i><span>Credencial</span></a>
+      <div class="sb-group-label">Administración</div>
+      <a href="usuarios.html" class="sb-item"><i class="fas fa-users-gear"></i><span>Usuarios</span></a>
+    </nav>
+    <div class="sb-footer">
+      <i class="fas fa-location-dot"></i> 5 de Febrero 628, Centro, León, Gto.<br>
+      Tel. 479 153 4007
+    </div>
+  </aside>
+  <div class="sidebar-overlay"></div>
+
+  <!-- ===== MAIN ===== -->
+  <div class="main-content">
+    <header class="topbar">
+      <button class="topbar-hamburger" aria-label="Menú"><i class="fas fa-bars"></i></button>
+      <nav class="topbar-breadcrumb">
+        <a href="index.html"><i class="fas fa-house"></i></a>
+        <span class="sep">›</span><span class="current">Horarios</span>
+      </nav>
+      <div class="topbar-right" id="topbar-actions"></div>
+    </header>
+
+    <div class="page-header">
+      <div>
+        <div class="page-title">Horarios y Materias</div>
+        <div class="page-sub">Gestiona maestros, materias y horarios de clase por grupo</div>
+      </div>
+    </div>
+
+    <div class="page-body">
+
+      <!-- Tabs -->
+      <div class="tabs-bar">
+        <button class="tab-btn active" id="tab-maestros" onclick="setTab('maestros')">
+          <i class="fas fa-chalkboard-user"></i> Maestros
+        </button>
+        <button class="tab-btn" id="tab-materias" onclick="setTab('materias')">
+          <i class="fas fa-book"></i> Materias
+        </button>
+        <button class="tab-btn" id="tab-horarios" onclick="setTab('horarios')">
+          <i class="fas fa-calendar-week"></i> Horarios
+        </button>
+      </div>
+
+      <!-- ── Panel Maestros ── -->
+      <div id="panel-maestros">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:10px;flex-wrap:wrap">
+          <div class="search-box" style="flex:1;max-width:320px;margin-bottom:0">
+            <i class="fas fa-magnifying-glass"></i>
+            <input type="text" id="mq" placeholder="Buscar maestro…" oninput="renderMaestros()">
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="abrirMaestro()">
+            <i class="fas fa-plus"></i> Nuevo Maestro
+          </button>
+        </div>
+        <div class="tbl-scroll">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Especialidad</th>
+                <th>Teléfono</th>
+                <th>Correo</th>
+                <th>Estado</th>
+                <th style="width:90px"></th>
+              </tr>
+            </thead>
+            <tbody id="tbody-maestros">
+              <tr><td colspan="6" style="text-align:center;padding:30px;color:var(--text-muted)">
+                <i class="fas fa-spinner fa-spin"></i>
+              </td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ── Panel Materias ── -->
+      <div id="panel-materias" style="display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:10px;flex-wrap:wrap">
+          <div class="search-box" style="flex:1;max-width:320px;margin-bottom:0">
+            <i class="fas fa-magnifying-glass"></i>
+            <input type="text" id="matq" placeholder="Buscar materia…" oninput="renderMaterias()">
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="abrirMateria()">
+            <i class="fas fa-plus"></i> Nueva Materia
+          </button>
+        </div>
+        <div class="tbl-scroll">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Clave</th>
+                <th>Nombre</th>
+                <th>Grado</th>
+                <th>Descripción</th>
+                <th style="width:90px"></th>
+              </tr>
+            </thead>
+            <tbody id="tbody-materias">
+              <tr><td colspan="5" style="text-align:center;padding:30px;color:var(--text-muted)">
+                <i class="fas fa-spinner fa-spin"></i>
+              </td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ── Panel Horarios ── -->
+      <div id="panel-horarios" style="display:none">
+        <div class="filtros-row">
+          <select id="fil-grupo" onchange="renderHorarios()">
+            <option value="">— Todos los grupos —</option>
+          </select>
+          <select id="fil-maestro" onchange="renderHorarios()">
+            <option value="">— Todos los maestros —</option>
+          </select>
+          <select id="fil-materia" onchange="renderHorarios()">
+            <option value="">— Todas las materias —</option>
+          </select>
+          <div class="view-toggle">
+            <button id="vbtn-grid" class="active" onclick="setVista('grid')"><i class="fas fa-border-all"></i> Cuadrícula</button>
+            <button id="vbtn-lista" onclick="setVista('lista')"><i class="fas fa-list"></i> Lista</button>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="abrirHorario()">
+            <i class="fas fa-plus"></i> Nuevo Horario
+          </button>
+        </div>
+        <!-- Grid view -->
+        <div id="vista-grid" class="hgrid-wrap"></div>
+        <!-- List view -->
+        <div id="vista-lista" style="display:none">
+          <div class="tbl-scroll">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Día</th><th>Hora</th><th>Materia</th><th>Maestro</th>
+                  <th>Grupo</th><th>Aula</th><th style="width:90px"></th>
+                </tr>
+              </thead>
+              <tbody id="tbody-horarios"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /page-body -->
+  </div>
+</div>
+
+<!-- ===== MODAL MAESTRO ===== -->
+<div class="modal-ov" id="modal-maestro">
+  <div class="modal-box" style="max-width:460px">
+    <div class="modal-header">
+      <h3 id="mm-titulo">Nuevo Maestro</h3>
+      <button class="modal-close" onclick="closeModal('modal-maestro')">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid" style="grid-template-columns:1fr 1fr;gap:12px">
+        <div class="field full">
+          <label class="field-label">Nombre completo <span class="req">*</span></label>
+          <input class="field-input" id="mm-nombre" type="text" placeholder="Nombre del maestro">
+        </div>
+        <div class="field">
+          <label class="field-label">Especialidad</label>
+          <input class="field-input" id="mm-especialidad" type="text" placeholder="Ej. Matemáticas">
+        </div>
+        <div class="field">
+          <label class="field-label">Teléfono</label>
+          <input class="field-input" id="mm-telefono" type="tel" placeholder="10 dígitos">
+        </div>
+        <div class="field full">
+          <label class="field-label">Correo electrónico</label>
+          <input class="field-input" id="mm-correo" type="email" placeholder="correo@ejemplo.com">
+        </div>
+        <div class="field">
+          <label class="field-label">Estado</label>
+          <select class="field-select" id="mm-activo">
+            <option value="true">Activo</option>
+            <option value="false">Inactivo</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary btn-sm" onclick="closeModal('modal-maestro')">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="guardarMaestro()"><i class="fas fa-floppy-disk"></i> Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL MATERIA ===== -->
+<div class="modal-ov" id="modal-materia">
+  <div class="modal-box" style="max-width:460px">
+    <div class="modal-header">
+      <h3 id="mt-titulo">Nueva Materia</h3>
+      <button class="modal-close" onclick="closeModal('modal-materia')">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid" style="grid-template-columns:1fr 1fr;gap:12px">
+        <div class="field">
+          <label class="field-label">Clave</label>
+          <input class="field-input" id="mt-clave" type="text" placeholder="Ej. MAT-101">
+        </div>
+        <div class="field">
+          <label class="field-label">Grado / Semestre</label>
+          <input class="field-input" id="mt-grado" type="text" placeholder="Ej. 1°, 2°">
+        </div>
+        <div class="field full">
+          <label class="field-label">Nombre <span class="req">*</span></label>
+          <input class="field-input" id="mt-nombre" type="text" placeholder="Nombre de la materia">
+        </div>
+        <div class="field full">
+          <label class="field-label">Descripción</label>
+          <input class="field-input" id="mt-descripcion" type="text" placeholder="Descripción breve (opcional)">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary btn-sm" onclick="closeModal('modal-materia')">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="guardarMateria()"><i class="fas fa-floppy-disk"></i> Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL HORARIO ===== -->
+<div class="modal-ov" id="modal-horario">
+  <div class="modal-box" style="max-width:500px">
+    <div class="modal-header">
+      <h3 id="mh-titulo">Nuevo Horario</h3>
+      <button class="modal-close" onclick="closeModal('modal-horario')">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid" style="grid-template-columns:1fr 1fr;gap:12px">
+        <div class="field full">
+          <label class="field-label">Grupo <span class="req">*</span></label>
+          <select class="field-select" id="mh-grupo">
+            <option value="">— Seleccionar grupo —</option>
+          </select>
+        </div>
+        <div class="field full">
+          <label class="field-label">Materia <span class="req">*</span></label>
+          <select class="field-select" id="mh-materia">
+            <option value="">— Seleccionar materia —</option>
+          </select>
+        </div>
+        <div class="field full">
+          <label class="field-label">Maestro</label>
+          <select class="field-select" id="mh-maestro">
+            <option value="">— Sin maestro asignado —</option>
+          </select>
+        </div>
+        <div class="field">
+          <label class="field-label">Día <span class="req">*</span></label>
+          <select class="field-select" id="mh-dia">
+            <option value="">— Día —</option>
+            <option value="1">Lunes</option>
+            <option value="2">Martes</option>
+            <option value="3">Miércoles</option>
+            <option value="4">Jueves</option>
+            <option value="5">Viernes</option>
+            <option value="6">Sábado</option>
+          </select>
+        </div>
+        <div class="field">
+          <label class="field-label">Aula / Salón</label>
+          <input class="field-input" id="mh-aula" type="text" placeholder="Ej. A-103">
+        </div>
+        <div class="field">
+          <label class="field-label">Hora inicio <span class="req">*</span></label>
+          <select class="field-select" id="mh-inicio">
+            <option value="">—</option>
+          </select>
+        </div>
+        <div class="field">
+          <label class="field-label">Hora fin <span class="req">*</span></label>
+          <select class="field-select" id="mh-fin">
+            <option value="">—</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary btn-sm" onclick="closeModal('modal-horario')">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="guardarHorario()"><i class="fas fa-floppy-disk"></i> Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL CONFIRM ===== -->
+<div class="modal-ov" id="modal-confirm">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 id="mc-title">Confirmar</h3>
+      <button class="modal-close" onclick="closeModal('modal-confirm')">&#10005;</button>
+    </div>
+    <div class="modal-body"><p id="mc-msg"></p></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary btn-sm" onclick="closeModal('modal-confirm')">Cancelar</button>
+      <button class="btn btn-danger btn-sm" id="mc-ok">Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script src="js/app.js"></script>
+<script>
+/* ── Estado ── */
+let _tab        = 'maestros';
+let _vista      = 'grid';
+let _maestros   = [];
+let _materias   = [];
+let _horarios   = [];
+let _grupos     = [];
+let _editMaestro = null;
+let _editMateria = null;
+let _editHorario = null;
+
+const DIAS_NOM = ['','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+const DIAS_CORTO = ['','Lun','Mar','Mié','Jue','Vie','Sáb'];
+const HORAS = ['07:00','08:00','09:00','10:00','11:00','12:00','13:00',
+               '14:00','15:00','16:00','17:00','18:00','19:00','20:00','21:00'];
+
+/* ── Tab switching ── */
+function setTab(t) {
+  _tab = t;
+  ['maestros','materias','horarios'].forEach(x => {
+    $('panel-' + x).style.display = x === t ? '' : 'none';
+    $('tab-' + x).classList.toggle('active', x === t);
+  });
+}
+
+function setVista(v) {
+  _vista = v;
+  $('vista-grid').style.display  = v === 'grid'  ? '' : 'none';
+  $('vista-lista').style.display = v === 'lista' ? '' : 'none';
+  $('vbtn-grid').classList.toggle('active', v === 'grid');
+  $('vbtn-lista').classList.toggle('active', v === 'lista');
+  renderHorarios();
+}
+
+/* ═══════════════════════════════
+   MAESTROS
+═══════════════════════════════ */
+function renderMaestros() {
+  const q = ($('mq').value || '').toLowerCase();
+  const fil = q
+    ? _maestros.filter(m => (m.nombre||'').toLowerCase().includes(q) ||
+                             (m.especialidad||'').toLowerCase().includes(q))
+    : _maestros;
+  const tbody = $('tbody-maestros');
+  if (!fil.length) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--text-muted)">
+      Sin maestros${q ? ' que coincidan' : ' registrados'}.
+    </td></tr>`;
+    return;
+  }
+  tbody.innerHTML = fil.map(m => `
+    <tr>
+      <td><strong>${esc(m.nombre)}</strong></td>
+      <td>${esc(m.especialidad || '—')}</td>
+      <td>${esc(m.telefono || '—')}</td>
+      <td>${esc(m.correo || '—')}</td>
+      <td><span class="${m.activo !== false ? 'badge-si' : 'badge-no'}">${m.activo !== false ? 'Activo' : 'Inactivo'}</span></td>
+      <td>
+        <button class="btn-sm-tbl" onclick="editarMaestro(${m.id})"><i class="fas fa-pen"></i></button>
+        <button class="btn-sm-tbl bst-red" onclick="borrarMaestro(${m.id})"><i class="fas fa-trash"></i></button>
+      </td>
+    </tr>`).join('');
+}
+
+function abrirMaestro(id) {
+  _editMaestro = id || null;
+  const m = id ? _maestros.find(x => x.id === id) : null;
+  $('mm-titulo').textContent = m ? 'Editar Maestro' : 'Nuevo Maestro';
+  sv('mm-nombre',      m?.nombre || '');
+  sv('mm-especialidad',m?.especialidad || '');
+  sv('mm-telefono',    m?.telefono || '');
+  sv('mm-correo',      m?.correo || '');
+  sv('mm-activo',      m?.activo === false ? 'false' : 'true');
+  openModal('modal-maestro');
+  setTimeout(() => $('mm-nombre').focus(), 80);
+}
+function editarMaestro(id) { abrirMaestro(id); }
+
+async function guardarMaestro() {
+  const nombre = $('mm-nombre').value.trim();
+  if (!nombre) { toast('El nombre es obligatorio.', 'warn'); return; }
+  try {
+    await saveMaestro({
+      id: _editMaestro,
+      nombre, especialidad: $('mm-especialidad').value.trim(),
+      telefono: $('mm-telefono').value.trim(),
+      correo:   $('mm-correo').value.trim(),
+      activo:   $('mm-activo').value !== 'false',
+    });
+    closeModal('modal-maestro');
+    toast('Maestro guardado.', 'ok');
+    await recargar();
+  } catch(e) { toast('Error: ' + e.message, 'err'); }
+}
+
+function borrarMaestro(id) {
+  const m = _maestros.find(x => x.id === id);
+  confirm2('Eliminar Maestro', `¿Eliminar al maestro "${m?.nombre}"?`, async () => {
+    try { await deleteMaestro(id); toast('Maestro eliminado.', 'ok'); await recargar(); }
+    catch(e) { toast('Error: ' + e.message, 'err'); }
+  });
+}
+
+/* ═══════════════════════════════
+   MATERIAS
+═══════════════════════════════ */
+function renderMaterias() {
+  const q = ($('matq').value || '').toLowerCase();
+  const fil = q
+    ? _materias.filter(m => (m.nombre||'').toLowerCase().includes(q) ||
+                             (m.clave||'').toLowerCase().includes(q) ||
+                             (m.grado||'').toLowerCase().includes(q))
+    : _materias;
+  const tbody = $('tbody-materias');
+  if (!fil.length) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--text-muted)">
+      Sin materias${q ? ' que coincidan' : ' registradas'}.
+    </td></tr>`;
+    return;
+  }
+  tbody.innerHTML = fil.map(m => `
+    <tr>
+      <td><code style="background:var(--bg);padding:2px 6px;border-radius:4px;font-size:12px">${esc(m.clave || '—')}</code></td>
+      <td><strong>${esc(m.nombre)}</strong></td>
+      <td>${esc(m.grado || '—')}</td>
+      <td style="color:var(--text-muted);font-size:12px">${esc(m.descripcion || '—')}</td>
+      <td>
+        <button class="btn-sm-tbl" onclick="editarMateria(${m.id})"><i class="fas fa-pen"></i></button>
+        <button class="btn-sm-tbl bst-red" onclick="borrarMateria(${m.id})"><i class="fas fa-trash"></i></button>
+      </td>
+    </tr>`).join('');
+}
+
+function abrirMateria(id) {
+  _editMateria = id || null;
+  const m = id ? _materias.find(x => x.id === id) : null;
+  $('mt-titulo').textContent = m ? 'Editar Materia' : 'Nueva Materia';
+  sv('mt-clave',       m?.clave || '');
+  sv('mt-nombre',      m?.nombre || '');
+  sv('mt-grado',       m?.grado || '');
+  sv('mt-descripcion', m?.descripcion || '');
+  openModal('modal-materia');
+  setTimeout(() => $('mt-nombre').focus(), 80);
+}
+function editarMateria(id) { abrirMateria(id); }
+
+async function guardarMateria() {
+  const nombre = $('mt-nombre').value.trim();
+  if (!nombre) { toast('El nombre es obligatorio.', 'warn'); return; }
+  try {
+    await saveMateria({
+      id: _editMateria,
+      nombre, clave: $('mt-clave').value.trim(),
+      grado: $('mt-grado').value.trim(),
+      descripcion: $('mt-descripcion').value.trim(),
+    });
+    closeModal('modal-materia');
+    toast('Materia guardada.', 'ok');
+    await recargar();
+  } catch(e) { toast('Error: ' + e.message, 'err'); }
+}
+
+function borrarMateria(id) {
+  const m = _materias.find(x => x.id === id);
+  confirm2('Eliminar Materia', `¿Eliminar la materia "${m?.nombre}"?`, async () => {
+    try { await deleteMateria(id); toast('Materia eliminada.', 'ok'); await recargar(); }
+    catch(e) { toast('Error: ' + e.message, 'err'); }
+  });
+}
+
+/* ═══════════════════════════════
+   HORARIOS
+═══════════════════════════════ */
+function getHorariosFiltrados() {
+  const gf = $('fil-grupo').value;
+  const mf = $('fil-maestro').value;
+  const tf = $('fil-materia').value;
+  return _horarios.filter(h =>
+    (!gf || String(h.grupo_id)   === gf) &&
+    (!mf || String(h.maestro_id) === mf) &&
+    (!tf || String(h.materia_id) === tf)
+  );
+}
+
+function renderHorarios() {
+  if (_vista === 'grid') renderGrid();
+  else renderLista();
+}
+
+function renderGrid() {
+  const fil = getHorariosFiltrados();
+  // Agrupar por día+hora
+  const map = {};
+  fil.forEach(h => {
+    const key = `${h.dia}-${h.hora_inicio}`;
+    if (!map[key]) map[key] = [];
+    map[key].push(h);
+  });
+
+  let html = `<table class="hgrid"><thead><tr>
+    <th>Hora</th>
+    ${DIAS_CORTO.slice(1).map(d => `<th>${d}</th>`).join('')}
+  </tr></thead><tbody>`;
+
+  HORAS.forEach(hora => {
+    html += `<tr><td class="hora-td">${hora}</td>`;
+    for (let dia = 1; dia <= 6; dia++) {
+      const entries = map[`${dia}-${hora}`] || [];
+      if (!entries.length) {
+        html += `<td class="cell-empty" onclick="abrirHorario(${dia},'${hora}')"></td>`;
+      } else {
+        html += `<td class="horario-entry-cell">`;
+        entries.forEach(h => {
+          const mat = _materias.find(m => m.id === h.materia_id);
+          const mae = _maestros.find(m => m.id === h.maestro_id);
+          const color = mat ? `hc${(mat.id - 1) % 10}` : 'hc0';
+          html += `<div class="he ${color}" onclick="editarHorario(${h.id})" title="Editar">
+            <span class="he-mat">${esc(mat?.nombre || 'Sin materia')}</span>
+            <span class="he-mae">${esc(mae?.nombre || '—')}</span>
+            <span class="he-info">${h.hora_inicio}–${h.hora_fin}${h.aula ? ' · ' + esc(h.aula) : ''}</span>
+          </div>`;
+        });
+        html += `</td>`;
+      }
+    }
+    html += `</tr>`;
+  });
+
+  html += `</tbody></table>`;
+  $('vista-grid').innerHTML = html;
+}
+
+function renderLista() {
+  const fil = getHorariosFiltrados();
+  const tbody = $('tbody-horarios');
+  if (!fil.length) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--text-muted)">Sin entradas de horario.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = fil.map(h => {
+    const mat = _materias.find(m => m.id === h.materia_id);
+    const mae = _maestros.find(m => m.id === h.maestro_id);
+    const grp = _grupos.find(g => g.id === h.grupo_id);
+    return `<tr>
+      <td><span class="dia-badge">${esc(DIAS_NOM[h.dia] || '?')}</span></td>
+      <td style="white-space:nowrap">${h.hora_inicio} – ${h.hora_fin}</td>
+      <td><strong>${esc(mat?.nombre || '—')}</strong>${mat?.clave ? ' <small style="color:var(--text-muted)">'+esc(mat.clave)+'</small>' : ''}</td>
+      <td>${esc(mae?.nombre || '—')}</td>
+      <td>${esc(grp?.nombre || '—')}</td>
+      <td>${esc(h.aula || '—')}</td>
+      <td>
+        <button class="btn-sm-tbl" onclick="editarHorario(${h.id})"><i class="fas fa-pen"></i></button>
+        <button class="btn-sm-tbl bst-red" onclick="borrarHorario(${h.id})"><i class="fas fa-trash"></i></button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function abrirHorario(diaPreset, horaPreset) {
+  _editHorario = null;
+  $('mh-titulo').textContent = 'Nuevo Horario';
+  sv('mh-grupo',   '');
+  sv('mh-materia', '');
+  sv('mh-maestro', '');
+  sv('mh-dia',     diaPreset ? String(diaPreset) : '');
+  sv('mh-aula',    '');
+  sv('mh-inicio',  horaPreset || '');
+  sv('mh-fin',     '');
+  openModal('modal-horario');
+}
+
+function editarHorario(id) {
+  const h = _horarios.find(x => x.id === id);
+  if (!h) return;
+  _editHorario = id;
+  $('mh-titulo').textContent = 'Editar Horario';
+  sv('mh-grupo',   h.grupo_id   ? String(h.grupo_id)   : '');
+  sv('mh-materia', h.materia_id ? String(h.materia_id) : '');
+  sv('mh-maestro', h.maestro_id ? String(h.maestro_id) : '');
+  sv('mh-dia',     String(h.dia));
+  sv('mh-aula',    h.aula || '');
+  sv('mh-inicio',  h.hora_inicio || '');
+  sv('mh-fin',     h.hora_fin || '');
+  openModal('modal-horario');
+}
+
+async function guardarHorario() {
+  const grupo   = $('mh-grupo').value;
+  const materia = $('mh-materia').value;
+  const dia     = $('mh-dia').value;
+  const inicio  = $('mh-inicio').value;
+  const fin     = $('mh-fin').value;
+  if (!grupo)   { toast('Selecciona un grupo.', 'warn'); return; }
+  if (!materia) { toast('Selecciona una materia.', 'warn'); return; }
+  if (!dia)     { toast('Selecciona el día.', 'warn'); return; }
+  if (!inicio)  { toast('Selecciona la hora de inicio.', 'warn'); return; }
+  if (!fin)     { toast('Selecciona la hora de fin.', 'warn'); return; }
+  if (inicio >= fin) { toast('La hora fin debe ser mayor que la hora inicio.', 'warn'); return; }
+  try {
+    await saveHorario({
+      id: _editHorario,
+      grupo_id:    grupo,
+      materia_id:  materia,
+      maestro_id:  $('mh-maestro').value || null,
+      dia, hora_inicio: inicio, hora_fin: fin,
+      aula: $('mh-aula').value.trim(),
+    });
+    closeModal('modal-horario');
+    toast('Horario guardado.', 'ok');
+    await recargar();
+  } catch(e) { toast('Error: ' + e.message, 'err'); }
+}
+
+function borrarHorario(id) {
+  const h = _horarios.find(x => x.id === id);
+  const mat = h ? _materias.find(m => m.id === h.materia_id) : null;
+  confirm2('Eliminar Horario',
+    `¿Eliminar la entrada de "${mat?.nombre || 'esta materia'}" del ${DIAS_NOM[h?.dia] || ''}?`,
+    async () => {
+      try { await deleteHorario(id); toast('Horario eliminado.', 'ok'); await recargar(); }
+      catch(e) { toast('Error: ' + e.message, 'err'); }
+    });
+}
+
+/* ── Helper: materias agrupadas por grado → <optgroup> ── */
+function buildMateriasOpts(placeholder) {
+  // Agrupar por grado (orden de inserción natural del servidor)
+  const grupos = {};
+  _materias.forEach(m => {
+    const g = m.grado || 'Sin clasificar';
+    if (!grupos[g]) grupos[g] = [];
+    grupos[g].push(m);
+  });
+  let html = `<option value="">${placeholder}</option>`;
+  Object.entries(grupos).forEach(([grado, mats]) => {
+    html += `<optgroup label="${esc(grado)}">`;
+    mats.forEach(m => {
+      html += `<option value="${m.id}">${esc(m.nombre)}${m.clave ? ' ('+esc(m.clave)+')' : ''}</option>`;
+    });
+    html += `</optgroup>`;
+  });
+  return html;
+}
+
+/* ── Poblar selects del modal horario ── */
+function poblarSelectsHorario() {
+  // Grupos
+  $('mh-grupo').innerHTML = '<option value="">— Seleccionar grupo —</option>' +
+    _grupos.map(g => `<option value="${g.id}">${esc(g.nombre)}</option>`).join('');
+  // Materias con optgroup por grado
+  $('mh-materia').innerHTML = buildMateriasOpts('— Seleccionar materia —');
+  // Maestros
+  $('mh-maestro').innerHTML = '<option value="">— Sin maestro —</option>' +
+    _maestros.filter(m => m.activo !== false).map(m => `<option value="${m.id}">${esc(m.nombre)}</option>`).join('');
+  // Horas
+  const horaOpts = HORAS.map(h => `<option value="${h}">${h}</option>`).join('');
+  $('mh-inicio').innerHTML = '<option value="">—</option>' + horaOpts;
+  $('mh-fin').innerHTML    = '<option value="">—</option>' + horaOpts;
+  // Filtros
+  $('fil-grupo').innerHTML = '<option value="">— Todos los grupos —</option>' +
+    _grupos.map(g => `<option value="${g.id}">${esc(g.nombre)}</option>`).join('');
+  $('fil-maestro').innerHTML = '<option value="">— Todos los maestros —</option>' +
+    _maestros.map(m => `<option value="${m.id}">${esc(m.nombre)}</option>`).join('');
+  $('fil-materia').innerHTML = buildMateriasOpts('— Todas las materias —');
+}
+
+/* ── Init ── */
+async function recargar() {
+  [_maestros, _materias, _horarios, _grupos] = await Promise.all([
+    getMaestros(), getMaterias(), getHorarios(), getGrupos()
+  ]);
+  renderMaestros();
+  renderMaterias();
+  poblarSelectsHorario();
+  renderHorarios();
+}
+
+(async () => {
+  try {
+    await recargar();
+  } catch(e) {
+    toast('Error al cargar datos: ' + e.message, 'err');
+  }
+})();
+</script>
+</body>
+</html>

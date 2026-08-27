@@ -270,6 +270,7 @@ button { cursor: pointer; }
   transition: border-color .18s, box-shadow .18s;
 }
 .field-input::placeholder { color: var(--text-light); }
+.field-input[data-mayus] { text-transform: uppercase; }
 .field-input:focus,
 .field-select:focus {
   border-color: var(--gold);

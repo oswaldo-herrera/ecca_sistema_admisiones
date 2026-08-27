@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
@@ -30,6 +30,7 @@
       <a href="grupos.html" class="sb-item"><i class="fas fa-people-group"></i><span>Grupos</span></a>
       <a href="sin-grupo.html" class="sb-item" style="display:none"><i class="fas fa-user-clock"></i><span>Sin Grupo</span></a>
       <a href="deportes.html" class="sb-item"><i class="fas fa-futbol"></i><span>Deportes</span></a>
+      <a href="horarios.html" class="sb-item"><i class="fas fa-calendar-week"></i><span>Horarios</span></a>
       <a href="documentos.html" class="sb-item"><i class="fas fa-folder-open"></i><span>Documentos</span></a>
       <a href="pagos.html" class="sb-item"><i class="fas fa-circle-dollar-to-slot"></i><span>Pagos</span></a>
       <a href="recibo.html" class="sb-item"><i class="fas fa-file-invoice"></i><span>Recibo</span></a>
@@ -94,7 +95,7 @@
           <div class="form-grid">
             <div class="field full">
               <label class="field-label">Nombre completo <span class="req">*</span></label>
-              <input class="field-input" id="f-nombre" type="text" placeholder="Apellido Paterno  Apellido Materno  Nombre(s)">
+              <input class="field-input" id="f-nombre" type="text" placeholder="Apellido Paterno  Apellido Materno  Nombre(s)" data-mayus>
             </div>
             <div class="field">
               <label class="field-label">CURP</label>
@@ -126,7 +127,7 @@
             </div>
             <div class="field full">
               <label class="field-label">Escuela de procedencia</label>
-              <input class="field-input" id="f-escuela" type="text" placeholder="Nombre de la institución de donde proviene">
+              <input class="field-input" id="f-escuela" type="text" placeholder="Nombre de la institución de donde proviene" data-mayus>
             </div>
           </div>
         </div>
@@ -142,11 +143,11 @@
           <div class="form-grid">
             <div class="field half">
               <label class="field-label">Nombre completo</label>
-              <input class="field-input" id="f-pnombre" type="text" placeholder="Nombre del padre o tutor">
+              <input class="field-input" id="f-pnombre" type="text" placeholder="Nombre del padre o tutor" data-mayus>
             </div>
             <div class="field">
               <label class="field-label">Ocupación</label>
-              <input class="field-input" id="f-pocup" type="text" placeholder="Ocupación">
+              <input class="field-input" id="f-pocup" type="text" placeholder="Ocupación" data-mayus>
             </div>
             <div class="field">
               <label class="field-label">Teléfono</label>
@@ -234,7 +235,7 @@
               </div>
               <div class="field full">
                 <label class="field-label">Objetivo principal</label>
-                <input class="field-input" id="f-objetivo" type="text" placeholder="¿Por qué desea estudiar aquí?">
+                <input class="field-input" id="f-objetivo" type="text" placeholder="¿Por qué desea estudiar aquí?" data-mayus>
               </div>
               <div class="field full">
                 <label class="field-label">¿Cómo se enteró?</label>
@@ -250,7 +251,7 @@
               </div>
               <div class="field full">
                 <label class="field-label">Referido por <span style="font-weight:400;color:var(--text-light)">(opcional — para comisión)</span></label>
-                <input class="field-input" id="f-referido" type="text" placeholder="Nombre de quien lo refirió">
+                <input class="field-input" id="f-referido" type="text" placeholder="Nombre de quien lo refirió" data-mayus>
               </div>
             </div>
           </div>
@@ -715,3 +716,4 @@ async function selResult(folio) {
 </script>
 </body>
 </html>
+

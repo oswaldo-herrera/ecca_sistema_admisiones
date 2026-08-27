@@ -1,4 +1,4 @@
-/* =============================================
+﻿/* =============================================
    ECCA — Supabase client + utilidades compartidas
    ============================================= */
 
@@ -7,43 +7,44 @@ const _sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 /* ---- Mappers DB ↔ JS ---- */
 function toDb(d) {
+  const u = s => sinAcento(s) || null; // mayusculas sin acentos
   return {
     folio:         d.folio,
-    nombre:        d.nombre        || null,
-    curp:          d.curp          || null,
+    nombre:        u(d.nombre),
+    curp:          d.curp          ? d.curp.toUpperCase().trim() : null,
     fecha_nac:     d.fechaNac      || null,
     edad:          d.edad          ? parseInt(d.edad) : null,
     tel:           d.tel           || null,
-    correo:        d.correo        || null,
-    escuela:       d.escuela       || null,
-    p_nombre:      d.pNombre       || null,
-    p_ocup:        d.pOcup         || null,
+    correo:        d.correo        ? d.correo.trim().toLowerCase() : null,
+    escuela:       u(d.escuela),
+    p_nombre:      u(d.pNombre),
+    p_ocup:        u(d.pOcup),
     p_tel:         d.pTel          || null,
-    p_correo:      d.pCorreo       || null,
+    p_correo:      d.pCorreo       ? d.pCorreo.trim().toLowerCase() : null,
     modalidad:     d.modalidad     || null,
     grupo_id:          d.grupoId        ? parseInt(d.grupoId)        : null,
     grupo_deporte_id:  d.grupoDeporteId ? parseInt(d.grupoDeporteId) : null,
     sexo:          d.sexo          || null,
     trabaja:       d.trabaja       || null,
-    deporte:       d.deporte       || null,
-    objetivo:      d.objetivo      || null,
+    deporte:       u(d.deporte),
+    objetivo:      u(d.objetivo),
     doc_acta:      !!d.docActa,
-    doc_acta_obs:  d.docActaObs    || null,
+    doc_acta_obs:  u(d.docActaObs),
     doc_curp:      !!d.docCurp,
-    doc_curp_obs:  d.docCurpObs    || null,
+    doc_curp_obs:  u(d.docCurpObs),
     doc_cert:      !!d.docCert,
-    doc_cert_obs:  d.docCertObs    || null,
+    doc_cert_obs:  u(d.docCertObs),
     doc_fotos:     !!d.docFotos,
-    doc_fotos_obs: d.docFotosObs   || null,
+    doc_fotos_obs: u(d.docFotosObs),
     doc_otro:      !!d.docOtro,
-    doc_otro_obs:  d.docOtroObs    || null,
+    doc_otro_obs:  u(d.docOtroObs),
     fecha_pago:    d.fechaPago     || null,
-    concepto:      d.concepto      || null,
+    concepto:      u(d.concepto),
     monto:         d.monto         ? parseFloat(d.monto) : null,
     fpago:         d.fpago         || null,
-    recibio:       d.recibio       || null,
+    recibio:       u(d.recibio),
     medio:         d.medio         || null,
-    referido_por:  d.referido      || null,
+    referido_por:  u(d.referido),
     exalumno:      !!d.exalumno,
     foto_url:      d.fotoUrl       || null,
   };
@@ -403,6 +404,12 @@ const sv = (id, v) => { const e = $(id); if (e) e.value = v ?? ''; };
 const gc = id => { const e = $(id); return e ? e.checked : false; };
 const sc = (id, v) => { const e = $(id); if (e) e.checked = !!v; };
 
+/* Convierte texto a MAYUSCULAS sin acentos ni diacríticos */
+function sinAcento(s) {
+  if (!s) return '';
+  return String(s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
+}
+
 function today()     { return new Date().toISOString().split('T')[0]; }
 function esc(s)      { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function fmtDate(d)  { if (!d) return ''; return new Date(d + 'T00:00:00').toLocaleDateString('es-MX', {day:'2-digit',month:'2-digit',year:'numeric'}); }
@@ -630,3 +637,77 @@ window.exportarCSV = async function() {
     toast('Error al exportar: ' + e.message, 'err');
   }
 };
+
+/* ---- Maestros ---- */
+async function getMaestros() {
+  const { data, error } = await _sb.from('maestros').select('*').order('nombre');
+  if (error) { console.error('getMaestros:', error); return []; }
+  return data || [];
+}
+async function saveMaestro(m) {
+  const p = { nombre: m.nombre, correo: m.correo||null, telefono: m.telefono||null,
+               especialidad: m.especialidad||null, activo: m.activo !== false };
+  if (m.id) p.id = parseInt(m.id);
+  const { data, error } = await _sb.from('maestros').upsert(p).select();
+  if (error) throw error;
+  return data?.[0];
+}
+async function deleteMaestro(id) {
+  const { error } = await _sb.from('maestros').delete().eq('id', id);
+  if (error) throw error;
+}
+
+/* ---- Materias ---- */
+async function getMaterias() {
+  const { data, error } = await _sb.from('materias').select('*').order('nombre');
+  if (error) { console.error('getMaterias:', error); return []; }
+  return data || [];
+}
+async function saveMateria(m) {
+  const p = { nombre: m.nombre, clave: m.clave||null, grado: m.grado||null,
+               descripcion: m.descripcion||null };
+  if (m.id) p.id = parseInt(m.id);
+  const { data, error } = await _sb.from('materias').upsert(p).select();
+  if (error) throw error;
+  return data?.[0];
+}
+async function deleteMateria(id) {
+  const { error } = await _sb.from('materias').delete().eq('id', id);
+  if (error) throw error;
+}
+
+/* ---- Horarios ---- */
+async function getHorarios() {
+  const { data, error } = await _sb.from('horarios').select('*').order('dia').order('hora_inicio');
+  if (error) { console.error('getHorarios:', error); return []; }
+  return data || [];
+}
+async function saveHorario(h) {
+  const p = {
+    maestro_id:  h.maestro_id  ? parseInt(h.maestro_id)  : null,
+    materia_id:  h.materia_id  ? parseInt(h.materia_id)  : null,
+    grupo_id:    h.grupo_id    ? parseInt(h.grupo_id)    : null,
+    dia:         parseInt(h.dia),
+    hora_inicio: h.hora_inicio,
+    hora_fin:    h.hora_fin,
+    aula:        h.aula || null,
+  };
+  if (h.id) p.id = parseInt(h.id);
+  const { data, error } = await _sb.from('horarios').upsert(p).select();
+  if (error) throw error;
+  return data?.[0];
+}
+async function deleteHorario(id) {
+  const { error } = await _sb.from('horarios').delete().eq('id', id);
+  if (error) throw error;
+}
+
+/* ---- Auto-mayúsculas en inputs con data-mayus ---- */
+document.addEventListener('input', e => {
+  const el = e.target;
+  if (!el.matches || !el.matches('[data-mayus]')) return;
+  const pos = el.selectionStart;
+  el.value = sinAcento(el.value);
+  try { el.setSelectionRange(pos, pos); } catch(_) {}
+});
+
