@@ -404,10 +404,15 @@ const sv = (id, v) => { const e = $(id); if (e) e.value = v ?? ''; };
 const gc = id => { const e = $(id); return e ? e.checked : false; };
 const sc = (id, v) => { const e = $(id); if (e) e.checked = !!v; };
 
-/* Convierte texto a MAYUSCULAS sin acentos ni diacríticos */
+/* Convierte texto a MAYUSCULAS sin acentos, conservando la Ñ */
 function sinAcento(s) {
   if (!s) return '';
-  return String(s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
+  return String(s)
+    .replace(/[ñÑ]/g, '\x00')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toUpperCase()
+    .replace(/\x00/g, 'Ñ');
 }
 
 function today()     { return new Date().toISOString().split('T')[0]; }

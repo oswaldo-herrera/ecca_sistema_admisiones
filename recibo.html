@@ -7,10 +7,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <link rel="stylesheet" href="css/styles.css">
 <style>
-  @media print {
-    .r-logo { width: 96px !important; height: 96px !important; }
-    .r-hdr  { grid-template-columns: 96px 1fr auto !important; }
-  }
+  #recibo-doc-2 { margin-top: 0; }
 </style>
 </head>
 <body>
@@ -112,87 +109,93 @@
         </div>
       </div>
 
-      <!-- Recibo -->
-      <div id="recibo-doc">
-        <div class="r-hdr">
-          <div class="r-logo" style="background:#fff;padding:4px">
-          <img src="images/ecca_logo.png" alt="Logo ECCA" style="width:100%;height:100%;object-fit:contain;display:block">
-        </div>
-          <div class="r-school">
-            <h1>ECCA PREPARATORIA DE LEÓN</h1>
-            <p>INCORPORADO A LA SECRETARÍA DE EDUCACIÓN DE GUANAJUATO</p>
-          </div>
-          <div class="r-fbox">
-            <span class="rfl">FOLIO</span>
-            <span class="rfn" id="r-folio">—</span>
-          </div>
-        </div>
-        <div class="r-title-bar">REGISTRO DE INSCRIPCIÓN</div>
+      <!-- Contenedor de las dos copias -->
+      <div id="print-pair">
 
-        <div class="r-body">
-
-          <div class="r-row">
-            <span class="r-lbl">Del Alumno:</span>
-            <span class="r-val" id="r-nombre"></span>
-          </div>
-          <div class="r-grid2">
-            <div class="r-row">
-              <span class="r-lbl">Nacimiento:</span>
-              <span class="r-val" id="r-fnac"></span>
+        <!-- Copia 1 (alumno) -->
+        <div id="recibo-doc">
+          <div class="r-hdr">
+            <div class="r-logo" style="background:#fff;padding:4px">
+              <img src="images/ecca_logo.png" alt="Logo ECCA" style="width:100%;height:100%;object-fit:contain;display:block">
             </div>
-            <div class="r-row">
-              <span class="r-lbl">Edad:</span>
-              <span class="r-val" id="r-edad"></span>
+            <div class="r-school">
+              <h1>ECCA PREPARATORIA DE LEÓN</h1>
+              <p>INCORPORADO A LA SECRETARÍA DE EDUCACIÓN DE GUANAJUATO</p>
+            </div>
+            <div class="r-fbox">
+              <span class="rfl">FOLIO</span>
+              <span class="rfn" id="r-folio">—</span>
             </div>
           </div>
-          <div class="r-row">
-            <span class="r-lbl">Padre o Tutor:</span>
-            <span class="r-val" id="r-padre"></span>
-          </div>
-          <div class="r-row">
-            <span class="r-lbl">Modalidad:</span>
-            <span class="r-val" id="r-modalidad"></span>
-          </div>
+          <div class="r-title-bar">REGISTRO DE INSCRIPCIÓN</div>
 
-          <div class="r-sec"><i class="fas fa-circle-dollar-to-slot"></i> DATOS DE PAGO</div>
-
-          <div class="r-row">
-            <span class="r-lbl">Concepto:</span>
-            <span class="r-val" id="r-concepto"></span>
-          </div>
-          <div class="r-grid2">
+          <div class="r-body">
             <div class="r-row">
-              <span class="r-lbl">Monto:</span>
-              <span class="r-val" id="r-monto"></span>
+              <span class="r-lbl">Del Alumno:</span>
+              <span class="r-val" id="r-nombre"></span>
+            </div>
+            <div class="r-grid2">
+              <div class="r-row">
+                <span class="r-lbl">Nacimiento:</span>
+                <span class="r-val" id="r-fnac"></span>
+              </div>
+              <div class="r-row">
+                <span class="r-lbl">Edad:</span>
+                <span class="r-val" id="r-edad"></span>
+              </div>
             </div>
             <div class="r-row">
-              <span class="r-lbl">Forma de Pago:</span>
-              <span class="r-val" id="r-fpago"></span>
-            </div>
-          </div>
-          <div class="r-grid2">
-            <div class="r-row">
-              <span class="r-lbl">Fecha:</span>
-              <span class="r-val" id="r-fecha-pago"></span>
+              <span class="r-lbl">Padre o Tutor:</span>
+              <span class="r-val" id="r-padre"></span>
             </div>
             <div class="r-row">
-              <span class="r-lbl">Recibió:</span>
-              <span class="r-val" id="r-recibio"></span>
+              <span class="r-lbl">Modalidad:</span>
+              <span class="r-val" id="r-modalidad"></span>
+            </div>
+
+            <div class="r-sec"><i class="fas fa-circle-dollar-to-slot"></i> DATOS DE PAGO</div>
+
+            <div class="r-row">
+              <span class="r-lbl">Concepto:</span>
+              <span class="r-val" id="r-concepto"></span>
+            </div>
+            <div class="r-grid2">
+              <div class="r-row">
+                <span class="r-lbl">Monto:</span>
+                <span class="r-val" id="r-monto"></span>
+              </div>
+              <div class="r-row">
+                <span class="r-lbl">Forma de Pago:</span>
+                <span class="r-val" id="r-fpago"></span>
+              </div>
+            </div>
+            <div class="r-grid2">
+              <div class="r-row">
+                <span class="r-lbl">Fecha:</span>
+                <span class="r-val" id="r-fecha-pago"></span>
+              </div>
+              <div class="r-row">
+                <span class="r-lbl">Recibió:</span>
+                <span class="r-val" id="r-recibio"></span>
+              </div>
+            </div>
+
+            <div class="r-sigs">
+              <div class="sig-blk"><div class="sig-line"></div><div class="sig-lbl">Padre o Tutor</div></div>
+              <div class="sig-blk"><div class="sig-line"></div><div class="sig-lbl">Alumno</div></div>
+              <div class="sig-blk"><div class="sig-line"></div><div class="sig-lbl">Asesor Educativo</div></div>
             </div>
           </div>
 
-          <div class="r-sigs">
-            <div class="sig-blk"><div class="sig-line"></div><div class="sig-lbl">Padre o Tutor</div></div>
-            <div class="sig-blk"><div class="sig-line"></div><div class="sig-lbl">Alumno</div></div>
-            <div class="sig-blk"><div class="sig-line"></div><div class="sig-lbl">Asesor Educativo</div></div>
+          <div class="r-footer">
+            CALLE INDEPENDENCIA No. 841 COL. SAN MIGUEL &nbsp;|&nbsp; TELS. 211-5392 y 211-5393 &nbsp;|&nbsp; LEÓN, GTO.
           </div>
+          <div class="copy-label">Copia Alumno</div>
+        </div><!-- /recibo-doc -->
 
-        </div>
+        <!-- Divisor (se rellena por JS con la segunda copia) -->
 
-        <div class="r-footer">
-          CALLE INDEPENDENCIA No. 841 COL. SAN MIGUEL &nbsp;|&nbsp; TELS. 211-5392 y 211-5393 &nbsp;|&nbsp; LEÓN, GTO.
-        </div>
-      </div><!-- /recibo-doc -->
+      </div><!-- /print-pair -->
 
     </div><!-- /recibo-page -->
   </div><!-- /main-content -->
@@ -215,10 +218,29 @@ function llenarRecibo(rec, pago) {
   $('r-fpago').textContent      = pago.forma_pago  || '';
   $('r-fecha-pago').textContent = pago.fecha_pago  ? fmtDate(pago.fecha_pago) : '';
   $('r-recibio').textContent    = pago.recibio     || '';
+
+  // Generar segunda copia (control interno)
+  const pair = $('print-pair');
+  const old2 = document.getElementById('recibo-doc-2');
+  const oldDiv = document.querySelector('.recibo-divider');
+  if (old2) old2.remove();
+  if (oldDiv) oldDiv.remove();
+
+  const divider = document.createElement('div');
+  divider.className = 'recibo-divider';
+  divider.textContent = '✂  Separar aquí  ✂';
+
+  const copy2 = $('recibo-doc').cloneNode(true);
+  copy2.id = 'recibo-doc-2';
+  const lbl2 = copy2.querySelector('.copy-label');
+  if (lbl2) lbl2.textContent = 'Copia Control Interno';
+
+  pair.appendChild(divider);
+  pair.appendChild(copy2);
 }
 
 function mostrarVacio() {
-  $('recibo-doc').style.display  = 'none';
+  $('print-pair').style.display  = 'none';
   $('empty-state').style.display = 'block';
 }
 
