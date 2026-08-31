@@ -373,7 +373,7 @@ function calcSaldo(cargos, pagos) {
   const confirmados = pagos.filter(p => p.estado === 'confirmado');
   const totalCargos = cargos.reduce((s, c) => s + (parseFloat(c.monto) || 0), 0);
   const totalPagado = confirmados.reduce((s, p) => s + (parseFloat(p.monto) || 0), 0);
-  return { totalCargos, totalPagado, saldo: totalCargos - totalPagado };
+  return { totalCargos, totalPagado, saldo: Math.max(totalCargos - totalPagado, 0) };
 }
 
 function estadoCargo(cargo, pagos) {

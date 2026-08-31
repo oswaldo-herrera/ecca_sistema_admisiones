@@ -71,9 +71,10 @@
     <div class="page-body">
 
       <!-- Tabs -->
-      <div style="display:flex;gap:8px;margin-bottom:14px">
+      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
         <button class="btn btn-primary btn-sm" id="tab-alumno" onclick="cambiarTab('alumno')"><i class="fas fa-user"></i> Por Alumno</button>
         <button class="btn btn-secondary btn-sm" id="tab-grupo" onclick="cambiarTab('grupo')"><i class="fas fa-people-group"></i> Por Grupo</button>
+        <button class="btn btn-secondary btn-sm" id="tab-corte" onclick="cambiarTab('corte')"><i class="fas fa-chart-bar"></i> Corte de Pagos</button>
       </div>
 
       <!-- ===== TAB: POR ALUMNO ===== -->
@@ -102,11 +103,11 @@
 
               <div class="saldo-box" id="pa-saldo-box">
                 <div>
-                  <div class="sb-lbl">Saldo pendiente</div>
+                  <div class="sb-lbl" id="pa-saldo-lbl">Saldo pendiente</div>
                   <div class="sb-val" id="pa-saldo-val">$0.00</div>
                 </div>
-                <div style="text-align:right;font-size:12px;color:var(--text-muted)">
-                  <div>Total cargado: <b id="pa-total-cargos">$0.00</b></div>
+                <div id="pa-detalle-saldo" style="text-align:right;font-size:12px;color:var(--text-muted);display:none">
+                  <div id="pa-row-cargos">Total cargado: <b id="pa-total-cargos">$0.00</b></div>
                   <div>Total pagado: <b id="pa-total-pagado">$0.00</b></div>
                 </div>
               </div>
@@ -167,6 +168,126 @@
         </div>
 
       </div>
+
+      <!-- ===== TAB: CORTE DE PAGOS ===== -->
+      <div id="panel-corte" style="display:none">
+
+        <!-- Tipo de corte -->
+        <div style="display:flex;gap:6px;margin-bottom:12px">
+          <button class="btn btn-primary btn-sm" id="ct-tipo-mensual" onclick="setCorteType('mensual')">
+            <i class="fas fa-calendar-days"></i> Mensual
+          </button>
+          <button class="btn btn-secondary btn-sm" id="ct-tipo-diario" onclick="setCorteType('diario')">
+            <i class="fas fa-calendar-day"></i> Diario
+          </button>
+        </div>
+
+        <!-- Filtros MENSUAL -->
+        <div class="card" id="ct-filtros-mensual" style="margin-bottom:14px">
+          <div class="card-body">
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:12px;align-items:end">
+              <div class="field">
+                <label class="field-label">Grupo</label>
+                <select class="field-select" id="ct-grupo">
+                  <option value="">Todos los grupos</option>
+                </select>
+              </div>
+              <div class="field">
+                <label class="field-label">Concepto</label>
+                <select class="field-select" id="ct-concepto">
+                  <option value="">Todos los conceptos</option>
+                  <option>Inscripción</option><option>Reinscripción</option>
+                  <option>Colegiatura</option><option>Examen</option>
+                  <option>Certificado</option><option>Constancia</option>
+                  <option>Credencial</option><option>Uniforme</option><option>Otro</option>
+                </select>
+              </div>
+              <div class="field">
+                <label class="field-label">Mes inicio</label>
+                <input class="field-input" type="month" id="ct-desde">
+              </div>
+              <div class="field">
+                <label class="field-label">Mes fin</label>
+                <input class="field-input" type="month" id="ct-hasta">
+              </div>
+              <button class="btn btn-primary btn-sm" onclick="generarCorte()" style="white-space:nowrap">
+                <i class="fas fa-magnifying-glass"></i> Generar
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filtros DIARIO -->
+        <div class="card" id="ct-filtros-diario" style="margin-bottom:14px;display:none">
+          <div class="card-body">
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:12px;align-items:end">
+              <div class="field">
+                <label class="field-label">Grupo</label>
+                <select class="field-select" id="cd-grupo">
+                  <option value="">Todos los grupos</option>
+                </select>
+              </div>
+              <div class="field">
+                <label class="field-label">Concepto</label>
+                <select class="field-select" id="cd-concepto">
+                  <option value="">Todos los conceptos</option>
+                  <option>Inscripción</option><option>Reinscripción</option>
+                  <option>Colegiatura</option><option>Examen</option>
+                  <option>Certificado</option><option>Constancia</option>
+                  <option>Credencial</option><option>Uniforme</option><option>Otro</option>
+                </select>
+              </div>
+              <div class="field">
+                <label class="field-label">Fecha inicio</label>
+                <input class="field-input" type="date" id="cd-desde">
+              </div>
+              <div class="field">
+                <label class="field-label">Fecha fin</label>
+                <input class="field-input" type="date" id="cd-hasta">
+              </div>
+              <button class="btn btn-primary btn-sm" onclick="generarCorteDiario()" style="white-space:nowrap">
+                <i class="fas fa-magnifying-glass"></i> Generar
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Resultado MENSUAL -->
+        <div id="ct-resultado" style="display:none">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+            <div id="ct-resumen-lbl" style="font-size:13px;color:var(--text-muted)"></div>
+            <button class="btn btn-secondary btn-sm" onclick="exportarCorteExcel()">
+              <i class="fas fa-file-excel"></i> Exportar Excel
+            </button>
+          </div>
+          <div class="stats-row" id="ct-stats" style="margin-bottom:14px"></div>
+          <div style="overflow-x:auto;border:1px solid var(--border);border-radius:var(--r-lg)">
+            <table class="dtbl" id="ct-tabla" style="min-width:600px">
+              <thead id="ct-thead"></thead>
+              <tbody id="ct-tbody"></tbody>
+              <tfoot id="ct-tfoot"></tfoot>
+            </table>
+          </div>
+        </div>
+
+        <!-- Resultado DIARIO -->
+        <div id="cd-resultado" style="display:none">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+            <div id="cd-resumen-lbl" style="font-size:13px;color:var(--text-muted)"></div>
+            <button class="btn btn-secondary btn-sm" onclick="exportarCorteDiarioExcel()">
+              <i class="fas fa-file-excel"></i> Exportar Excel
+            </button>
+          </div>
+          <div class="stats-row" id="cd-stats" style="margin-bottom:14px"></div>
+          <div id="cd-dias"></div>
+        </div>
+
+        <div id="ct-empty" style="display:none;text-align:center;padding:50px;color:var(--text-muted)">
+          <i class="fas fa-chart-bar" style="font-size:36px;opacity:.3;display:block;margin-bottom:12px"></i>
+          <p>Sin pagos en el rango seleccionado.</p>
+        </div>
+
+      </div><!-- /panel-corte -->
 
     </div><!-- /page-body -->
   </div><!-- /main-content -->
@@ -353,12 +474,390 @@ let _editingCargoId = null;
 
 /* ---- Tabs ---- */
 function cambiarTab(t) {
-  const esAlumno = t === 'alumno';
-  $('panel-alumno').style.display = esAlumno ? 'block' : 'none';
-  $('panel-grupo').style.display  = esAlumno ? 'none'  : 'block';
-  $('tab-alumno').className = 'btn btn-sm ' + (esAlumno ? 'btn-primary' : 'btn-secondary');
-  $('tab-grupo').className  = 'btn btn-sm ' + (esAlumno ? 'btn-secondary' : 'btn-primary');
-  if (!esAlumno) cargarGruposSelect();
+  ['alumno','grupo','corte'].forEach(k => {
+    $('panel-' + k).style.display = k === t ? 'block' : 'none';
+    $('tab-' + k).className = 'btn btn-sm ' + (k === t ? 'btn-primary' : 'btn-secondary');
+  });
+  if (t === 'grupo') cargarGruposSelect();
+  if (t === 'corte') iniciarCorte();
+}
+
+/* ========== CORTE DE PAGOS ========== */
+let _ctGrupos = [];
+
+async function iniciarCorte() {
+  if (_ctGrupos.length) return;
+  _ctGrupos = _grupos.length ? _grupos : await getGrupos();
+  const sel = $('ct-grupo');
+  _ctGrupos.forEach(g => {
+    const o = document.createElement('option');
+    o.value = g.id; o.textContent = g.nombre;
+    sel.appendChild(o);
+  });
+  // Defaults: mes actual y 3 meses atrás
+  const hoy = new Date();
+  const desde = new Date(hoy.getFullYear(), hoy.getMonth() - 2, 1);
+  $('ct-desde').value = desde.toISOString().slice(0,7);
+  $('ct-hasta').value = hoy.toISOString().slice(0,7);
+}
+
+function _mesesEntre(desdeStr, hastaStr) {
+  const meses = [];
+  const [dy, dm] = desdeStr.split('-').map(Number);
+  const [hy, hm] = hastaStr.split('-').map(Number);
+  let y = dy, m = dm;
+  while (y < hy || (y === hy && m <= hm)) {
+    meses.push(`${y}-${String(m).padStart(2,'0')}`);
+    m++; if (m > 12) { m = 1; y++; }
+  }
+  return meses;
+}
+
+const _MESES_ES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+function _lblMes(ym) {
+  const [y, m] = ym.split('-');
+  return _MESES_ES[parseInt(m) - 1] + ' ' + y;
+}
+
+async function generarCorte() {
+  const grupoId  = $('ct-grupo').value;
+  const concepto = $('ct-concepto').value;
+  const desde    = $('ct-desde').value;
+  const hasta    = $('ct-hasta').value;
+  if (!desde || !hasta) { toast('Selecciona el rango de meses.', 'warn'); return; }
+  if (desde > hasta) { toast('El mes inicio debe ser anterior al mes fin.', 'warn'); return; }
+
+  $('ct-resultado').style.display = 'none';
+  $('ct-empty').style.display = 'none';
+
+  try {
+    // 1. Obtener folios del grupo (o todos si no hay filtro)
+    let foliosAlumnos = [];
+    if (grupoId) {
+      const { data } = await _sb.from('inscripciones')
+        .select('folio, nombre, grupo_id')
+        .eq('grupo_id', parseInt(grupoId))
+        .order('nombre');
+      foliosAlumnos = data || [];
+    } else {
+      const { data } = await _sb.from('inscripciones')
+        .select('folio, nombre, grupo_id')
+        .not('nombre', 'is', null)
+        .order('nombre');
+      foliosAlumnos = data || [];
+    }
+
+    if (!foliosAlumnos.length) {
+      $('ct-empty').style.display = 'block'; return;
+    }
+
+    // 2. Obtener pagos en el rango de fechas
+    const desdeDate = desde + '-01';
+    const [hy, hm] = hasta.split('-').map(Number);
+    const hastaDate = hasta + '-' + String(new Date(hy, hm, 0).getDate()).padStart(2,'0');
+    const folios = foliosAlumnos.map(a => a.folio);
+
+    let q = _sb.from('pagos')
+      .select('folio, concepto, monto, fecha_pago, estado')
+      .in('folio', folios)
+      .gte('fecha_pago', desdeDate)
+      .lte('fecha_pago', hastaDate);
+    if (concepto) q = q.eq('concepto', concepto);
+
+    const { data: pagosData, error } = await q;
+    if (error) throw error;
+
+    const pagos = (pagosData || []).filter(p => p.estado === 'confirmado' || !p.estado);
+
+    // 3. Construir mapa folio → mes → total
+    const meses = _mesesEntre(desde, hasta);
+    const mapaAlumno = {};
+    pagos.forEach(p => {
+      const mes = (p.fecha_pago || '').slice(0,7);
+      if (!mapaAlumno[p.folio]) mapaAlumno[p.folio] = {};
+      mapaAlumno[p.folio][mes] = (mapaAlumno[p.folio][mes] || 0) + parseFloat(p.monto || 0);
+    });
+
+    // 4. Render tabla
+    _renderCorteTabla(foliosAlumnos, meses, mapaAlumno, concepto, grupoId);
+    $('ct-resultado').style.display = 'block';
+
+  } catch(e) { toast('Error al generar corte: ' + e.message, 'err'); }
+}
+
+function _renderCorteTabla(alumnos, meses, mapa, concepto, grupoId) {
+  const grupo = _ctGrupos.find(g => g.id === parseInt(grupoId));
+
+  // Label resumen
+  const lbl = (grupo ? grupo.nombre : 'Todos los grupos') +
+    (concepto ? ' · ' + concepto : ' · Todos los conceptos') +
+    ' · ' + _lblMes(meses[0]) + ' — ' + _lblMes(meses[meses.length - 1]);
+  $('ct-resumen-lbl').textContent = lbl;
+
+  // Stats
+  const totalGen = alumnos.reduce((s, a) =>
+    s + meses.reduce((s2, m) => s2 + (mapa[a.folio]?.[m] || 0), 0), 0);
+  const pagaron  = alumnos.filter(a =>
+    meses.some(m => (mapa[a.folio]?.[m] || 0) > 0)).length;
+  const noPag    = alumnos.length - pagaron;
+
+  $('ct-stats').innerHTML = `
+    <div class="stat-card">
+      <div class="stat-icon si-blue"><i class="fas fa-users"></i></div>
+      <div><div class="stat-val">${alumnos.length}</div><div class="stat-lbl">Alumnos</div></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon si-gold"><i class="fas fa-circle-check"></i></div>
+      <div><div class="stat-val">${pagaron}</div><div class="stat-lbl">Con pago</div></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon si-red"><i class="fas fa-circle-xmark"></i></div>
+      <div><div class="stat-val">${noPag}</div><div class="stat-lbl">Sin pago</div></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon si-purple"><i class="fas fa-circle-dollar-to-slot"></i></div>
+      <div><div class="stat-val">${fmtMoney(totalGen)}</div><div class="stat-lbl">Total recaudado</div></div>
+    </div>`;
+
+  // Thead
+  $('ct-thead').innerHTML = `<tr>
+    <th style="min-width:180px;position:sticky;left:0;background:var(--bg-card);z-index:1">Alumno</th>
+    ${meses.map(m => `<th style="text-align:center;white-space:nowrap">${_lblMes(m)}</th>`).join('')}
+    <th style="text-align:right;white-space:nowrap">Total</th>
+  </tr>`;
+
+  // Tbody
+  const totalesMes = meses.map(() => 0);
+  $('ct-tbody').innerHTML = alumnos.map(a => {
+    const rowTotal = meses.reduce((s, m, i) => {
+      const v = mapa[a.folio]?.[m] || 0;
+      totalesMes[i] += v;
+      return s + v;
+    }, 0);
+    return `<tr>
+      <td style="font-size:12.5px;font-weight:500;position:sticky;left:0;background:var(--bg-card)">${esc(a.nombre || a.folio)}</td>
+      ${meses.map(m => {
+        const v = mapa[a.folio]?.[m] || 0;
+        return `<td style="text-align:center;font-size:12px;${v > 0 ? 'color:#16a34a;font-weight:600' : 'color:var(--text-muted)'}">
+          ${v > 0 ? fmtMoney(v) : '—'}
+        </td>`;
+      }).join('')}
+      <td style="text-align:right;font-weight:700;font-size:12.5px">${rowTotal > 0 ? fmtMoney(rowTotal) : '—'}</td>
+    </tr>`;
+  }).join('');
+
+  // Tfoot totales
+  const totalTodos = totalesMes.reduce((s, v) => s + v, 0);
+  $('ct-tfoot').innerHTML = `<tr style="background:var(--bg-hover);font-weight:700">
+    <td style="position:sticky;left:0;background:var(--bg-hover)">TOTAL</td>
+    ${totalesMes.map(v => `<td style="text-align:center;font-size:12px">${v > 0 ? fmtMoney(v) : '—'}</td>`).join('')}
+    <td style="text-align:right">${fmtMoney(totalTodos)}</td>
+  </tr>`;
+}
+
+function exportarCorteExcel() {
+  if (typeof XLSX === 'undefined') {
+    toast('Cargando exportador...', 'ok');
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+    s.onload = _doExportCorte;
+    document.head.appendChild(s);
+  } else { _doExportCorte(); }
+}
+
+function _doExportCorte() {
+  const tabla = $('ct-tabla');
+  const wb = XLSX.utils.table_to_book(tabla, { sheet: 'Corte de Pagos' });
+  XLSX.writeFile(wb, 'corte_pagos.xlsx');
+}
+
+/* ========== CORTE DIARIO ========== */
+let _cdTipo = 'mensual';
+let _cdPagosRaw = [];
+
+function setCorteType(tipo) {
+  _cdTipo = tipo;
+  $('ct-tipo-mensual').className = 'btn btn-sm ' + (tipo === 'mensual' ? 'btn-primary' : 'btn-secondary');
+  $('ct-tipo-diario').className  = 'btn btn-sm ' + (tipo === 'diario'  ? 'btn-primary' : 'btn-secondary');
+  $('ct-filtros-mensual').style.display = tipo === 'mensual' ? '' : 'none';
+  $('ct-filtros-diario').style.display  = tipo === 'diario'  ? '' : 'none';
+  $('ct-resultado').style.display = 'none';
+  $('cd-resultado').style.display = 'none';
+  $('ct-empty').style.display = 'none';
+  // Copiar selección de grupo al filtro diario si ya se cargó
+  if (tipo === 'diario' && $('cd-grupo').options.length <= 1) {
+    _ctGrupos.forEach(g => {
+      const o = document.createElement('option');
+      o.value = g.id; o.textContent = g.nombre;
+      $('cd-grupo').appendChild(o);
+    });
+    const hoy = today();
+    $('cd-desde').value = hoy;
+    $('cd-hasta').value = hoy;
+  }
+}
+
+async function generarCorteDiario() {
+  const grupoId  = $('cd-grupo').value;
+  const concepto = $('cd-concepto').value;
+  const desde    = $('cd-desde').value;
+  const hasta    = $('cd-hasta').value;
+  if (!desde || !hasta) { toast('Selecciona el rango de fechas.', 'warn'); return; }
+  if (desde > hasta)    { toast('La fecha inicio debe ser anterior a la fecha fin.', 'warn'); return; }
+
+  $('cd-resultado').style.display = 'none';
+  $('ct-empty').style.display = 'none';
+
+  try {
+    // Obtener folios del grupo
+    let folios = null;
+    let alumnosMap = {};
+    if (grupoId) {
+      const { data } = await _sb.from('inscripciones')
+        .select('folio, nombre, grupo_id')
+        .eq('grupo_id', parseInt(grupoId));
+      (data || []).forEach(a => { alumnosMap[a.folio] = a.nombre; });
+      folios = Object.keys(alumnosMap);
+      if (!folios.length) { $('ct-empty').style.display = 'block'; return; }
+    } else {
+      const { data } = await _sb.from('inscripciones').select('folio, nombre');
+      (data || []).forEach(a => { alumnosMap[a.folio] = a.nombre; });
+    }
+
+    // Obtener pagos en el rango exacto de fechas
+    let q = _sb.from('pagos')
+      .select('folio, concepto, monto, fecha_pago, forma_pago, recibio, estado')
+      .gte('fecha_pago', desde)
+      .lte('fecha_pago', hasta)
+      .order('fecha_pago,folio');
+    if (folios) q = q.in('folio', folios);
+    if (concepto) q = q.eq('concepto', concepto);
+
+    const { data: pagosData, error } = await q;
+    if (error) throw error;
+
+    const pagos = (pagosData || []).filter(p => p.estado === 'confirmado' || !p.estado);
+    _cdPagosRaw = pagos.map(p => ({ ...p, _nombre: alumnosMap[p.folio] || p.folio }));
+
+    if (!_cdPagosRaw.length) { $('ct-empty').style.display = 'block'; return; }
+
+    _renderCorteDiario(desde, hasta, grupoId, concepto);
+    $('cd-resultado').style.display = 'block';
+
+  } catch(e) { toast('Error al generar corte: ' + e.message, 'err'); }
+}
+
+function _renderCorteDiario(desde, hasta, grupoId, concepto) {
+  const grupo = _ctGrupos.find(g => g.id === parseInt(grupoId));
+  const lbl = (grupo ? grupo.nombre : 'Todos los grupos') +
+    (concepto ? ' · ' + concepto : ' · Todos los conceptos') +
+    ' · ' + fmtDate(desde) + (desde !== hasta ? ' — ' + fmtDate(hasta) : '');
+  $('cd-resumen-lbl').textContent = lbl;
+
+  // Agrupar por día
+  const porDia = {};
+  _cdPagosRaw.forEach(p => {
+    const d = p.fecha_pago;
+    if (!porDia[d]) porDia[d] = [];
+    porDia[d].push(p);
+  });
+  const dias = Object.keys(porDia).sort();
+
+  // Stats globales
+  const totalGral  = _cdPagosRaw.reduce((s, p) => s + parseFloat(p.monto || 0), 0);
+  const alumnosSet = new Set(_cdPagosRaw.map(p => p.folio));
+  const totalTxn   = _cdPagosRaw.length;
+
+  $('cd-stats').innerHTML = `
+    <div class="stat-card">
+      <div class="stat-icon si-blue"><i class="fas fa-calendar-day"></i></div>
+      <div><div class="stat-val">${dias.length}</div><div class="stat-lbl">Día(s)</div></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon si-gold"><i class="fas fa-users"></i></div>
+      <div><div class="stat-val">${alumnosSet.size}</div><div class="stat-lbl">Alumnos</div></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon si-navy"><i class="fas fa-receipt"></i></div>
+      <div><div class="stat-val">${totalTxn}</div><div class="stat-lbl">Transacciones</div></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon si-purple"><i class="fas fa-circle-dollar-to-slot"></i></div>
+      <div><div class="stat-val">${fmtMoney(totalGral)}</div><div class="stat-lbl">Total recaudado</div></div>
+    </div>`;
+
+  // Un bloque por día
+  $('cd-dias').innerHTML = dias.map(dia => {
+    const filas = porDia[dia];
+    const totalDia = filas.reduce((s, p) => s + parseFloat(p.monto || 0), 0);
+
+    // Agrupar por alumno dentro del día
+    const porAlumno = {};
+    filas.forEach(p => {
+      if (!porAlumno[p.folio]) porAlumno[p.folio] = { nombre: p._nombre, pagos: [] };
+      porAlumno[p.folio].pagos.push(p);
+    });
+
+    return `
+    <div style="border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;margin-bottom:12px" class="cd-dia-bloque" data-fecha="${dia}">
+      <div style="background:var(--navy);color:#fff;padding:10px 16px;display:flex;justify-content:space-between;align-items:center">
+        <span style="font-weight:700;font-size:13px"><i class="fas fa-calendar-day"></i> ${fmtDate(dia)}</span>
+        <span style="font-weight:700;font-size:14px">${fmtMoney(totalDia)}</span>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="dtbl" style="margin:0;border:none">
+          <thead>
+            <tr>
+              <th>Alumno</th><th>Concepto</th><th>Forma de pago</th><th>Recibió</th>
+              <th style="text-align:right">Monto</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${filas.map(p => `
+              <tr>
+                <td style="font-size:12px">${esc(p._nombre)}</td>
+                <td style="font-size:12px">${esc(p.concepto || '—')}</td>
+                <td style="font-size:12px">${esc(p.forma_pago || '—')}</td>
+                <td style="font-size:12px">${esc(p.recibio || '—')}</td>
+                <td style="text-align:right;font-weight:600;color:#16a34a">${fmtMoney(parseFloat(p.monto||0))}</td>
+              </tr>`).join('')}
+          </tbody>
+          <tfoot>
+            <tr style="background:var(--bg-hover);font-weight:700">
+              <td colspan="4">Total del día</td>
+              <td style="text-align:right">${fmtMoney(totalDia)}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>`;
+  }).join('') + `
+    <div style="text-align:right;padding:12px 4px;font-size:14px;font-weight:700;color:var(--navy)">
+      TOTAL GENERAL: ${fmtMoney(totalGral)}
+    </div>`;
+}
+
+function exportarCorteDiarioExcel() {
+  if (typeof XLSX === 'undefined') {
+    toast('Cargando exportador...', 'ok');
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+    s.onload = _doExportDiario;
+    document.head.appendChild(s);
+  } else { _doExportDiario(); }
+}
+
+function _doExportDiario() {
+  // Construir hoja plana con todos los pagos
+  const rows = [['Fecha','Alumno','Folio','Concepto','Forma de pago','Recibió','Monto']];
+  _cdPagosRaw.forEach(p => {
+    rows.push([fmtDate(p.fecha_pago), p._nombre, p.folio, p.concepto||'', p.forma_pago||'', p.recibio||'', parseFloat(p.monto||0)]);
+  });
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols'] = [{wch:12},{wch:35},{wch:14},{wch:16},{wch:16},{wch:16},{wch:12}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Corte Diario');
+  XLSX.writeFile(wb, 'corte_diario.xlsx');
 }
 
 /* ---- Buscar alumno ---- */
@@ -409,10 +908,13 @@ async function refrescarAlumno() {
 
 function renderSaldo() {
   const { totalCargos, totalPagado, saldo } = calcSaldo(_paCargos, _paPagos);
-  $('pa-saldo-val').textContent = fmtMoney(saldo);
+  const alCorriente = saldo === 0;
+  $('pa-saldo-lbl').textContent = alCorriente ? 'Total pagado' : 'Saldo pendiente';
+  $('pa-saldo-val').textContent  = alCorriente ? fmtMoney(totalPagado) : fmtMoney(saldo);
   $('pa-total-cargos').textContent = fmtMoney(totalCargos);
   $('pa-total-pagado').textContent = fmtMoney(totalPagado);
-  $('pa-saldo-box').classList.toggle('al-corriente', saldo <= 0);
+  $('pa-detalle-saldo').style.display = totalCargos > 0 ? '' : 'none';
+  $('pa-saldo-box').classList.toggle('al-corriente', alCorriente);
 }
 
 function badgeEstado(estado) {
