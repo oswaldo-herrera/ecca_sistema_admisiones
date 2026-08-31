@@ -1,0 +1,817 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ECCA — Calificaciones</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="css/styles.css">
+<style>
+/* ── Tabs ── */
+.cal-tabs { display:flex; gap:4px; border-bottom:2px solid var(--border); margin-bottom:20px; }
+.cal-tab  { padding:9px 20px; font-size:13px; font-weight:600; color:var(--text-muted);
+            cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-2px;
+            transition:.15s; border-radius:var(--r-sm) var(--r-sm) 0 0; }
+.cal-tab:hover  { color:var(--navy); background:var(--bg-hover); }
+.cal-tab.active { color:var(--navy); border-bottom-color:var(--gold); }
+
+/* ── Filtros ── */
+.cal-filters { display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end; margin-bottom:18px; }
+.cal-filters .field { display:flex; flex-direction:column; gap:4px; }
+.cal-filters label { font-size:11px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:.4px; }
+.cal-filters select, .cal-filters input[type=text] {
+  height:36px; border:1px solid var(--border); border-radius:var(--r-sm);
+  padding:0 10px; font-size:13px; background:var(--bg-card); color:var(--text);
+  min-width:180px; }
+.cal-filters select:focus, .cal-filters input:focus { outline:none; border-color:var(--gold); }
+
+/* ── Tabla captura ── */
+.cap-table { width:100%; border-collapse:collapse; font-size:13px; }
+.cap-table th { background:var(--navy); color:#fff; padding:9px 12px; text-align:left;
+                font-size:11px; letter-spacing:.4px; white-space:nowrap; }
+.cap-table th.th-c { text-align:center; }
+.cap-table td { padding:7px 10px; border-bottom:1px solid var(--border); vertical-align:middle; }
+.cap-table tr:hover td { background:var(--bg-hover); }
+.cap-table .td-num { color:var(--text-muted); font-size:12px; width:36px; text-align:center; }
+.cap-table .td-folio { font-family:monospace; font-size:12px; color:var(--text-muted); white-space:nowrap; }
+.cap-table .td-nombre { font-weight:500; }
+.grade-input {
+  width:70px; text-align:center; border:1px solid var(--border); border-radius:var(--r-sm);
+  padding:5px 6px; font-size:14px; font-weight:600; background:var(--bg-card); color:var(--text);
+  transition:.15s; }
+.grade-input:focus { outline:none; border-color:var(--gold); background:#fffbeb; }
+.grade-input.aprobado { border-color:#22c55e; color:#15803d; }
+.grade-input.reprobado { border-color:#ef4444; color:#b91c1c; }
+.obs-input {
+  width:100%; border:1px solid var(--border); border-radius:var(--r-sm);
+  padding:5px 8px; font-size:12px; background:var(--bg-card); color:var(--text); }
+.obs-input:focus { outline:none; border-color:var(--gold); }
+.badge-saved { display:inline-block; padding:2px 8px; border-radius:10px;
+               background:#dcfce7; color:#15803d; font-size:10px; font-weight:700; }
+.badge-empty { display:inline-block; padding:2px 8px; border-radius:10px;
+               background:#f1f5f9; color:#94a3b8; font-size:10px; }
+
+/* ── Vista alumno ── */
+.alum-card { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--r-lg);
+             padding:16px 20px; display:flex; align-items:center; gap:16px; margin-bottom:18px; }
+.alum-avatar { width:48px; height:48px; border-radius:50%; background:var(--navy);
+               display:flex; align-items:center; justify-content:center;
+               font-size:18px; font-weight:700; color:var(--gold); flex-shrink:0; }
+.alum-info { flex:1; }
+.alum-nombre { font-size:16px; font-weight:700; color:var(--text); }
+.alum-meta { font-size:12px; color:var(--text-muted); margin-top:3px; }
+.alum-promedio { text-align:right; }
+.alum-prom-val { font-size:26px; font-weight:800; color:var(--navy); line-height:1; }
+.alum-prom-lbl { font-size:11px; color:var(--text-muted); margin-top:2px; }
+
+.calif-materia-blk { margin-bottom:14px; background:var(--bg-card);
+                     border:1px solid var(--border); border-radius:var(--r-lg); overflow:hidden; }
+.calif-materia-hdr { background:var(--navy); color:#fff; padding:8px 14px;
+                     display:flex; justify-content:space-between; align-items:center;
+                     font-size:12px; font-weight:700; letter-spacing:.3px; }
+.calif-materia-hdr .grado-tag { font-size:10px; color:rgba(255,255,255,.6); font-weight:400; }
+.calif-periodos-row { display:flex; }
+.calif-periodo-cell { flex:1; padding:10px 14px; border-right:1px solid var(--border); text-align:center; }
+.calif-periodo-cell:last-child { border-right:none; }
+.calif-periodo-lbl { font-size:10px; color:var(--text-muted); font-weight:600; text-transform:uppercase; letter-spacing:.3px; }
+.calif-periodo-val { font-size:20px; font-weight:700; margin-top:3px; }
+.calif-val-aprobado  { color:#15803d; }
+.calif-val-reprobado { color:#b91c1c; }
+.calif-val-vacio     { color:#cbd5e0; font-size:16px; }
+.calif-obs { font-size:11px; color:var(--text-muted); margin-top:2px; font-style:italic; }
+
+/* ── Vista grupo (matriz) ── */
+.matriz-wrap { overflow-x:auto; }
+.matriz-table { width:100%; border-collapse:collapse; font-size:12px; min-width:600px; }
+.matriz-table th { background:var(--navy); color:#fff; padding:8px 10px;
+                   text-align:center; white-space:nowrap; font-size:11px; letter-spacing:.3px; }
+.matriz-table th.th-nombre { text-align:left; min-width:180px; position:sticky; left:0; background:var(--navy); z-index:2; }
+.matriz-table td { padding:6px 10px; border-bottom:1px solid var(--border); text-align:center; white-space:nowrap; }
+.matriz-table td.td-nombre { text-align:left; font-weight:500; position:sticky; left:0; background:var(--bg-card); z-index:1; }
+.matriz-table tr:hover td { background:var(--bg-hover); }
+.matriz-table tr:hover td.td-nombre { background:var(--bg-hover); }
+.matriz-table .tr-prom td { font-weight:700; background:#f8fafc; font-size:11px; }
+.matriz-table .tr-prom td.td-nombre { font-weight:700; }
+.m-cell-ap  { color:#15803d; font-weight:600; }
+.m-cell-rep { color:#b91c1c; font-weight:600; }
+.m-cell-vac { color:#e2e8f0; }
+.m-prom-chip { display:inline-block; padding:2px 7px; border-radius:10px;
+               font-size:11px; font-weight:700; }
+.m-prom-ok  { background:#dcfce7; color:#15803d; }
+.m-prom-bad { background:#fee2e2; color:#b91c1c; }
+.m-prom-na  { background:#f1f5f9; color:#94a3b8; }
+
+/* ── Búsqueda alumno ── */
+.alum-search-wrap { position:relative; max-width:400px; margin-bottom:18px; }
+.alum-search-wrap input { width:100%; height:38px; border:1px solid var(--border);
+  border-radius:var(--r-sm); padding:0 12px 0 36px; font-size:13px;
+  background:var(--bg-card); color:var(--text); }
+.alum-search-wrap input:focus { outline:none; border-color:var(--gold); }
+.alum-search-wrap i { position:absolute; left:11px; top:50%; transform:translateY(-50%);
+  color:var(--text-muted); font-size:14px; }
+.alum-search-list { position:absolute; top:42px; left:0; right:0; background:var(--bg-card);
+  border:1px solid var(--border); border-radius:var(--r-sm); box-shadow:var(--sh-xl);
+  z-index:50; max-height:260px; overflow-y:auto; display:none; }
+.alum-search-list.open { display:block; }
+.alum-sl-item { padding:9px 14px; cursor:pointer; display:flex; gap:10px; align-items:center; }
+.alum-sl-item:hover { background:var(--bg-hover); }
+.alum-sl-folio { font-family:monospace; font-size:11px; color:var(--text-muted); }
+.alum-sl-name  { font-size:13px; font-weight:500; color:var(--text); }
+
+/* ── Estado vacío ── */
+.cal-empty { text-align:center; padding:50px 20px; color:var(--text-muted); }
+.cal-empty i { font-size:40px; display:block; margin-bottom:12px; opacity:.3; }
+.cal-empty p { font-size:14px; }
+
+/* ── Stats chips ── */
+.stat-chips { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px; }
+.stat-chip  { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--r-sm);
+              padding:8px 16px; font-size:12px; color:var(--text-muted); }
+.stat-chip strong { font-size:18px; font-weight:700; color:var(--text); display:block; line-height:1.1; }
+</style>
+</head>
+<body data-modulo="calificaciones">
+<div class="layout">
+
+  <!-- ===== SIDEBAR ===== -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-brand">
+      <div class="sb-logo" style="background:#fff;padding:3px">
+        <img src="images/ecca_logo.png" alt="Logo ECCA" style="width:100%;height:100%;object-fit:contain;display:block">
+      </div>
+      <div>
+        <div class="sb-brand-name">ECCA Prepa León</div>
+        <div class="sb-brand-sub">Sistema de Admisiones</div>
+      </div>
+    </div>
+    <nav class="sb-nav">
+      <div class="sb-group-label">Principal</div>
+      <a href="index.html" class="sb-item" data-modulo="inicio"><i class="fas fa-house"></i><span>Inicio</span></a>
+      <a href="formulario.html" class="sb-item" data-modulo="nueva-inscripcion"><i class="fas fa-user-plus"></i><span>Nueva Inscripción</span></a>
+      <div class="sb-group-label">Gestión</div>
+      <a href="base-datos.html" class="sb-item" data-modulo="base-datos"><i class="fas fa-table-list"></i><span>Base de Datos</span><span class="sb-badge" id="sb-badge">0</span></a>
+      <a href="grupos.html" class="sb-item" data-modulo="grupos"><i class="fas fa-people-group"></i><span>Grupos</span></a>
+      <a href="deportes.html" class="sb-item" data-modulo="deportes"><i class="fas fa-futbol"></i><span>Deportes</span></a>
+      <a href="horarios.html" class="sb-item" data-modulo="horarios"><i class="fas fa-calendar-week"></i><span>Horarios</span></a>
+      <a href="calificaciones.html" class="sb-item active"><i class="fas fa-star-half-stroke"></i><span>Calificaciones</span></a>
+      <a href="documentos.html" class="sb-item" data-modulo="documentos"><i class="fas fa-folder-open"></i><span>Documentos</span></a>
+      <a href="pagos.html" class="sb-item" data-modulo="pagos"><i class="fas fa-circle-dollar-to-slot"></i><span>Pagos</span></a>
+      <a href="recibo.html" class="sb-item" data-modulo="recibo"><i class="fas fa-file-invoice"></i><span>Recibo</span></a>
+      <a href="credencial.html" class="sb-item" data-modulo="credencial"><i class="fas fa-id-card"></i><span>Credencial</span></a>
+      <div class="sb-group-label">Administración</div>
+      <a href="bitacora.html" class="sb-item" data-modulo="bitacora"><i class="fas fa-clipboard-list"></i><span>Bitácora</span></a>
+      <a href="usuarios.html" class="sb-item" data-modulo="usuarios"><i class="fas fa-users-gear"></i><span>Usuarios</span></a>
+    </nav>
+    <div class="sb-footer">
+      <i class="fas fa-location-dot"></i> 5 de Febrero 628, Centro, León, Gto.<br>
+      Tel. 479 153 4007
+    </div>
+  </aside>
+  <div class="sidebar-overlay"></div>
+
+  <!-- ===== MAIN ===== -->
+  <div class="main-content">
+
+    <!-- Topbar -->
+    <header class="topbar">
+      <button class="topbar-hamburger" aria-label="Menú"><i class="fas fa-bars"></i></button>
+      <nav class="topbar-breadcrumb">
+        <a href="index.html"><i class="fas fa-house"></i></a>
+        <span class="sep">›</span>
+        <span class="current">Calificaciones</span>
+      </nav>
+      <div class="topbar-right">
+        <button class="btn btn-primary btn-sm" onclick="exportarGrupoExcel()" id="btn-export" style="display:none">
+          <i class="fas fa-file-excel"></i> Exportar
+        </button>
+      </div>
+    </header>
+
+    <!-- Page header -->
+    <div class="page-header">
+      <div>
+        <div class="page-title">Control de Calificaciones</div>
+        <div class="page-sub">Captura y consulta de calificaciones por materia, alumno y grupo</div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="cal-tabs">
+      <div class="cal-tab active" id="tab-btn-captura" onclick="setTab('captura')">
+        <i class="fas fa-pen-to-square"></i> Captura
+      </div>
+      <div class="cal-tab" id="tab-btn-alumno" onclick="setTab('alumno')">
+        <i class="fas fa-user"></i> Por Alumno
+      </div>
+      <div class="cal-tab" id="tab-btn-grupo" onclick="setTab('grupo')">
+        <i class="fas fa-people-group"></i> Por Grupo
+      </div>
+    </div>
+
+    <!-- ==================== TAB: CAPTURA ==================== -->
+    <div id="tab-captura">
+
+      <div class="cal-filters">
+        <div class="field">
+          <label>Grupo</label>
+          <select id="cap-grupo" onchange="onCapGrupoChange()">
+            <option value="">— Seleccione grupo —</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Materia</label>
+          <select id="cap-materia">
+            <option value="">— Seleccione materia —</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Período</label>
+          <select id="cap-periodo">
+            <option value="1er Parcial">1er Parcial</option>
+            <option value="2do Parcial">2do Parcial</option>
+            <option value="3er Parcial">3er Parcial</option>
+            <option value="Final">Final</option>
+            <option value="Extraordinario">Extraordinario</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Maestro (opcional)</label>
+          <select id="cap-maestro">
+            <option value="">— Sin asignar —</option>
+          </select>
+        </div>
+        <div class="field" style="justify-content:flex-end">
+          <button class="btn btn-primary btn-sm" onclick="cargarCaptura()">
+            <i class="fas fa-list"></i> Cargar Lista
+          </button>
+        </div>
+      </div>
+
+      <!-- Tabla de captura -->
+      <div id="cap-resultado">
+        <div class="cal-empty">
+          <i class="fas fa-pen-to-square"></i>
+          <p>Seleccione grupo, materia y período para cargar la lista de alumnos.</p>
+        </div>
+      </div>
+
+    </div><!-- /tab-captura -->
+
+    <!-- ==================== TAB: POR ALUMNO ==================== -->
+    <div id="tab-alumno" style="display:none">
+
+      <div class="alum-search-wrap">
+        <i class="fas fa-magnifying-glass"></i>
+        <input type="text" id="alum-q" placeholder="Buscar por nombre o folio..." oninput="buscarAlumnoCalif()" autocomplete="off">
+        <div class="alum-search-list" id="alum-list"></div>
+      </div>
+
+      <div id="alum-resultado">
+        <div class="cal-empty">
+          <i class="fas fa-user"></i>
+          <p>Busque un alumno para ver sus calificaciones.</p>
+        </div>
+      </div>
+
+    </div><!-- /tab-alumno -->
+
+    <!-- ==================== TAB: POR GRUPO ==================== -->
+    <div id="tab-grupo" style="display:none">
+
+      <div class="cal-filters">
+        <div class="field">
+          <label>Grupo</label>
+          <select id="gv-grupo">
+            <option value="">— Seleccione grupo —</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Período</label>
+          <select id="gv-periodo">
+            <option value="1er Parcial">1er Parcial</option>
+            <option value="2do Parcial">2do Parcial</option>
+            <option value="3er Parcial">3er Parcial</option>
+            <option value="Final">Final</option>
+            <option value="Extraordinario">Extraordinario</option>
+          </select>
+        </div>
+        <div class="field" style="justify-content:flex-end">
+          <button class="btn btn-primary btn-sm" onclick="cargarVistaGrupo()">
+            <i class="fas fa-table"></i> Ver Cuadro
+          </button>
+        </div>
+      </div>
+
+      <div id="gv-resultado">
+        <div class="cal-empty">
+          <i class="fas fa-people-group"></i>
+          <p>Seleccione grupo y período para ver el cuadro de calificaciones.</p>
+        </div>
+      </div>
+
+    </div><!-- /tab-grupo -->
+
+  </div><!-- /main-content -->
+</div><!-- /layout -->
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+<script src="js/config.js"></script>
+<script src="js/app.js"></script>
+<script>
+/* ────────────────────────────────────────────
+   ESTADO
+──────────────────────────────────────────── */
+let _grupos   = [];
+let _materias = [];
+let _maestros = [];
+let _allAlumnos = [];      // cache para búsqueda
+let _capGrupoId  = null;
+let _capAlumnos  = [];     // alumnos + calificaciones cargados en captura
+let _gvGrupoId   = null;
+let _alumnoSel   = null;   // alumno seleccionado en tab alumno
+
+/* ────────────────────────────────────────────
+   TABS
+──────────────────────────────────────────── */
+function setTab(tab) {
+  ['captura','alumno','grupo'].forEach(t => {
+    $('tab-' + t).style.display = t === tab ? '' : 'none';
+    $('tab-btn-' + t).classList.toggle('active', t === tab);
+  });
+  $('btn-export').style.display = tab === 'grupo' ? '' : 'none';
+}
+
+/* ────────────────────────────────────────────
+   INIT
+──────────────────────────────────────────── */
+(async function init() {
+  [_grupos, _materias, _maestros] = await Promise.all([getGrupos(), getMaterias(), getMaestros()]);
+
+  // Poblar selects de grupos (captura y vista grupo)
+  const grupoOpts = _grupos.map(g =>
+    `<option value="${g.id}">${esc(g.nombre)}${g.modalidad ? ' · ' + esc(g.modalidad) : ''}</option>`
+  ).join('');
+  $('cap-grupo').innerHTML = '<option value="">— Seleccione grupo —</option>' + grupoOpts;
+  $('gv-grupo').innerHTML  = '<option value="">— Seleccione grupo —</option>' + grupoOpts;
+
+  // Poblar selects de materias (captura)
+  const matOpts = _materias.map(m =>
+    `<option value="${m.id}">${esc(m.nombre)}${m.grado ? ' (' + esc(m.grado) + ')' : ''}</option>`
+  ).join('');
+  $('cap-materia').innerHTML = '<option value="">— Seleccione materia —</option>' + matOpts;
+
+  // Poblar select de maestros (captura)
+  const maeOpts = _maestros.map(m =>
+    `<option value="${m.id}">${esc(m.nombre)}</option>`
+  ).join('');
+  $('cap-maestro').innerHTML = '<option value="">— Sin asignar —</option>' + maeOpts;
+
+  refreshBadge();
+})();
+
+function onCapGrupoChange() {
+  _capGrupoId = gv('cap-grupo') || null;
+  $('cap-resultado').innerHTML = `<div class="cal-empty"><i class="fas fa-list"></i><p>Pulse "Cargar Lista" para ver los alumnos del grupo.</p></div>`;
+}
+
+/* ────────────────────────────────────────────
+   TAB CAPTURA
+──────────────────────────────────────────── */
+async function cargarCaptura() {
+  const grupoId   = parseInt(gv('cap-grupo'));
+  const materiaId = parseInt(gv('cap-materia'));
+  const periodo   = gv('cap-periodo');
+  if (!grupoId)   { toast('Seleccione un grupo.', 'warn'); return; }
+  if (!materiaId) { toast('Seleccione una materia.', 'warn'); return; }
+  if (!periodo)   { toast('Seleccione un período.', 'warn'); return; }
+
+  const cont = $('cap-resultado');
+  cont.innerHTML = `<div class="cal-empty"><i class="fas fa-spinner fa-spin" style="opacity:.5"></i><p>Cargando...</p></div>`;
+
+  try {
+    _capGrupoId = grupoId;
+    _capAlumnos = await getCalificacionesByCaptura(grupoId, materiaId, periodo);
+
+    if (!_capAlumnos.length) {
+      cont.innerHTML = `<div class="cal-empty"><i class="fas fa-user-slash"></i><p>No hay alumnos asignados a este grupo.</p></div>`;
+      return;
+    }
+
+    const materia = _materias.find(m => m.id === materiaId);
+    const grupo   = _grupos.find(g => g.id === grupoId);
+
+    // Contar ya calificados
+    const yaCalif = _capAlumnos.filter(a => a.calif && a.calif.calificacion !== null).length;
+
+    cont.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:10px">
+        <div>
+          <span style="font-weight:700;font-size:14px">${esc(grupo?.nombre || '')} — ${esc(materia?.nombre || '')} — ${esc(periodo)}</span>
+          <span style="color:var(--text-muted);font-size:12px;margin-left:10px">${_capAlumnos.length} alumnos · ${yaCalif} calificados</span>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="guardarTodas(${grupoId}, ${materiaId}, '${periodo}')">
+          <i class="fas fa-floppy-disk"></i> Guardar Todo
+        </button>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="cap-table">
+          <thead>
+            <tr>
+              <th class="th-c">#</th>
+              <th>Folio</th>
+              <th>Nombre</th>
+              <th class="th-c">Calificación (0-10)</th>
+              <th>Observaciones</th>
+              <th class="th-c">Estado</th>
+            </tr>
+          </thead>
+          <tbody id="cap-tbody">
+            ${_capAlumnos.map((a, i) => {
+              const val = a.calif?.calificacion !== null && a.calif?.calificacion !== undefined
+                ? a.calif.calificacion : '';
+              const obs = a.calif?.observaciones || '';
+              const ap  = val !== '' ? (parseFloat(val) >= 6 ? 'aprobado' : 'reprobado') : '';
+              const est = val !== '' ? (parseFloat(val) >= 6
+                ? '<span class="badge-saved">Aprobado</span>'
+                : '<span class="badge-saved" style="background:#fee2e2;color:#b91c1c">Reprobado</span>')
+                : '<span class="badge-empty">Sin calificación</span>';
+              return `
+              <tr id="cap-row-${a.folio.replace(/[^a-z0-9]/gi,'_')}">
+                <td class="td-num">${i + 1}</td>
+                <td class="td-folio">${esc(a.folio)}</td>
+                <td class="td-nombre">${esc(a.nombre || '(sin nombre)')}</td>
+                <td style="text-align:center">
+                  <input type="number" class="grade-input ${ap}" id="gi-${i}"
+                    data-folio="${esc(a.folio)}" data-idx="${i}"
+                    value="${esc(String(val))}" min="0" max="10" step="0.1"
+                    placeholder="—"
+                    oninput="onGradeInput(this)"
+                    onkeydown="navGrade(event, ${i}, ${_capAlumnos.length - 1})">
+                </td>
+                <td>
+                  <input type="text" class="obs-input" id="oi-${i}"
+                    data-folio="${esc(a.folio)}"
+                    value="${esc(obs)}" placeholder="Observación opcional">
+                </td>
+                <td style="text-align:center" id="cap-est-${i}">${est}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+      <div style="display:flex;justify-content:flex-end;margin-top:14px">
+        <button class="btn btn-primary" onclick="guardarTodas(${grupoId}, ${materiaId}, '${periodo}')">
+          <i class="fas fa-floppy-disk"></i> Guardar Todo
+        </button>
+      </div>`;
+  } catch(e) {
+    cont.innerHTML = `<div class="cal-empty"><i class="fas fa-circle-exclamation"></i><p>Error: ${esc(e.message)}</p></div>`;
+  }
+}
+
+function onGradeInput(el) {
+  const v = parseFloat(el.value);
+  el.classList.remove('aprobado','reprobado');
+  if (!isNaN(v)) {
+    if (v > 10) { el.value = 10; }
+    if (v < 0)  { el.value = 0; }
+    el.classList.add(parseFloat(el.value) >= 6 ? 'aprobado' : 'reprobado');
+  }
+  const idx = el.dataset.idx;
+  const est = $('cap-est-' + idx);
+  if (!est) return;
+  const vf = parseFloat(el.value);
+  if (isNaN(vf) || el.value === '') {
+    est.innerHTML = '<span class="badge-empty">Sin calificación</span>';
+  } else if (vf >= 6) {
+    est.innerHTML = '<span class="badge-saved">Aprobado</span>';
+  } else {
+    est.innerHTML = '<span class="badge-saved" style="background:#fee2e2;color:#b91c1c">Reprobado</span>';
+  }
+}
+
+function navGrade(e, idx, max) {
+  if (e.key === 'Enter' || e.key === 'ArrowDown') {
+    e.preventDefault();
+    const next = $('gi-' + (idx + 1));
+    if (next) { next.focus(); next.select(); }
+  }
+  if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    const prev = $('gi-' + (idx - 1));
+    if (prev) { prev.focus(); prev.select(); }
+  }
+}
+
+async function guardarTodas(grupoId, materiaId, periodo) {
+  const maestroId = parseInt(gv('cap-maestro')) || null;
+  const filas = [];
+  _capAlumnos.forEach((a, i) => {
+    const gInput = $('gi-' + i);
+    const oInput = $('oi-' + i);
+    if (!gInput) return;
+    filas.push({
+      folio: a.folio,
+      grupoId, materiaId, maestroId, periodo,
+      calificacion: gInput.value.trim(),
+      observaciones: oInput ? oInput.value.trim() : '',
+    });
+  });
+
+  const btn = document.querySelector('button[onclick^="guardarTodas"]');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...'; }
+
+  try {
+    await Promise.all(filas.map(f => saveCalificacion(f)));
+    toast(`${filas.length} calificaciones guardadas correctamente.`, 'ok');
+    logActividad('GUARDAR CALIFICACIONES', 'Calificaciones',
+      _grupos.find(g => g.id === grupoId)?.nombre || '',
+      _materias.find(m => m.id === materiaId)?.nombre + ' · ' + periodo);
+    // Recargar para actualizar estado
+    await cargarCaptura();
+  } catch(e) {
+    toast('Error al guardar: ' + e.message, 'err');
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-floppy-disk"></i> Guardar Todo'; }
+  }
+}
+
+/* ────────────────────────────────────────────
+   TAB ALUMNO
+──────────────────────────────────────────── */
+let _alumBusqTimer = null;
+
+async function buscarAlumnoCalif() {
+  const q = ($('alum-q').value || '').trim().toLowerCase();
+  const list = $('alum-list');
+  if (q.length < 2) { list.classList.remove('open'); return; }
+
+  if (!_allAlumnos.length) _allAlumnos = await getRecords();
+  const res = _allAlumnos.filter(r =>
+    (r.nombre || '').toLowerCase().includes(q) ||
+    (r.folio  || '').toLowerCase().includes(q)
+  ).slice(0, 20);
+
+  if (!res.length) {
+    list.innerHTML = '<div class="alum-sl-item" style="color:var(--text-muted)">Sin resultados.</div>';
+    list.classList.add('open');
+    return;
+  }
+  list.innerHTML = res.map(r => `
+    <div class="alum-sl-item" onclick="seleccionarAlumnoCalif('${esc(r.folio)}')">
+      <span class="alum-sl-folio">${esc(r.folio)}</span>
+      <span class="alum-sl-name">${esc(r.nombre || '(sin nombre)')}</span>
+    </div>`).join('');
+  list.classList.add('open');
+}
+
+document.addEventListener('click', e => {
+  const list = $('alum-list');
+  if (list && !list.contains(e.target) && e.target !== $('alum-q')) {
+    list.classList.remove('open');
+  }
+});
+
+async function seleccionarAlumnoCalif(folio) {
+  $('alum-list').classList.remove('open');
+  const rec = _allAlumnos.find(r => r.folio === folio) || await getRecord(folio);
+  if (!rec) return;
+  _alumnoSel = rec;
+  sv('alum-q', rec.nombre || rec.folio);
+  await renderAlumnoCalif(rec);
+}
+
+async function renderAlumnoCalif(rec) {
+  const cont = $('alum-resultado');
+  cont.innerHTML = `<div class="cal-empty"><i class="fas fa-spinner fa-spin" style="opacity:.5"></i><p>Cargando...</p></div>`;
+  try {
+    const cals = await getCalificacionesByAlumno(rec.folio);
+    const grupo  = rec.grupoId ? _grupos.find(g => g.id === rec.grupoId) : null;
+
+    // Calcular promedio general
+    const vals = cals.filter(c => c.calificacion !== null).map(c => parseFloat(c.calificacion));
+    const prom = vals.length ? (vals.reduce((a, b) => a + b, 0) / vals.length) : null;
+    const promStr = prom !== null ? prom.toFixed(1) : '—';
+    const promColor = prom !== null ? (prom >= 6 ? '#15803d' : '#b91c1c') : 'var(--text-muted)';
+
+    // Agrupar por materia
+    const byMateria = {};
+    cals.forEach(c => {
+      const key = c.materia_id || 'sin';
+      if (!byMateria[key]) byMateria[key] = { nombre: c.materias?.nombre || 'Sin materia', grado: c.materias?.grado || '', periodos: {} };
+      byMateria[key].periodos[c.periodo] = c;
+    });
+
+    const periodos = ['1er Parcial','2do Parcial','3er Parcial','Final','Extraordinario'];
+
+    const avatar = (rec.nombre || '?')[0].toUpperCase();
+    cont.innerHTML = `
+      <div class="alum-card">
+        <div class="alum-avatar">${esc(avatar)}</div>
+        <div class="alum-info">
+          <div class="alum-nombre">${esc(rec.nombre || '(sin nombre)')}</div>
+          <div class="alum-meta">
+            Folio: <strong>${esc(rec.folio)}</strong>
+            ${grupo ? ' &nbsp;·&nbsp; Grupo: <strong>' + esc(grupo.nombre) + '</strong>' : ''}
+            ${rec.modalidad ? ' &nbsp;·&nbsp; ' + esc(rec.modalidad) : ''}
+          </div>
+        </div>
+        <div class="alum-promedio">
+          <div class="alum-prom-val" style="color:${promColor}">${promStr}</div>
+          <div class="alum-prom-lbl">Promedio</div>
+        </div>
+      </div>
+
+      ${Object.keys(byMateria).length === 0
+        ? `<div class="cal-empty"><i class="fas fa-star-half-stroke"></i><p>Este alumno aún no tiene calificaciones registradas.</p></div>`
+        : Object.entries(byMateria).map(([key, mat]) => {
+            const periHtml = periodos.map(per => {
+              const c = mat.periodos[per];
+              if (!c) return '';
+              const v = c.calificacion;
+              const vStr = v !== null ? parseFloat(v).toFixed(1) : '—';
+              const cls  = v !== null ? (parseFloat(v) >= 6 ? 'calif-val-aprobado' : 'calif-val-reprobado') : 'calif-val-vacio';
+              return `
+                <div class="calif-periodo-cell">
+                  <div class="calif-periodo-lbl">${esc(per)}</div>
+                  <div class="calif-periodo-val ${cls}">${vStr}</div>
+                  ${c.observaciones ? `<div class="calif-obs">${esc(c.observaciones)}</div>` : ''}
+                </div>`;
+            }).join('');
+            if (!periHtml.replace(/\s/g,'')) return '';
+            // Calcular promedio de materia
+            const vMat = Object.values(mat.periodos).filter(c => c.calificacion !== null).map(c => parseFloat(c.calificacion));
+            const promMat = vMat.length ? (vMat.reduce((a,b)=>a+b,0)/vMat.length).toFixed(1) : null;
+            return `
+              <div class="calif-materia-blk">
+                <div class="calif-materia-hdr">
+                  <span>${esc(mat.nombre)}</span>
+                  <span class="grado-tag">${esc(mat.grado)}${promMat !== null ? ' &nbsp;·&nbsp; Promedio: <strong style="color:#fff">' + promMat + '</strong>' : ''}</span>
+                </div>
+                <div class="calif-periodos-row">${periHtml}</div>
+              </div>`;
+          }).join('')
+      }`;
+  } catch(e) {
+    cont.innerHTML = `<div class="cal-empty"><i class="fas fa-circle-exclamation"></i><p>Error: ${esc(e.message)}</p></div>`;
+  }
+}
+
+/* ────────────────────────────────────────────
+   TAB POR GRUPO (MATRIZ)
+──────────────────────────────────────────── */
+let _gvAlumnos = [];
+let _gvCals    = [];
+let _gvMaterias = [];
+
+async function cargarVistaGrupo() {
+  const grupoId = parseInt(gv('gv-grupo'));
+  const periodo = gv('gv-periodo');
+  if (!grupoId) { toast('Seleccione un grupo.', 'warn'); return; }
+
+  const cont = $('gv-resultado');
+  cont.innerHTML = `<div class="cal-empty"><i class="fas fa-spinner fa-spin" style="opacity:.5"></i><p>Cargando...</p></div>`;
+
+  try {
+    _gvGrupoId = grupoId;
+    [_gvAlumnos, _gvCals] = await Promise.all([
+      getAlumnosByGrupo(grupoId),
+      getCalificacionesByGrupo(grupoId, periodo),
+    ]);
+
+    if (!_gvAlumnos.length) {
+      cont.innerHTML = `<div class="cal-empty"><i class="fas fa-user-slash"></i><p>No hay alumnos en este grupo.</p></div>`;
+      return;
+    }
+
+    // Construir mapa: calMap[folio][materia_id] = calificacion
+    const calMap = {};
+    _gvAlumnos.forEach(a => { calMap[a.folio] = {}; });
+    _gvCals.forEach(c => {
+      if (!calMap[c.folio]) calMap[c.folio] = {};
+      calMap[c.folio][c.materia_id] = c.calificacion;
+    });
+
+    // Materias únicas con calificaciones
+    _gvMaterias = [];
+    const matIds = new Set(_gvCals.map(c => c.materia_id));
+    matIds.forEach(id => {
+      const m = _gvCals.find(c => c.materia_id === id);
+      _gvMaterias.push({ id, nombre: m?.materias?.nombre || 'Materia ' + id });
+    });
+    _gvMaterias.sort((a, b) => a.nombre.localeCompare(b.nombre));
+
+    const grupo = _grupos.find(g => g.id === grupoId);
+
+    // Stats
+    const totalCals = _gvCals.filter(c => c.calificacion !== null).length;
+    const aprobados = _gvCals.filter(c => c.calificacion !== null && parseFloat(c.calificacion) >= 6).length;
+
+    let html = `
+      <div class="stat-chips">
+        <div class="stat-chip"><strong>${_gvAlumnos.length}</strong>Alumnos</div>
+        <div class="stat-chip"><strong>${_gvMaterias.length}</strong>Materias con calificaciones</div>
+        <div class="stat-chip"><strong>${totalCals}</strong>Calificaciones capturadas</div>
+        ${totalCals ? `<div class="stat-chip"><strong>${Math.round(aprobados/totalCals*100)}%</strong>Aprobados</div>` : ''}
+      </div>`;
+
+    if (!_gvMaterias.length) {
+      html += `<div class="cal-empty"><i class="fas fa-star-half-stroke"></i><p>Aún no hay calificaciones registradas para este grupo y período.</p></div>`;
+      cont.innerHTML = html;
+      return;
+    }
+
+    // Promedios por columna (materia)
+    const promMat = {};
+    _gvMaterias.forEach(m => {
+      const vals = _gvAlumnos.map(a => calMap[a.folio]?.[m.id]).filter(v => v !== undefined && v !== null).map(Number);
+      promMat[m.id] = vals.length ? (vals.reduce((a,b)=>a+b,0)/vals.length) : null;
+    });
+
+    html += `
+      <div class="matriz-wrap">
+        <table class="matriz-table">
+          <thead>
+            <tr>
+              <th class="th-nombre">Alumno / Materia</th>
+              ${_gvMaterias.map(m => `<th title="${esc(m.nombre)}">${esc(m.nombre.length > 18 ? m.nombre.substring(0,16) + '…' : m.nombre)}</th>`).join('')}
+              <th>Promedio</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${_gvAlumnos.map(a => {
+              const vals = _gvMaterias.map(m => calMap[a.folio]?.[m.id]).filter(v => v !== undefined && v !== null).map(Number);
+              const promA = vals.length ? (vals.reduce((x,y)=>x+y,0)/vals.length) : null;
+              const promChip = promA !== null
+                ? `<span class="m-prom-chip ${promA >= 6 ? 'm-prom-ok' : 'm-prom-bad'}">${promA.toFixed(1)}</span>`
+                : `<span class="m-prom-chip m-prom-na">—</span>`;
+              return `
+                <tr>
+                  <td class="td-nombre">${esc(a.nombre || a.folio)}</td>
+                  ${_gvMaterias.map(m => {
+                    const v = calMap[a.folio]?.[m.id];
+                    if (v === undefined || v === null) return `<td class="m-cell-vac">—</td>`;
+                    const n = parseFloat(v);
+                    return `<td class="${n >= 6 ? 'm-cell-ap' : 'm-cell-rep'}">${n.toFixed(1)}</td>`;
+                  }).join('')}
+                  <td>${promChip}</td>
+                </tr>`;
+            }).join('')}
+          </tbody>
+          <tfoot>
+            <tr class="tr-prom">
+              <td class="td-nombre">Promedio grupo</td>
+              ${_gvMaterias.map(m => {
+                const p = promMat[m.id];
+                return p !== null
+                  ? `<td class="${p >= 6 ? 'm-cell-ap' : 'm-cell-rep'}">${p.toFixed(1)}</td>`
+                  : `<td class="m-cell-vac">—</td>`;
+              }).join('')}
+              <td>—</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>`;
+
+    cont.innerHTML = html;
+  } catch(e) {
+    cont.innerHTML = `<div class="cal-empty"><i class="fas fa-circle-exclamation"></i><p>Error: ${esc(e.message)}</p></div>`;
+  }
+}
+
+/* ────────────────────────────────────────────
+   EXPORTAR EXCEL (vista grupo)
+──────────────────────────────────────────── */
+async function exportarGrupoExcel() {
+  if (!_gvGrupoId || !_gvMaterias.length) { toast('Primero cargue el cuadro del grupo.', 'warn'); return; }
+  const grupo   = _grupos.find(g => g.id === _gvGrupoId);
+  const periodo = gv('gv-periodo');
+  try {
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet('Calificaciones');
+    ws.addRow(['Alumno', ..._gvMaterias.map(m => m.nombre), 'Promedio']);
+    ws.getRow(1).font = { bold: true };
+
+    const calMap = {};
+    _gvAlumnos.forEach(a => { calMap[a.folio] = {}; });
+    _gvCals.forEach(c => { if (calMap[c.folio]) calMap[c.folio][c.materia_id] = c.calificacion; });
+
+    _gvAlumnos.forEach(a => {
+      const vals = _gvMaterias.map(m => calMap[a.folio]?.[m.id] ?? null);
+      const nums = vals.filter(v => v !== null).map(Number);
+      const prom = nums.length ? (nums.reduce((x,y)=>x+y,0)/nums.length).toFixed(1) : '';
+      ws.addRow([a.nombre || a.folio, ...vals.map(v => v !== null ? parseFloat(v) : ''), prom]);
+    });
+
+    const buf = await wb.xlsx.writeBuffer();
+    const url = URL.createObjectURL(new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
+    const a = document.createElement('a'); a.href = url;
+    a.download = `Calificaciones-${(grupo?.nombre||'Grupo').replace(/\s+/g,'-')}-${periodo}.xlsx`;
+    a.click(); URL.revokeObjectURL(url);
+    toast('Archivo Excel generado.', 'ok');
+  } catch(e) { toast('Error al exportar: ' + e.message, 'err'); }
+}
+</script>
+</body>
+</html>

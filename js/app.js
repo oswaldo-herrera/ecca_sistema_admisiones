@@ -707,6 +707,61 @@ async function deleteHorario(id) {
   if (error) throw error;
 }
 
+/* ---- Calificaciones ---- */
+async function getCalificacionesByCaptura(grupoId, materiaId, periodo) {
+  const [alumnos, cals] = await Promise.all([
+    getAlumnosByGrupo(grupoId),
+    (async () => {
+      const { data, error } = await _sb.from('calificaciones')
+        .select('*')
+        .eq('grupo_id', grupoId)
+        .eq('materia_id', materiaId)
+        .eq('periodo', periodo);
+      if (error) throw error;
+      return data || [];
+    })()
+  ]);
+  const calMap = {};
+  cals.forEach(c => { calMap[c.folio] = c; });
+  return alumnos.map(a => ({ ...a, calif: calMap[a.folio] || null }));
+}
+
+async function saveCalificacion(d) {
+  const payload = {
+    folio: d.folio,
+    grupo_id: d.grupoId || null,
+    materia_id: d.materiaId,
+    maestro_id: d.maestroId || null,
+    periodo: d.periodo,
+    calificacion: (d.calificacion !== '' && d.calificacion !== null && d.calificacion !== undefined)
+      ? parseFloat(d.calificacion) : null,
+    observaciones: d.observaciones || null,
+    updated_at: new Date().toISOString(),
+  };
+  const { error } = await _sb.from('calificaciones')
+    .upsert(payload, { onConflict: 'folio,materia_id,periodo' });
+  if (error) throw error;
+}
+
+async function getCalificacionesByAlumno(folio) {
+  const { data, error } = await _sb.from('calificaciones')
+    .select('*, materias(nombre, grado), maestros(nombre), grupos(nombre)')
+    .eq('folio', folio)
+    .order('materia_id')
+    .order('periodo');
+  if (error) throw error;
+  return data || [];
+}
+
+async function getCalificacionesByGrupo(grupoId, periodo) {
+  const { data, error } = await _sb.from('calificaciones')
+    .select('folio, materia_id, calificacion, materias(nombre)')
+    .eq('grupo_id', grupoId)
+    .eq('periodo', periodo);
+  if (error) throw error;
+  return data || [];
+}
+
 /* ---- Bitácora de actividad ---- */
 async function logActividad(accion, modulo, referencia, detalle) {
   try {
@@ -721,6 +776,69 @@ async function logActividad(accion, modulo, referencia, detalle) {
     });
   } catch(_) { /* silencioso — no bloquea el flujo principal */ }
 }
+
+/* ---- Roles personalizados ---- */
+async function getRolesPersonalizados() {
+  const { data, error } = await _sb.from('roles_personalizados').select('*').order('id');
+  if (error) throw error;
+  return data || [];
+}
+async function saveRolPersonalizado(r) {
+  const payload = { nombre: r.nombre, color: r.color || '#1e3a5f', permisos: r.permisos || [], es_admin: r.esAdmin || false };
+  if (r.id) {
+    const { error } = await _sb.from('roles_personalizados').update(payload).eq('id', r.id);
+    if (error) throw error;
+  } else {
+    const { error } = await _sb.from('roles_personalizados').insert(payload);
+    if (error) throw error;
+  }
+}
+async function deleteRolPersonalizado(id) {
+  const { error } = await _sb.from('roles_personalizados').delete().eq('id', id);
+  if (error) throw error;
+}
+
+/* ---- Permisos del sistema: ocultar módulos según rol ---- */
+async function aplicarPermisosSistema() {
+  try {
+    const cache = sessionStorage.getItem('ecca_permisos_v2');
+    if (cache) {
+      const { permisos, esAdmin } = JSON.parse(cache);
+      if (!esAdmin) _ocultarModulos(permisos);
+      return;
+    }
+    const { data: { user } } = await _sb.auth.getUser();
+    if (!user) return;
+    const { data: perfil } = await _sb.from('perfiles')
+      .select('rol_id, roles_personalizados(permisos, es_admin)')
+      .eq('id', user.id).single();
+    if (!perfil?.rol_id || !perfil?.roles_personalizados) return;
+    const { permisos, es_admin: esAdmin } = perfil.roles_personalizados;
+    const packed = { permisos: permisos || [], esAdmin: esAdmin || false };
+    sessionStorage.setItem('ecca_permisos_v2', JSON.stringify(packed));
+    if (!packed.esAdmin) _ocultarModulos(packed.permisos);
+  } catch(_) {}
+}
+
+function _ocultarModulos(permisos) {
+  document.querySelectorAll('.sb-item[data-modulo]').forEach(el => {
+    if (!permisos.includes(el.dataset.modulo)) el.style.display = 'none';
+  });
+  const mod = document.body.dataset.modulo;
+  if (mod && !permisos.includes(mod)) window.location.replace('index.html');
+}
+
+function tienePermiso(key) {
+  try {
+    const cache = sessionStorage.getItem('ecca_permisos_v2');
+    if (!cache) return true;
+    const { permisos, esAdmin } = JSON.parse(cache);
+    if (esAdmin) return true;
+    return Array.isArray(permisos) && permisos.includes(key);
+  } catch(_) { return true; }
+}
+
+document.addEventListener('DOMContentLoaded', () => { aplicarPermisosSistema(); });
 
 /* ---- Auto-mayúsculas en inputs con data-mayus ---- */
 document.addEventListener('input', e => {

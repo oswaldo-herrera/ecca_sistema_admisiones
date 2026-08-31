@@ -41,7 +41,7 @@
   .sp-otro       { background:#f0fdf4; color:#14532d; }
 </style>
 </head>
-<body>
+<body data-modulo="deportes">
 <div class="layout">
 
   <!-- ===== SIDEBAR ===== -->
@@ -57,21 +57,22 @@
     </div>
     <nav class="sb-nav">
       <div class="sb-group-label">Principal</div>
-      <a href="index.html" class="sb-item"><i class="fas fa-house"></i><span>Inicio</span></a>
-      <a href="formulario.html" class="sb-item"><i class="fas fa-user-plus"></i><span>Nueva Inscripción</span></a>
+      <a href="index.html" class="sb-item" data-modulo="inicio"><i class="fas fa-house"></i><span>Inicio</span></a>
+      <a href="formulario.html" class="sb-item" data-modulo="nueva-inscripcion"><i class="fas fa-user-plus"></i><span>Nueva Inscripción</span></a>
       <div class="sb-group-label">Gestión</div>
-      <a href="base-datos.html" class="sb-item"><i class="fas fa-table-list"></i><span>Base de Datos</span><span class="sb-badge">0</span></a>
-      <a href="grupos.html" class="sb-item"><i class="fas fa-people-group"></i><span>Grupos</span></a>
+      <a href="base-datos.html" class="sb-item" data-modulo="base-datos"><i class="fas fa-table-list"></i><span>Base de Datos</span><span class="sb-badge">0</span></a>
+      <a href="grupos.html" class="sb-item" data-modulo="grupos"><i class="fas fa-people-group"></i><span>Grupos</span></a>
       <a href="sin-grupo.html" class="sb-item" style="display:none"><i class="fas fa-user-clock"></i><span>Sin Grupo</span></a>
       <a href="deportes.html" class="sb-item active"><i class="fas fa-futbol"></i><span>Deportes</span></a>
-      <a href="horarios.html" class="sb-item"><i class="fas fa-calendar-week"></i><span>Horarios</span></a>
-      <a href="documentos.html" class="sb-item"><i class="fas fa-folder-open"></i><span>Documentos</span></a>
-      <a href="pagos.html" class="sb-item"><i class="fas fa-circle-dollar-to-slot"></i><span>Pagos</span></a>
-      <a href="recibo.html" class="sb-item"><i class="fas fa-file-invoice"></i><span>Recibo</span></a>
-      <a href="credencial.html" class="sb-item"><i class="fas fa-id-card"></i><span>Credencial</span></a>
+      <a href="horarios.html" class="sb-item" data-modulo="horarios"><i class="fas fa-calendar-week"></i><span>Horarios</span></a>
+      <a href="calificaciones.html" class="sb-item" data-modulo="calificaciones"><i class="fas fa-star-half-stroke"></i><span>Calificaciones</span></a>
+      <a href="documentos.html" class="sb-item" data-modulo="documentos"><i class="fas fa-folder-open"></i><span>Documentos</span></a>
+      <a href="pagos.html" class="sb-item" data-modulo="pagos"><i class="fas fa-circle-dollar-to-slot"></i><span>Pagos</span></a>
+      <a href="recibo.html" class="sb-item" data-modulo="recibo"><i class="fas fa-file-invoice"></i><span>Recibo</span></a>
+      <a href="credencial.html" class="sb-item" data-modulo="credencial"><i class="fas fa-id-card"></i><span>Credencial</span></a>
       <div class="sb-group-label">Administración</div>
-      <a href="bitacora.html" class="sb-item"><i class="fas fa-clipboard-list"></i><span>Bitácora</span></a>
-      <a href="usuarios.html" class="sb-item"><i class="fas fa-users-gear"></i><span>Usuarios</span></a>
+      <a href="bitacora.html" class="sb-item" data-modulo="bitacora"><i class="fas fa-clipboard-list"></i><span>Bitácora</span></a>
+      <a href="usuarios.html" class="sb-item" data-modulo="usuarios"><i class="fas fa-users-gear"></i><span>Usuarios</span></a>
     </nav>
     <div class="sb-footer">
       <i class="fas fa-location-dot"></i> 5 de Febrero 628, Centro, León, Gto.<br>
@@ -304,9 +305,9 @@ function renderGrid() {
         <span style="font-size:12px;color:var(--text-light)">${g.cupo ? 'Cupo: ' + g.cupo : 'Sin límite'}</span>
       </div>
       <div class="dep-card-footer">
-        <button class="btn btn-secondary btn-sm" onclick="gestionarGrupoDeporte(${g.id})"><i class="fas fa-people-group"></i> Gestionar</button>
-        <button class="btn btn-secondary btn-sm" onclick="editarGrupoDeporte(${g.id})"><i class="fas fa-pen"></i> Editar</button>
-        <button class="btn btn-danger btn-sm" style="flex:0;padding:6px 10px" onclick="eliminarGrupoDeporte(${g.id})"><i class="fas fa-trash"></i></button>
+        ${tienePermiso('deportes-gestionar') ? `<button class="btn btn-secondary btn-sm" onclick="gestionarGrupoDeporte(${g.id})"><i class="fas fa-people-group"></i> Gestionar</button>` : ''}
+        ${tienePermiso('deportes-editar')    ? `<button class="btn btn-secondary btn-sm" onclick="editarGrupoDeporte(${g.id})"><i class="fas fa-pen"></i> Editar</button>` : ''}
+        ${tienePermiso('deportes-eliminar')  ? `<button class="btn btn-danger btn-sm" style="flex:0;padding:6px 10px" onclick="eliminarGrupoDeporte(${g.id})"><i class="fas fa-trash"></i></button>` : ''}
       </div>
     </div>`;
   }).join('');

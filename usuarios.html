@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
@@ -6,8 +6,51 @@
 <title>ECCA — Usuarios</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <link rel="stylesheet" href="css/styles.css">
+<style>
+/* ── Tabs ── */
+.usr-tabs { display:flex; gap:4px; border-bottom:2px solid var(--border); margin-bottom:20px; }
+.usr-tab  { padding:9px 20px; font-size:13px; font-weight:600; color:var(--text-muted);
+            cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-2px;
+            transition:.15s; border-radius:var(--r-sm) var(--r-sm) 0 0; }
+.usr-tab:hover  { color:var(--navy); background:var(--bg-hover); }
+.usr-tab.active { color:var(--navy); border-bottom-color:var(--gold); }
+
+/* ── Roles grid ── */
+.roles-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:14px; }
+.rol-card   { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--r-lg);
+              overflow:hidden; display:flex; flex-direction:column; }
+.rol-card-hdr { padding:14px 18px; display:flex; align-items:center; gap:12px; }
+.rol-dot    { width:14px; height:14px; border-radius:50%; flex-shrink:0; }
+.rol-nombre { font-weight:700; font-size:14px; color:var(--text); }
+.rol-admin-chip { font-size:10px; font-weight:700; padding:2px 8px; border-radius:10px;
+                  background:#fee2e2; color:#b91c1c; margin-left:6px; }
+.rol-body   { padding:8px 18px 14px; flex:1; }
+.rol-permisos-list { display:flex; flex-wrap:wrap; gap:4px; margin-top:6px; }
+.rol-perm-chip { font-size:10px; padding:2px 8px; border-radius:10px;
+                 background:var(--bg-hover); color:var(--text-muted); }
+.rol-footer { padding:10px 14px; border-top:1px solid var(--border);
+              display:flex; gap:6px; justify-content:flex-end; }
+
+/* ── Checkbox grid para permisos ── */
+.perm-group { margin-bottom:14px; }
+.perm-group-label { font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase;
+                    letter-spacing:.5px; margin-bottom:7px; display:block; }
+.perm-checks { display:grid; grid-template-columns:repeat(2,1fr); gap:6px; }
+.perm-check  { display:flex; align-items:center; gap:8px; cursor:pointer;
+               padding:6px 10px; border-radius:var(--r-sm); border:1px solid var(--border);
+               transition:.15s; font-size:13px; }
+.perm-check:hover   { border-color:var(--gold); background:var(--bg-hover); }
+.perm-check input   { width:15px; height:15px; cursor:pointer; accent-color:var(--navy); }
+.perm-check.checked { border-color:var(--navy); background:#f0f4ff; }
+
+/* ── Color swatches ── */
+.color-swatches { display:flex; gap:8px; flex-wrap:wrap; }
+.color-swatch { width:28px; height:28px; border-radius:50%; cursor:pointer;
+                border:3px solid transparent; transition:.15s; }
+.color-swatch.sel { border-color:#fff; box-shadow:0 0 0 2px var(--navy); }
+</style>
 </head>
-<body>
+<body data-modulo="usuarios">
 <div class="layout">
 
   <!-- ===== SIDEBAR ===== -->
@@ -23,21 +66,22 @@
     </div>
     <nav class="sb-nav">
       <div class="sb-group-label">Principal</div>
-      <a href="index.html" class="sb-item"><i class="fas fa-house"></i><span>Inicio</span></a>
-      <a href="formulario.html" class="sb-item"><i class="fas fa-user-plus"></i><span>Nueva Inscripción</span></a>
+      <a href="index.html" class="sb-item" data-modulo="inicio"><i class="fas fa-house"></i><span>Inicio</span></a>
+      <a href="formulario.html" class="sb-item" data-modulo="nueva-inscripcion"><i class="fas fa-user-plus"></i><span>Nueva Inscripción</span></a>
       <div class="sb-group-label">Gestión</div>
-      <a href="base-datos.html" class="sb-item"><i class="fas fa-table-list"></i><span>Base de Datos</span><span class="sb-badge">0</span></a>
-      <a href="grupos.html" class="sb-item"><i class="fas fa-people-group"></i><span>Grupos</span></a>
+      <a href="base-datos.html" class="sb-item" data-modulo="base-datos"><i class="fas fa-table-list"></i><span>Base de Datos</span><span class="sb-badge" id="sb-badge">0</span></a>
+      <a href="grupos.html" class="sb-item" data-modulo="grupos"><i class="fas fa-people-group"></i><span>Grupos</span></a>
       <a href="sin-grupo.html" class="sb-item" style="display:none"><i class="fas fa-user-clock"></i><span>Sin Grupo</span></a>
-      <a href="deportes.html" class="sb-item"><i class="fas fa-futbol"></i><span>Deportes</span></a>
-      <a href="horarios.html" class="sb-item"><i class="fas fa-calendar-week"></i><span>Horarios</span></a>
-      <a href="documentos.html" class="sb-item"><i class="fas fa-folder-open"></i><span>Documentos</span></a>
-      <a href="pagos.html" class="sb-item"><i class="fas fa-circle-dollar-to-slot"></i><span>Pagos</span></a>
-      <a href="recibo.html" class="sb-item"><i class="fas fa-file-invoice"></i><span>Recibo</span></a>
-      <a href="credencial.html" class="sb-item"><i class="fas fa-id-card"></i><span>Credencial</span></a>
+      <a href="deportes.html" class="sb-item" data-modulo="deportes"><i class="fas fa-futbol"></i><span>Deportes</span></a>
+      <a href="horarios.html" class="sb-item" data-modulo="horarios"><i class="fas fa-calendar-week"></i><span>Horarios</span></a>
+      <a href="calificaciones.html" class="sb-item" data-modulo="calificaciones"><i class="fas fa-star-half-stroke"></i><span>Calificaciones</span></a>
+      <a href="documentos.html" class="sb-item" data-modulo="documentos"><i class="fas fa-folder-open"></i><span>Documentos</span></a>
+      <a href="pagos.html" class="sb-item" data-modulo="pagos"><i class="fas fa-circle-dollar-to-slot"></i><span>Pagos</span></a>
+      <a href="recibo.html" class="sb-item" data-modulo="recibo"><i class="fas fa-file-invoice"></i><span>Recibo</span></a>
+      <a href="credencial.html" class="sb-item" data-modulo="credencial"><i class="fas fa-id-card"></i><span>Credencial</span></a>
       <div class="sb-group-label">Administración</div>
-      <a href="bitacora.html" class="sb-item"><i class="fas fa-clipboard-list"></i><span>Bitácora</span></a>
-      <a href="usuarios.html" class="sb-item"><i class="fas fa-users-gear"></i><span>Usuarios</span></a>
+      <a href="bitacora.html" class="sb-item" data-modulo="bitacora"><i class="fas fa-clipboard-list"></i><span>Bitácora</span></a>
+      <a href="usuarios.html" class="sb-item active" data-modulo="usuarios"><i class="fas fa-users-gear"></i><span>Usuarios</span></a>
     </nav>
     <div class="sb-footer">
       <i class="fas fa-location-dot"></i> 5 de Febrero 628, Centro, León, Gto.<br>
@@ -57,7 +101,7 @@
         <span class="sep">›</span>
         <span class="current">Usuarios</span>
       </nav>
-      <div class="topbar-right">
+      <div class="topbar-right" id="topbar-right-btns">
         <button class="btn btn-primary btn-sm" onclick="abrirCrearUsuario()">
           <i class="fas fa-user-plus"></i> Crear Usuario
         </button>
@@ -68,63 +112,93 @@
     <div class="page-header">
       <div>
         <div class="page-title">Gestión de Usuarios</div>
-        <div class="page-sub">Crea cuentas y asigna roles de acceso al sistema</div>
-      </div>
-      <div class="page-actions">
-        <button class="btn btn-primary btn-sm" onclick="abrirCrearUsuario()">
-          <i class="fas fa-user-plus"></i> Crear Usuario
-        </button>
+        <div class="page-sub">Crea cuentas, asigna roles y define los permisos de acceso al sistema</div>
       </div>
     </div>
 
-    <div class="page-body">
-
-      <!-- Stats -->
-      <div class="stats-row" id="stats-row">
-        <div class="stat-card">
-          <div class="stat-icon si-blue"><i class="fas fa-users"></i></div>
-          <div><div class="stat-val" id="st-total">0</div><div class="stat-lbl">Total Usuarios</div></div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon si-red"><i class="fas fa-user-shield"></i></div>
-          <div><div class="stat-val" id="st-admin">0</div><div class="stat-lbl">Administradores</div></div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon si-gold"><i class="fas fa-user-tie"></i></div>
-          <div><div class="stat-val" id="st-asesor">0</div><div class="stat-lbl">Asesores</div></div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon si-purple"><i class="fas fa-users-gear"></i></div>
-          <div><div class="stat-val" id="st-otros">0</div><div class="stat-lbl">Otros Roles</div></div>
-        </div>
+    <!-- Tabs -->
+    <div class="usr-tabs">
+      <div class="usr-tab active" id="tab-btn-usuarios" onclick="setTab('usuarios')">
+        <i class="fas fa-users"></i> Usuarios
       </div>
+      <div class="usr-tab" id="tab-btn-roles" onclick="setTab('roles')">
+        <i class="fas fa-shield-halved"></i> Roles y Permisos
+      </div>
+    </div>
 
-      <!-- Table -->
-      <div class="table-wrap">
-        <div class="tbl-toolbar">
-          <div class="search-box">
-            <i class="fas fa-magnifying-glass"></i>
-            <input type="text" id="usr-q" placeholder="Buscar por nombre o correo..." oninput="renderTabla()">
+    <!-- ==================== TAB USUARIOS ==================== -->
+    <div id="tab-usuarios">
+      <div class="page-body">
+
+        <!-- Stats -->
+        <div class="stats-row" id="stats-row">
+          <div class="stat-card">
+            <div class="stat-icon si-blue"><i class="fas fa-users"></i></div>
+            <div><div class="stat-val" id="st-total">0</div><div class="stat-lbl">Total Usuarios</div></div>
           </div>
-          <span class="tbl-count" id="usr-count"></span>
+          <div class="stat-card">
+            <div class="stat-icon si-red"><i class="fas fa-user-shield"></i></div>
+            <div><div class="stat-val" id="st-admin">0</div><div class="stat-lbl">Administradores</div></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon si-gold"><i class="fas fa-user-tie"></i></div>
+            <div><div class="stat-val" id="st-asesor">0</div><div class="stat-lbl">Asesores</div></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon si-purple"><i class="fas fa-users-gear"></i></div>
+            <div><div class="stat-val" id="st-otros">0</div><div class="stat-lbl">Otros Roles</div></div>
+          </div>
         </div>
-        <div style="overflow-x:auto">
-          <table class="dtbl">
-            <thead>
-              <tr>
-                <th>Nombre</th>
-                <th>Correo electrónico</th>
-                <th>Rol</th>
-                <th>Alta</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody id="usr-tbody"></tbody>
-          </table>
+
+        <!-- Table -->
+        <div class="table-wrap">
+          <div class="tbl-toolbar">
+            <div class="search-box">
+              <i class="fas fa-magnifying-glass"></i>
+              <input type="text" id="usr-q" placeholder="Buscar por nombre o correo..." oninput="renderTabla()">
+            </div>
+            <span class="tbl-count" id="usr-count"></span>
+          </div>
+          <div style="overflow-x:auto">
+            <table class="dtbl">
+              <thead>
+                <tr>
+                  <th>Nombre</th>
+                  <th>Correo electrónico</th>
+                  <th>Rol</th>
+                  <th>Alta</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="usr-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </div><!-- /tab-usuarios -->
+
+    <!-- ==================== TAB ROLES ==================== -->
+    <div id="tab-roles" style="display:none">
+      <div class="page-body">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;flex-wrap:wrap;gap:10px">
+          <div>
+            <p style="font-size:13px;color:var(--text-muted);margin:0">
+              Define qué módulos puede ver cada rol. <strong>Administrador</strong> siempre tiene acceso completo y no se puede restringir.
+            </p>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="abrirNuevoRol()">
+            <i class="fas fa-plus"></i> Nuevo Rol
+          </button>
+        </div>
+        <div class="roles-grid" id="roles-grid">
+          <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-muted)">
+            <i class="fas fa-spinner fa-spin" style="font-size:28px;color:var(--gold)"></i>
+          </div>
         </div>
       </div>
+    </div><!-- /tab-roles -->
 
-    </div><!-- /page-body -->
   </div><!-- /main-content -->
 </div><!-- /layout -->
 
@@ -138,7 +212,7 @@
     <div class="modal-body">
       <p style="font-size:12.5px;color:var(--text-muted);margin-bottom:16px;padding:10px 12px;background:var(--gold-pale);border-radius:var(--r-sm);border:1px solid var(--gold-border)">
         <i class="fas fa-circle-info"></i>
-        El nuevo usuario recibirá un correo de confirmación de Supabase. Comparte también la contraseña temporal que se mostrará al crear la cuenta.
+        El nuevo usuario recibirá un correo de confirmación de Supabase. Comparte también la contraseña temporal.
       </p>
       <div class="form-grid" style="margin-bottom:12px">
         <div class="field full">
@@ -152,12 +226,7 @@
         <div class="field">
           <label class="field-label">Rol <span class="req">*</span></label>
           <select class="field-select" id="cu-rol">
-            <option value="asesor">Asesor</option>
-            <option value="admin">Administrador</option>
-            <option value="director">Director</option>
-            <option value="profesor">Profesor</option>
-            <option value="control_escolar">Control Escolar</option>
-            <option value="ventas">Ventas / Inscripción</option>
+            <option value="">— Cargando roles —</option>
           </select>
         </div>
         <div class="field">
@@ -188,7 +257,7 @@
       <button class="modal-close" onclick="closeModal('modal-temp-pass')">&#10005;</button>
     </div>
     <div class="modal-body">
-      <p style="font-size:13px;margin-bottom:16px">La cuenta fue creada. El usuario recibirá un correo de Supabase para confirmar su cuenta. Comparte estos datos de acceso:</p>
+      <p style="font-size:13px;margin-bottom:16px">La cuenta fue creada. Comparte estos datos de acceso:</p>
       <div style="background:#f8fafc;border:1px solid var(--border);border-radius:var(--r-sm);padding:16px 18px;font-size:13px">
         <div style="margin-bottom:10px">
           <span style="color:var(--text-muted);font-size:11.5px;display:block;margin-bottom:2px">CORREO</span>
@@ -211,35 +280,7 @@
   </div>
 </div>
 
-<!-- ===== MODAL EDITAR ROL ===== -->
-<div class="modal-ov" id="modal-editar-rol">
-  <div class="modal-box" style="max-width:380px">
-    <div class="modal-header">
-      <h3><i class="fas fa-users-gear" style="color:var(--gold)"></i> Editar Rol</h3>
-      <button class="modal-close" onclick="closeModal('modal-editar-rol')">&#10005;</button>
-    </div>
-    <div class="modal-body">
-      <p style="font-size:13px;margin-bottom:12px">Usuario: <strong id="er-nombre"></strong></p>
-      <div class="field">
-        <label class="field-label">Nuevo rol</label>
-        <select class="field-select" id="er-rol">
-          <option value="asesor">Asesor</option>
-          <option value="admin">Administrador</option>
-          <option value="director">Director</option>
-          <option value="profesor">Profesor</option>
-          <option value="control_escolar">Control Escolar</option>
-          <option value="ventas">Ventas / Inscripción</option>
-        </select>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-secondary btn-sm" onclick="closeModal('modal-editar-rol')">Cancelar</button>
-      <button class="btn btn-primary btn-sm" onclick="guardarEditarRol()"><i class="fas fa-floppy-disk"></i> Guardar</button>
-    </div>
-  </div>
-</div>
-
-<!-- ===== MODAL EDITAR USUARIO (admin/director) ===== -->
+<!-- ===== MODAL EDITAR USUARIO ===== -->
 <div class="modal-ov" id="modal-editar-usuario">
   <div class="modal-box" style="max-width:420px">
     <div class="modal-header">
@@ -254,18 +295,52 @@
       <div class="field">
         <label class="field-label">Rol</label>
         <select class="field-select" id="eu-rol">
-          <option value="asesor">Asesor</option>
-          <option value="admin">Administrador</option>
-          <option value="director">Director</option>
-          <option value="profesor">Profesor</option>
-          <option value="control_escolar">Control Escolar</option>
-          <option value="ventas">Ventas / Inscripción</option>
+          <option value="">— Cargando roles —</option>
         </select>
+      </div>
+      <div id="eu-permisos-preview" style="margin-top:12px;display:none">
+        <p style="font-size:11px;color:var(--text-muted);margin-bottom:6px">Módulos que tendrá disponibles:</p>
+        <div id="eu-permisos-chips" style="display:flex;flex-wrap:wrap;gap:4px"></div>
       </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-secondary btn-sm" onclick="closeModal('modal-editar-usuario')">Cancelar</button>
       <button class="btn btn-primary btn-sm" onclick="guardarEditarUsuario()"><i class="fas fa-floppy-disk"></i> Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL CREAR/EDITAR ROL ===== -->
+<div class="modal-ov" id="modal-rol-form">
+  <div class="modal-box" style="max-width:500px">
+    <div class="modal-header">
+      <h3 id="rf-titulo"><i class="fas fa-shield-halved" style="color:var(--gold)"></i> Nuevo Rol</h3>
+      <button class="modal-close" onclick="closeModal('modal-rol-form')">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid" style="margin-bottom:14px">
+        <div class="field half">
+          <label class="field-label">Nombre del rol <span class="req">*</span></label>
+          <input class="field-input" id="rf-nombre" type="text" placeholder="Ej. Secretaría, Rector...">
+        </div>
+        <div class="field">
+          <label class="field-label">Color</label>
+          <div class="color-swatches" id="rf-colors">
+            <!-- generado por JS -->
+          </div>
+          <input type="hidden" id="rf-color" value="#1e3a5f">
+        </div>
+      </div>
+
+      <div style="margin-bottom:8px;font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px">
+        Módulos con acceso
+      </div>
+
+      <div id="rf-permisos"><!-- generado por JS --></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary btn-sm" onclick="closeModal('modal-rol-form')">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="guardarRol()"><i class="fas fa-floppy-disk"></i> Guardar Rol</button>
     </div>
   </div>
 </div>
@@ -294,35 +369,88 @@ const _sbReg = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
   auth: { persistSession: false, autoRefreshToken: false }
 });
 
-const ROL_MAP = {
-  admin:          'Admin',
-  director:       'Director',
-  asesor:         'Asesor',
-  profesor:       'Profesor',
-  control_escolar:'Control Escolar',
-  ventas:         'Ventas / Insc.',
-};
-const ROL_BADGE = {
-  admin:          'badge-red',
-  director:       'badge-blue',
-  asesor:         'badge-gold',
-  profesor:       'badge-green',
-  control_escolar:'badge-blue',
-  ventas:         'badge-gray',
-};
+/* ────────────────────────────────────────────
+   MÓDULOS DEL SISTEMA
+──────────────────────────────────────────── */
+const MODULOS_SISTEMA = [
+  { key: 'inicio',            label: 'Inicio',            grupo: 'Principal' },
+  { key: 'nueva-inscripcion', label: 'Nueva Inscripción', grupo: 'Principal' },
+  { key: 'base-datos',        label: 'Base de Datos',     grupo: 'Gestión' },
+  { key: 'grupos',            label: 'Grupos',            grupo: 'Gestión' },
+  { key: 'deportes',          label: 'Deportes',          grupo: 'Gestión' },
+  { key: 'horarios',          label: 'Horarios',          grupo: 'Gestión' },
+  { key: 'calificaciones',    label: 'Calificaciones',    grupo: 'Gestión' },
+  { key: 'documentos',        label: 'Documentos',        grupo: 'Gestión' },
+  { key: 'pagos',             label: 'Pagos',             grupo: 'Gestión' },
+  { key: 'recibo',            label: 'Recibo',            grupo: 'Gestión' },
+  { key: 'credencial',        label: 'Credencial',        grupo: 'Gestión' },
+  { key: 'bitacora',          label: 'Bitácora',          grupo: 'Administración' },
+  { key: 'usuarios',          label: 'Usuarios',          grupo: 'Administración' },
+  // Acciones dentro de páginas
+  { key: 'grupos-gestionar',   label: 'Grupos — Gestionar',   grupo: 'Acciones' },
+  { key: 'grupos-editar',      label: 'Grupos — Editar',      grupo: 'Acciones' },
+  { key: 'grupos-eliminar',    label: 'Grupos — Eliminar',    grupo: 'Acciones' },
+  { key: 'deportes-gestionar', label: 'Deportes — Gestionar', grupo: 'Acciones' },
+  { key: 'deportes-editar',    label: 'Deportes — Editar',    grupo: 'Acciones' },
+  { key: 'deportes-eliminar',  label: 'Deportes — Eliminar',  grupo: 'Acciones' },
+];
 
-let _usuarios  = [];
-let _editingId = null;
+const COLORES_ROL = [
+  '#dc2626','#ea580c','#d97706','#16a34a','#0891b2',
+  '#1e40af','#7c3aed','#be185d','#374151','#0f766e'
+];
+
+/* ────────────────────────────────────────────
+   ESTADO
+──────────────────────────────────────────── */
+let _usuarios    = [];
+let _roles       = [];
+let _editingId   = null;
+let _editingRolId = null;
 let _tempEmail = '', _tempPass = '';
 
-/* ---- Carga y render ---- */
+/* ────────────────────────────────────────────
+   TABS
+──────────────────────────────────────────── */
+function setTab(tab) {
+  ['usuarios','roles'].forEach(t => {
+    $('tab-' + t).style.display = t === tab ? '' : 'none';
+    $('tab-btn-' + t).classList.toggle('active', t === tab);
+  });
+  $('topbar-right-btns').innerHTML = tab === 'usuarios'
+    ? `<button class="btn btn-primary btn-sm" onclick="abrirCrearUsuario()"><i class="fas fa-user-plus"></i> Crear Usuario</button>`
+    : `<button class="btn btn-primary btn-sm" onclick="abrirNuevoRol()"><i class="fas fa-plus"></i> Nuevo Rol</button>`;
+}
+
+/* ────────────────────────────────────────────
+   INIT
+──────────────────────────────────────────── */
+(async function init() {
+  [_roles] = await Promise.all([getRolesPersonalizados()]);
+  poblarSelectsRol();
+  await Promise.all([loadUsuarios(), renderRoles()]);
+  refreshBadge();
+})();
+
+function poblarSelectsRol() {
+  const opts = _roles.map(r =>
+    `<option value="${r.id}" data-color="${esc(r.color)}">${esc(r.nombre)}${r.es_admin ? ' ★' : ''}</option>`
+  ).join('');
+  ['cu-rol','eu-rol'].forEach(id => {
+    const el = $(id);
+    if (el) el.innerHTML = '<option value="">— Seleccione rol —</option>' + opts;
+  });
+}
+
+/* ────────────────────────────────────────────
+   TAB USUARIOS
+──────────────────────────────────────────── */
 async function loadUsuarios() {
   $('usr-tbody').innerHTML = `<tr><td colspan="5"><div style="text-align:center;padding:40px">
     <i class="fas fa-spinner fa-spin" style="font-size:28px;color:var(--gold)"></i>
-    <p style="margin-top:12px;color:var(--text-muted)">Cargando usuarios...</p>
   </div></td></tr>`;
   try {
-    const { data, error } = await _sb.from('perfiles').select('*').order('created_at', { ascending: true });
+    const { data, error } = await _sb.from('perfiles').select('*, roles_personalizados(nombre,color,es_admin)').order('created_at', { ascending: true });
     if (error) throw error;
     _usuarios = data || [];
     renderStats();
@@ -334,29 +462,28 @@ async function loadUsuarios() {
 
 function renderStats() {
   $('st-total').textContent  = _usuarios.length;
-  $('st-admin').textContent  = _usuarios.filter(u => u.rol === 'admin').length;
+  $('st-admin').textContent  = _usuarios.filter(u => u.rol === 'admin' || u.roles_personalizados?.es_admin).length;
   $('st-asesor').textContent = _usuarios.filter(u => u.rol === 'asesor').length;
-  $('st-otros').textContent  = _usuarios.filter(u => !['admin','asesor'].includes(u.rol)).length;
+  $('st-otros').textContent  = _usuarios.filter(u => !['admin','asesor'].includes(u.rol) && !u.roles_personalizados?.es_admin).length;
 }
 
 function renderTabla() {
   const q = ($('usr-q').value || '').toLowerCase();
-  const esAdminDir = ['admin','director'].includes(sessionStorage.getItem('ecca_rol') || window._userRol || '');
   const fil = _usuarios.filter(u =>
-    !q ||
-    (u.nombre || '').toLowerCase().includes(q) ||
-    (u.email  || '').toLowerCase().includes(q)
+    !q || (u.nombre || '').toLowerCase().includes(q) || (u.email || '').toLowerCase().includes(q)
   );
   $('usr-count').textContent = `${fil.length} de ${_usuarios.length} usuario(s)`;
   if (!fil.length) {
-    $('usr-tbody').innerHTML = `<tr><td colspan="5"><div class="empty-state">
-      <i class="fas fa-users"></i>
-      <p>${_usuarios.length ? 'Sin coincidencias.' : 'Aún no hay usuarios registrados.'}</p>
-    </div></td></tr>`;
+    $('usr-tbody').innerHTML = `<tr><td colspan="5"><div class="empty-state"><i class="fas fa-users"></i>
+      <p>${_usuarios.length ? 'Sin coincidencias.' : 'Aún no hay usuarios.'}</p></div></td></tr>`;
     return;
   }
   $('usr-tbody').innerHTML = fil.map(u => {
     const inactivo = u.activo === false;
+    // Preferir rol personalizado, fallback al texto
+    const rolObj = u.roles_personalizados;
+    const rolNombre = rolObj?.nombre || u.rol || '—';
+    const rolColor  = rolObj?.color  || '#6b7280';
     return `
     <tr style="${inactivo ? 'opacity:.4' : ''}">
       <td style="font-weight:500">
@@ -364,139 +491,129 @@ function renderTabla() {
         ${inactivo ? '<span class="badge badge-gray" style="font-size:10px;margin-left:6px">Inactivo</span>' : ''}
       </td>
       <td style="font-size:12.5px;color:var(--text-muted)">${esc(u.email || '—')}</td>
-      <td><span class="badge ${ROL_BADGE[u.rol]||'badge-gray'}">${esc(ROL_MAP[u.rol]||u.rol)}</span></td>
+      <td>
+        <span style="display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:10px;font-size:12px;font-weight:600;color:#fff;background:${esc(rolColor)}">
+          ${esc(rolNombre)}
+        </span>
+      </td>
       <td style="font-size:12px;color:var(--text-muted)">${u.created_at ? fmtDate(u.created_at.split('T')[0]) : '—'}</td>
       <td>
         <div style="display:flex;gap:4px;flex-wrap:wrap">
-          ${esAdminDir ? `
-            <button class="btn-sm-tbl bst-gold" onclick="abrirEditarUsuario('${esc(u.id)}')"><i class="fas fa-pen"></i> Editar</button>
-            ${inactivo
-              ? `<button class="btn-sm-tbl bst-navy" onclick="reactivarUsuario('${esc(u.id)}')"><i class="fas fa-rotate-left"></i> Reactivar</button>`
-              : `<button class="btn-sm-tbl bst-red" onclick="desactivarUsuario('${esc(u.id)}','${esc(u.nombre||u.email||'')}')"><i class="fas fa-ban"></i> Desactivar</button>`
-            }
-          ` : `
-            <button class="btn-sm-tbl bst-gold" onclick="abrirEditarRol('${esc(u.id)}')"><i class="fas fa-pen"></i> Cambiar Rol</button>
-          `}
+          <button class="btn-sm-tbl bst-gold" onclick="abrirEditarUsuario('${esc(u.id)}')"><i class="fas fa-pen"></i> Editar</button>
+          ${inactivo
+            ? `<button class="btn-sm-tbl bst-navy" onclick="reactivarUsuario('${esc(u.id)}')"><i class="fas fa-rotate-left"></i> Reactivar</button>`
+            : `<button class="btn-sm-tbl bst-red" onclick="desactivarUsuario('${esc(u.id)}','${esc(u.nombre||u.email||'')}')"><i class="fas fa-ban"></i> Desactivar</button>`
+          }
         </div>
       </td>
     </tr>`;
   }).join('');
 }
 
-/* ---- Generar contraseña ---- */
+/* ── Crear usuario ── */
 function genPassword() {
   const c = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789@#$!';
   let p = '';
   for (let i = 0; i < 12; i++) p += c[Math.floor(Math.random() * c.length)];
   return p;
 }
-
 function regenerarPass() { sv('cu-pass', genPassword()); }
 
-/* ---- Modal crear usuario ---- */
 function abrirCrearUsuario() {
-  sv('cu-nombre', '');
-  sv('cu-email',  '');
-  sv('cu-rol',    'asesor');
-  sv('cu-pass',   genPassword());
+  sv('cu-nombre', ''); sv('cu-email', ''); sv('cu-pass', genPassword());
+  if (_roles.length) sv('cu-rol', _roles[0].id);
   $('cu-save').disabled = false;
   openModal('modal-crear');
   setTimeout(() => $('cu-nombre').focus(), 80);
 }
 
 async function guardarCrearUsuario() {
-  const nombre = gv('cu-nombre');
-  const email  = gv('cu-email');
-  const rol    = gv('cu-rol');
-  const pass   = gv('cu-pass');
-
+  const nombre  = gv('cu-nombre');
+  const email   = gv('cu-email');
+  const rolId   = gv('cu-rol');
+  const pass    = gv('cu-pass');
   if (!nombre) { toast('El nombre es obligatorio.', 'err'); $('cu-nombre').focus(); return; }
   if (!email)  { toast('El correo es obligatorio.',  'err'); $('cu-email').focus(); return; }
   if (pass.length < 8) { toast('La contraseña debe tener al menos 8 caracteres.', 'err'); return; }
-
+  const rolObj = _roles.find(r => r.id === parseInt(rolId));
   const btn = $('cu-save');
-  btn.disabled = true;
-  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creando...';
-
+  btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creando...';
   try {
-    const { data, error } = await _sbReg.auth.signUp({
-      email,
-      password: pass,
-      options: { data: { nombre, rol } }
-    });
+    const { data, error } = await _sbReg.auth.signUp({ email, password: pass, options: { data: { nombre, rol: rolObj?.nombre || '' } } });
     if (error) throw error;
-
-    // Asegurar que el perfil tiene email (el trigger lo hace, pero por si hay delay)
     if (data?.user) {
-      await _sb.from('perfiles').upsert({ id: data.user.id, nombre, rol, email }, { onConflict: 'id' });
+      await _sb.from('perfiles').upsert({
+        id: data.user.id, nombre, rol: rolObj?.nombre || '', email,
+        rol_id: rolId ? parseInt(rolId) : null,
+      }, { onConflict: 'id' });
     }
-
-    _tempEmail = email;
-    _tempPass  = pass;
+    _tempEmail = email; _tempPass = pass;
     closeModal('modal-crear');
-    $('tp-email').textContent = email;
-    $('tp-pass').textContent  = pass;
+    $('tp-email').textContent = email; $('tp-pass').textContent = pass;
     openModal('modal-temp-pass');
-    toast('Usuario creado. Se envió correo de confirmación.', 'ok');
+    toast('Usuario creado.', 'ok');
     await loadUsuarios();
   } catch(e) {
-    const msgs = {
-      'User already registered':                    'Ya existe una cuenta con ese correo.',
-      'Password should be at least 6 characters':   'La contraseña debe tener al menos 6 caracteres.',
-    };
+    const msgs = { 'User already registered': 'Ya existe una cuenta con ese correo.' };
     toast(msgs[e.message] || 'Error: ' + e.message, 'err');
   } finally {
-    btn.disabled = false;
-    btn.innerHTML = '<i class="fas fa-paper-plane"></i> Crear y enviar invitación';
+    btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane"></i> Crear y enviar invitación';
   }
 }
 
 function copiarAcceso() {
-  const txt = `Acceso al Sistema ECCA\nCorreo: ${_tempEmail}\nContraseña: ${_tempPass}\nURL: ${window.location.href.replace('usuarios.html','login.html')}`;
+  const txt = `Acceso al Sistema ECCA\nCorreo: ${_tempEmail}\nContraseña: ${_tempPass}`;
   navigator.clipboard.writeText(txt).then(() => toast('Datos copiados al portapapeles.', 'ok'));
 }
 
-/* ---- Modal editar rol ---- */
-function abrirEditarRol(id) {
-  _editingId = id;
-  const u = _usuarios.find(x => x.id === id);
-  if (!u) return;
-  $('er-nombre').textContent = u.nombre || u.email || id;
-  sv('er-rol', u.rol);
-  openModal('modal-editar-rol');
-}
-
-async function guardarEditarRol() {
-  const rol = gv('er-rol');
-  if (!rol) { toast('Seleccione un rol.', 'err'); return; }
-  try {
-    const { error } = await _sb.from('perfiles').update({ rol }).eq('id', _editingId);
-    if (error) throw error;
-    closeModal('modal-editar-rol');
-    toast('Rol actualizado correctamente.', 'ok');
-    await loadUsuarios();
-  } catch(e) {
-    toast('Error al actualizar el rol: ' + e.message, 'err');
-  }
-}
-
-/* ---- Admin/Director: editar usuario ---- */
+/* ── Editar usuario ── */
 function abrirEditarUsuario(id) {
   _editingId = id;
   const u = _usuarios.find(x => x.id === id);
   if (!u) return;
   sv('eu-nombre', u.nombre || '');
-  sv('eu-rol',    u.rol);
+  sv('eu-rol', u.rol_id || '');
+  mostrarPreviewPermisos(u.rol_id);
   openModal('modal-editar-usuario');
   setTimeout(() => $('eu-nombre').focus(), 80);
 }
 
+function mostrarPreviewPermisos(rolId) {
+  const rol = _roles.find(r => r.id === parseInt(rolId));
+  const prev = $('eu-permisos-preview');
+  const chips = $('eu-permisos-chips');
+  if (!rol) { prev.style.display = 'none'; return; }
+  if (rol.es_admin) {
+    prev.style.display = 'block';
+    chips.innerHTML = '<span style="font-size:11px;color:#15803d;font-weight:600"><i class="fas fa-star"></i> Acceso completo al sistema</span>';
+  } else {
+    const perms = Array.isArray(rol.permisos) ? rol.permisos : [];
+    const labels = perms.map(k => MODULOS_SISTEMA.find(m => m.key === k)?.label || k);
+    prev.style.display = 'block';
+    chips.innerHTML = labels.map(l =>
+      `<span style="font-size:10px;padding:2px 8px;border-radius:10px;background:#f1f5f9;color:var(--text-muted)">${esc(l)}</span>`
+    ).join('');
+  }
+}
+
+// Actualizar preview cuando cambia el select
+document.addEventListener('change', e => {
+  if (e.target && e.target.id === 'eu-rol') mostrarPreviewPermisos(e.target.value);
+});
+
 async function guardarEditarUsuario() {
-  const nombre = gv('eu-nombre'), rol = gv('eu-rol');
+  const nombre = gv('eu-nombre'), rolId = gv('eu-rol');
   if (!nombre) { toast('El nombre es obligatorio.', 'err'); $('eu-nombre').focus(); return; }
+  const rolObj = _roles.find(r => r.id === parseInt(rolId));
   try {
-    const { error } = await _sb.from('perfiles').update({ nombre, rol }).eq('id', _editingId);
+    const { error } = await _sb.from('perfiles').update({
+      nombre,
+      rol: rolObj?.nombre || '',
+      rol_id: rolId ? parseInt(rolId) : null,
+    }).eq('id', _editingId);
     if (error) throw error;
+    // Limpiar caché de permisos si el usuario se editó a sí mismo
+    sessionStorage.removeItem('ecca_permisos_v2');
     closeModal('modal-editar-usuario');
     toast('Usuario actualizado.', 'ok');
     await loadUsuarios();
@@ -504,29 +621,161 @@ async function guardarEditarUsuario() {
 }
 
 async function desactivarUsuario(id, nombre) {
-  confirm2('Desactivar Usuario',
-    `¿Desactivar a "${nombre}"? No podrá iniciar sesión hasta que lo reactives.`,
-    async () => {
-      try {
-        await _sb.from('perfiles').update({ activo: false }).eq('id', id);
-        toast('Usuario desactivado.', 'ok');
-        await loadUsuarios();
-      } catch(e) { toast('Error: ' + e.message, 'err'); }
-    });
+  confirm2('Desactivar Usuario', `¿Desactivar a "${nombre}"? No podrá iniciar sesión.`, async () => {
+    try {
+      await _sb.from('perfiles').update({ activo: false }).eq('id', id);
+      toast('Usuario desactivado.', 'ok'); await loadUsuarios();
+    } catch(e) { toast('Error: ' + e.message, 'err'); }
+  });
 }
-
 async function reactivarUsuario(id) {
   try {
     await _sb.from('perfiles').update({ activo: true }).eq('id', id);
-    toast('Usuario reactivado.', 'ok');
-    await loadUsuarios();
+    toast('Usuario reactivado.', 'ok'); await loadUsuarios();
   } catch(e) { toast('Error: ' + e.message, 'err'); }
 }
 
-/* ---- Init ---- */
-loadUsuarios();
+/* ────────────────────────────────────────────
+   TAB ROLES
+──────────────────────────────────────────── */
+async function renderRoles() {
+  const grid = $('roles-grid');
+  if (!_roles.length) {
+    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-muted)">
+      <i class="fas fa-shield-halved" style="font-size:36px;opacity:.3;display:block;margin-bottom:12px"></i>
+      <p>No hay roles definidos. Ejecuta el SQL para crear los roles predeterminados.</p>
+    </div>`;
+    return;
+  }
+  grid.innerHTML = _roles.map(r => {
+    const perms = Array.isArray(r.permisos) ? r.permisos : [];
+    const labels = r.es_admin
+      ? ['Acceso completo']
+      : perms.map(k => MODULOS_SISTEMA.find(m => m.key === k)?.label || k);
+    const usuariosConRol = _usuarios.filter(u => u.rol_id === r.id).length;
+    return `
+    <div class="rol-card">
+      <div class="rol-card-hdr">
+        <div class="rol-dot" style="background:${esc(r.color)}"></div>
+        <div style="flex:1">
+          <span class="rol-nombre">${esc(r.nombre)}</span>
+          ${r.es_admin ? '<span class="rol-admin-chip">ADMIN</span>' : ''}
+        </div>
+        <span style="font-size:11px;color:var(--text-muted)">${usuariosConRol} usuario${usuariosConRol !== 1 ? 's' : ''}</span>
+      </div>
+      <div class="rol-body">
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:5px">${r.es_admin ? '13 módulos' : perms.length + ' módulo' + (perms.length !== 1 ? 's' : '')}</div>
+        <div class="rol-permisos-list">
+          ${labels.slice(0, 8).map(l => `<span class="rol-perm-chip">${esc(l)}</span>`).join('')}
+          ${labels.length > 8 ? `<span class="rol-perm-chip">+${labels.length - 8} más</span>` : ''}
+        </div>
+      </div>
+      <div class="rol-footer">
+        <button class="btn-sm-tbl bst-gold" onclick="abrirEditarRol(${r.id})"><i class="fas fa-pen"></i> Editar</button>
+        ${!r.es_admin ? `<button class="btn-sm-tbl bst-red" onclick="eliminarRol(${r.id},'${esc(r.nombre)}')"><i class="fas fa-trash"></i></button>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ── Modal crear/editar rol ── */
+function construirFormPermisos(permisosActivos) {
+  const grupos = [...new Set(MODULOS_SISTEMA.map(m => m.grupo))];
+  const html = grupos.map(g => {
+    const mods = MODULOS_SISTEMA.filter(m => m.grupo === g);
+    return `
+      <div class="perm-group">
+        <span class="perm-group-label">${esc(g)}</span>
+        <div class="perm-checks">
+          ${mods.map(m => {
+            const checked = permisosActivos.includes(m.key);
+            return `
+              <label class="perm-check ${checked ? 'checked' : ''}" id="lbl-${m.key}">
+                <input type="checkbox" id="perm-${m.key}" value="${m.key}" ${checked ? 'checked' : ''}
+                  onchange="this.closest('.perm-check').classList.toggle('checked', this.checked)">
+                ${esc(m.label)}
+              </label>`;
+          }).join('')}
+        </div>
+      </div>`;
+  }).join('');
+  $('rf-permisos').innerHTML = html;
+}
+
+function construirColorSwatches(colorActual) {
+  $('rf-colors').innerHTML = COLORES_ROL.map(c => `
+    <div class="color-swatch ${c === colorActual ? 'sel' : ''}"
+      style="background:${c}" title="${c}"
+      onclick="seleccionarColor('${c}')"></div>`).join('');
+}
+
+function seleccionarColor(color) {
+  sv('rf-color', color);
+  document.querySelectorAll('.color-swatch').forEach(el => {
+    el.classList.toggle('sel', el.style.background === color || el.title === color);
+  });
+}
+
+function abrirNuevoRol() {
+  _editingRolId = null;
+  $('rf-titulo').innerHTML = '<i class="fas fa-shield-halved" style="color:var(--gold)"></i> Nuevo Rol';
+  sv('rf-nombre', '');
+  sv('rf-color', COLORES_ROL[4]);
+  construirColorSwatches(COLORES_ROL[4]);
+  construirFormPermisos([]);
+  openModal('modal-rol-form');
+  setTimeout(() => $('rf-nombre').focus(), 80);
+}
+
+function abrirEditarRol(id) {
+  const r = _roles.find(x => x.id === id);
+  if (!r) return;
+  _editingRolId = id;
+  $('rf-titulo').innerHTML = `<i class="fas fa-shield-halved" style="color:var(--gold)"></i> Editar Rol: ${esc(r.nombre)}`;
+  sv('rf-nombre', r.nombre);
+  sv('rf-color', r.color);
+  construirColorSwatches(r.color);
+  const perms = Array.isArray(r.permisos) ? r.permisos : [];
+  construirFormPermisos(r.es_admin ? MODULOS_SISTEMA.map(m => m.key) : perms);
+  openModal('modal-rol-form');
+  setTimeout(() => $('rf-nombre').focus(), 80);
+}
+
+async function guardarRol() {
+  const nombre = gv('rf-nombre');
+  if (!nombre) { toast('El nombre del rol es obligatorio.', 'err'); $('rf-nombre').focus(); return; }
+  const color  = gv('rf-color') || COLORES_ROL[4];
+  const permisos = MODULOS_SISTEMA
+    .filter(m => document.getElementById('perm-' + m.key)?.checked)
+    .map(m => m.key);
+  try {
+    await saveRolPersonalizado({ id: _editingRolId, nombre, color, permisos, esAdmin: false });
+    closeModal('modal-rol-form');
+    toast(_editingRolId ? 'Rol actualizado.' : 'Rol creado.', 'ok');
+    sessionStorage.removeItem('ecca_permisos_v2');
+    _roles = await getRolesPersonalizados();
+    poblarSelectsRol();
+    renderRoles();
+  } catch(e) { toast('Error al guardar: ' + e.message, 'err'); }
+}
+
+async function eliminarRol(id, nombre) {
+  const enUso = _usuarios.filter(u => u.rol_id === id).length;
+  if (enUso) {
+    toast(`No se puede eliminar — ${enUso} usuario(s) tienen este rol. Cámbialos primero.`, 'warn');
+    return;
+  }
+  confirm2('Eliminar Rol', `¿Eliminar el rol "${nombre}"? Esta acción no se puede deshacer.`, async () => {
+    try {
+      await deleteRolPersonalizado(id);
+      toast('Rol eliminado.', 'ok');
+      sessionStorage.removeItem('ecca_permisos_v2');
+      _roles = await getRolesPersonalizados();
+      poblarSelectsRol();
+      renderRoles();
+    } catch(e) { toast('Error al eliminar: ' + e.message, 'err'); }
+  });
+}
 </script>
 </body>
 </html>
-
-
