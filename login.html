@@ -58,7 +58,7 @@ const _sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 // Si ya hay sesión activa, redirigir al sistema
 (async function() {
   const { data: { session } } = await _sb.auth.getSession();
-  if (session) window.location.href = 'formulario.html';
+  if (session) window.location.href = 'index.html';
 })();
 
 function togglePass() {
@@ -91,7 +91,7 @@ async function handleLogin(e) {
   try {
     const { error } = await _sb.auth.signInWithPassword({ email, password: pass });
     if (error) throw error;
-    window.location.href = 'formulario.html';
+    window.location.href = 'index.html';
   } catch (err) {
     const msgs = {
       'Invalid login credentials': 'Correo o contraseña incorrectos.',
