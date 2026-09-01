@@ -320,17 +320,18 @@ async function getPago(id) {
 
 async function savePago(p) {
   const payload = {
-    folio:           p.folio,
-    cargo_id:        p.cargoId ? parseInt(p.cargoId) : null,
-    concepto:        p.concepto,
-    monto:           parseFloat(p.monto),
-    fecha_pago:      p.fechaPago || today(),
-    forma_pago:      p.formaPago || null,
-    recibio:         p.recibio   || null,
-    comprobante_url: p.comprobanteUrl || null,
-    metodo:          p.metodo || 'manual',
-    referencia:      p.referencia || null,
-    estado:          p.estado || 'confirmado',
+    folio:               p.folio,
+    cargo_id:            p.cargoId ? parseInt(p.cargoId) : null,
+    concepto:            p.concepto,
+    monto:               parseFloat(p.monto),
+    fecha_pago:          p.fechaPago || today(),
+    mes_correspondiente: p.mesCorrespondiente || null,
+    forma_pago:          p.formaPago || null,
+    recibio:             p.recibio   || null,
+    comprobante_url:     p.comprobanteUrl || null,
+    metodo:              p.metodo || 'manual',
+    referencia:          p.referencia || null,
+    estado:              p.estado || 'confirmado',
   };
   if (p.id) payload.id = parseInt(p.id);
   const { data, error } = await _sb.from('pagos').upsert(payload).select();

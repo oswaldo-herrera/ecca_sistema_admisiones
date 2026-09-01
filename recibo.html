@@ -81,6 +81,9 @@
         <div class="page-sub">Vista previa del recibo para impresión o exportación a PDF</div>
       </div>
       <div class="page-actions">
+        <button class="btn btn-secondary btn-sm no-print" id="btn-volver-pagos" onclick="volverAPagos()" style="display:none">
+          <i class="fas fa-arrow-left"></i> Volver a Pagos
+        </button>
         <button class="btn btn-secondary btn-sm no-print" onclick="window.location.href='formulario.html'">
           <i class="fas fa-pen"></i> Editar Registro
         </button>
@@ -245,9 +248,16 @@ function mostrarVacio() {
   $('empty-state').style.display = 'block';
 }
 
+function volverAPagos() {
+  const folio = getActiveFolio();
+  window.location.href = folio ? 'pagos.html?folio=' + encodeURIComponent(folio) : 'pagos.html';
+}
+
 // Init — carga el folio y el pago activo desde Supabase
 (async function () {
   const folio = getActiveFolio();
+  // Mostrar botón "Volver a Pagos" si venimos desde pagos.html
+  if (folio && getActivePago()) $('btn-volver-pagos').style.display = '';
   if (!folio) { mostrarVacio(); return; }
   try {
     const rec = await getRecord(folio);

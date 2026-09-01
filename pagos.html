@@ -97,6 +97,7 @@
               <div class="ch-icon ch-navy"><i class="fas fa-user-graduate"></i></div>
               <div><div class="ch-title" id="pa-nombre">—</div><div class="ch-sub" id="pa-meta">—</div></div>
               <span class="spacer" style="flex:1"></span>
+              <button class="btn btn-secondary btn-sm" onclick="irAFichaAlumno()" title="Ver ficha de registro del alumno"><i class="fas fa-id-card-clip"></i> Ver Ficha</button>
               <button class="btn btn-secondary btn-sm" onclick="cerrarDetalleAlumno()"><i class="fas fa-xmark"></i> Cerrar</button>
             </div>
             <div class="card-body">
@@ -356,6 +357,10 @@
           <input class="field-input" id="pf-fecha" type="date">
         </div>
         <div class="field">
+          <label class="field-label">Fecha que corresponde</label>
+          <input class="field-input" id="pf-mes" type="date" title="¿A qué fecha/período corresponde este pago?">
+        </div>
+        <div class="field">
           <label class="field-label">Forma de pago</label>
           <select class="field-select" id="pf-forma">
             <option value="">— Seleccionar —</option>
@@ -524,9 +529,14 @@ function _mesesEntre(desdeStr, hastaStr) {
 }
 
 const _MESES_ES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+const _MESES_LARGO = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 function _lblMes(ym) {
   const [y, m] = ym.split('-');
   return _MESES_ES[parseInt(m) - 1] + ' ' + y;
+}
+function _lblMesPago(ym) {
+  const [y, m] = ym.split('-');
+  return _MESES_LARGO[parseInt(m) - 1] + ' ' + y;
 }
 
 async function generarCorte() {
@@ -1012,6 +1022,12 @@ async function seleccionarAlumno(folio) {
   await refrescarAlumno();
 }
 
+function irAFichaAlumno() {
+  if (!_paAlumno) return;
+  setActiveFolio(_paAlumno.folio);
+  window.location.href = 'formulario.html';
+}
+
 function cerrarDetalleAlumno() {
   _paAlumno = null;
   $('pa-detalle').style.display = 'none';
@@ -1071,7 +1087,7 @@ function renderPagos() {
     _paPagos.map(p => `
       <div class="pago-row">
         <div class="pago-info">
-          <span class="pago-concepto">${esc(p.concepto)}</span>
+          <span class="pago-concepto">${esc(p.concepto)}${p.mes_correspondiente ? ' <span style="font-size:11px;font-weight:400;color:var(--text-muted);margin-left:6px">(corresponde: ' + fmtDate(p.mes_correspondiente) + ')</span>' : ''}</span>
           <span class="pago-meta">${fmtDate(p.fecha_pago)}${p.forma_pago ? '  ·  ' + esc(p.forma_pago) : ''}${p.recibio ? '  ·  Recibió: ' + esc(p.recibio) : ''}</span>
         </div>
         <div class="pago-monto">${fmtMoney(p.monto)}</div>
@@ -1091,6 +1107,7 @@ function abrirPagoForm(cargoId) {
       `<option value="${c.id}">${esc(c.descripcion || c.concepto)} (${fmtMoney(c.monto)})</option>`).join('');
   sv('pf-cargo', cargoId || '');
   sv('pf-fecha', today());
+  sv('pf-mes', today());
   sv('pf-monto', ''); sv('pf-forma', ''); sv('pf-recibio', '');
   $('pf-comprobante').value = '';
   const cargo = cargoId ? _paCargos.find(c => c.id === cargoId) : null;
@@ -1114,6 +1131,7 @@ async function guardarPagoForm() {
       cargoId: gv('pf-cargo') || null,
       concepto, monto,
       fechaPago: gv('pf-fecha'),
+      mesCorrespondiente: gv('pf-mes') || null,
       formaPago: gv('pf-forma'),
       recibio: gv('pf-recibio'),
       comprobanteUrl,
