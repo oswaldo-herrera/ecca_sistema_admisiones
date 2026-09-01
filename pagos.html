@@ -323,7 +323,7 @@
 <div class="modal-ov" id="modal-pago-form">
   <div class="modal-box">
     <div class="modal-header">
-      <h3><i class="fas fa-circle-dollar-to-slot" style="color:var(--gold)"></i> Registrar Pago</h3>
+      <h3><i class="fas fa-circle-dollar-to-slot" style="color:var(--gold)"></i> <span id="pf-titulo">Registrar Pago</span></h3>
       <button class="modal-close" onclick="closeModal('modal-pago-form')">&#10005;</button>
     </div>
     <div class="modal-body">
@@ -1094,14 +1094,19 @@ function renderPagos() {
         <div class="pago-actions">
           ${p.comprobante_url ? `<a class="btn-sm-tbl bst-navy" href="${esc(p.comprobante_url)}" target="_blank"><i class="fas fa-paperclip"></i> Comprobante</a>` : ''}
           <button class="btn-sm-tbl bst-navy" onclick="imprimirRecibo(${p.id})"><i class="fas fa-print"></i> Recibo</button>
+          <button class="btn-sm-tbl bst-gold" onclick="editarPago(${p.id})"><i class="fas fa-pen"></i> Editar</button>
           <button class="btn-sm-tbl bst-red" onclick="eliminarPago(${p.id})"><i class="fas fa-trash"></i></button>
         </div>
       </div>`).join('');
 }
 
-/* ---- Modal: registrar pago ---- */
+/* ---- Modal: registrar / editar pago ---- */
+var _paEditandoPagoId = null;
+
 function abrirPagoForm(cargoId) {
   if (!_paAlumno) return;
+  _paEditandoPagoId = null;
+  $('pf-titulo').textContent = 'Registrar Pago';
   $('pf-cargo').innerHTML = '<option value="">— Pago libre (sin cargo) —</option>' +
     _paCargos.filter(c => estadoCargo(c, _paPagos) !== 'pagado').map(c =>
       `<option value="${c.id}">${esc(c.descripcion || c.concepto)} (${fmtMoney(c.monto)})</option>`).join('');
@@ -1116,6 +1121,24 @@ function abrirPagoForm(cargoId) {
   openModal('modal-pago-form');
 }
 
+function editarPago(id) {
+  const p = _paPagos.find(x => x.id === id);
+  if (!p) return;
+  _paEditandoPagoId = id;
+  $('pf-titulo').textContent = 'Editar Pago';
+  $('pf-cargo').innerHTML = '<option value="">— Pago libre (sin cargo) —</option>' +
+    _paCargos.map(c => `<option value="${c.id}">${esc(c.descripcion || c.concepto)} (${fmtMoney(c.monto)})</option>`).join('');
+  sv('pf-cargo', p.cargo_id || '');
+  sv('pf-concepto', p.concepto || '');
+  sv('pf-monto', p.monto || '');
+  sv('pf-fecha', p.fecha_pago || today());
+  sv('pf-mes', p.mes_correspondiente || p.fecha_pago || today());
+  sv('pf-forma', p.forma_pago || '');
+  sv('pf-recibio', p.recibio || '');
+  $('pf-comprobante').value = '';
+  openModal('modal-pago-form');
+}
+
 async function guardarPagoForm() {
   const concepto = gv('pf-concepto'), monto = gv('pf-monto');
   if (!concepto) { toast('Seleccione el concepto.', 'err'); return; }
@@ -1127,6 +1150,7 @@ async function guardarPagoForm() {
     const file = $('pf-comprobante').files[0];
     if (file) comprobanteUrl = await uploadComprobante(file, _paAlumno.folio);
     await savePago({
+      id: _paEditandoPagoId || undefined,
       folio: _paAlumno.folio,
       cargoId: gv('pf-cargo') || null,
       concepto, monto,
@@ -1137,8 +1161,9 @@ async function guardarPagoForm() {
       comprobanteUrl,
     });
     closeModal('modal-pago-form');
-    toast('Pago registrado correctamente.', 'ok');
-    logActividad('NUEVO PAGO', 'Pagos', _paAlumno.folio, (_paAlumno.nombre ? _paAlumno.nombre + ' - ' : '') + concepto + ' $' + parseFloat(monto).toFixed(2));
+    const accion = _paEditandoPagoId ? 'EDITAR PAGO' : 'NUEVO PAGO';
+    toast(_paEditandoPagoId ? 'Pago actualizado correctamente.' : 'Pago registrado correctamente.', 'ok');
+    logActividad(accion, 'Pagos', _paAlumno.folio, (_paAlumno.nombre ? _paAlumno.nombre + ' - ' : '') + concepto + ' $' + parseFloat(monto).toFixed(2));
     await refrescarAlumno();
   } catch (e) {
     toast('Error al guardar el pago: ' + e.message, 'err');
