@@ -256,9 +256,14 @@
         <div id="ct-resultado" style="display:none">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
             <div id="ct-resumen-lbl" style="font-size:13px;color:var(--text-muted)"></div>
-            <button class="btn btn-secondary btn-sm" onclick="exportarCorteExcel()">
-              <i class="fas fa-file-excel"></i> Exportar Excel
-            </button>
+            <div style="display:flex;gap:6px">
+              <button class="btn btn-secondary btn-sm" onclick="imprimirCorteMensual()">
+                <i class="fas fa-file-pdf"></i> PDF
+              </button>
+              <button class="btn btn-secondary btn-sm" onclick="exportarCorteExcel()">
+                <i class="fas fa-file-excel"></i> Excel
+              </button>
+            </div>
           </div>
           <div class="stats-row" id="ct-stats" style="margin-bottom:14px"></div>
           <div style="overflow-x:auto;border:1px solid var(--border);border-radius:var(--r-lg)">
@@ -274,9 +279,14 @@
         <div id="cd-resultado" style="display:none">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
             <div id="cd-resumen-lbl" style="font-size:13px;color:var(--text-muted)"></div>
-            <button class="btn btn-secondary btn-sm" onclick="exportarCorteDiarioExcel()">
-              <i class="fas fa-file-excel"></i> Exportar Excel
-            </button>
+            <div style="display:flex;gap:6px">
+              <button class="btn btn-secondary btn-sm" onclick="imprimirCorteDiario()">
+                <i class="fas fa-file-pdf"></i> PDF
+              </button>
+              <button class="btn btn-secondary btn-sm" onclick="exportarCorteDiarioExcel()">
+                <i class="fas fa-file-excel"></i> Excel
+              </button>
+            </div>
           </div>
           <div class="stats-row" id="cd-stats" style="margin-bottom:14px"></div>
           <div id="cd-dias"></div>
@@ -845,6 +855,115 @@ function exportarCorteDiarioExcel() {
     s.onload = _doExportDiario;
     document.head.appendChild(s);
   } else { _doExportDiario(); }
+}
+
+/* ---- PDF helpers (ventana nueva → imprimir → Guardar como PDF) ---- */
+function _getPdfCss() {
+  return 'body{font-family:Arial,sans-serif;font-size:11px;color:#111;margin:16px}' +
+    'h2{font-size:15px;margin:0 0 2px;color:#1e3a5f}' +
+    'p{font-size:11px;color:#555;margin:0 0 12px}' +
+    'table{width:100%;border-collapse:collapse;font-size:10.5px}' +
+    'th{background:#1e3a5f;color:#fff;padding:5px 8px;text-align:left;white-space:nowrap}' +
+    'td{padding:4px 8px;border-bottom:1px solid #e5e7eb}' +
+    'tfoot td{background:#f1f5f9;font-weight:700}' +
+    '.dia-hdr{background:#1e3a5f;color:#fff;padding:7px 10px;display:flex;justify-content:space-between;font-weight:700;margin-top:14px;border-radius:4px 4px 0 0}' +
+    '.stats{display:flex;gap:16px;margin-bottom:14px;flex-wrap:wrap}' +
+    '.stat{background:#f8fafc;border:1px solid #e5e7eb;border-radius:6px;padding:8px 14px;min-width:100px}' +
+    '.stat-v{font-size:18px;font-weight:700;color:#1e3a5f}' +
+    '.stat-l{font-size:10px;color:#6b7280}' +
+    '.total-gral{text-align:right;font-size:13px;font-weight:700;color:#1e3a5f;padding:10px 0;border-top:2px solid #1e3a5f;margin-top:10px}' +
+    '.logo-hdr{display:flex;align-items:center;gap:12px;margin-bottom:14px;border-bottom:2px solid #1e3a5f;padding-bottom:10px}' +
+    '@media print{@page{size:letter portrait;margin:12mm 10mm}}';
+}
+
+function _abrirVentanaPDF(titulo, bodyHtml) {
+  var w = window.open('', '_blank', 'width=900,height=700');
+  var fecha = new Date().toLocaleDateString('es-MX', {day:'2-digit', month:'long', year:'numeric'});
+  var C = '<'; var S = '>';
+  var header = C + 'div class="logo-hdr"' + S + C + 'div' + S +
+    C + 'div style="font-size:17px;font-weight:700;color:#1e3a5f"' + S + 'ECCA Prepa León' + C + '/div' + S +
+    C + 'div style="font-size:11px;color:#6b7280"' + S + 'Sistema de Admisiones' + C + '/div' + S +
+    C + '/div' + S +
+    C + 'div style="margin-left:auto;text-align:right;font-size:11px;color:#6b7280"' + S + 'Generado: ' + fecha + C + '/div' + S +
+    C + '/div' + S;
+  w.document.open();
+  w.document.write('<!DOCTYPE html>' + C + 'html' + S + C + 'head' + S +
+    C + 'meta charset="UTF-8"' + S +
+    C + 'title' + S + titulo + C + '/title' + S +
+    C + 'style' + S + _getPdfCss() + C + '/style' + S +
+    C + '/head' + S + C + 'body' + S +
+    header + bodyHtml +
+    C + '/body' + S + C + '/html' + S);
+  w.document.close();
+  setTimeout(function() { w.print(); w.close(); }, 600);
+}
+
+function imprimirCorteMensual() {
+  const lbl = $('ct-resumen-lbl').textContent;
+  // Clonar la tabla para no modificar el DOM original
+  const tabla = $('ct-tabla').cloneNode(true);
+  // Quitar sticky y box-shadow del clon
+  tabla.querySelectorAll('[style]').forEach(el => {
+    el.style.position = ''; el.style.zIndex = '';
+  });
+
+  // Stats texto
+  const statCards = [...$('ct-stats').querySelectorAll('.stat-card')];
+  const statsHtml = '<div class="stats">' + statCards.map(c => {
+    const v = c.querySelector('.stat-val')?.textContent || '';
+    const l = c.querySelector('.stat-lbl')?.textContent || '';
+    return `<div class="stat"><div class="stat-v">${v}</div><div class="stat-l">${l}</div></div>`;
+  }).join('') + '</div>';
+
+  _abrirVentanaPDF('Corte Mensual de Pagos',
+    `<h2>Corte Mensual de Pagos</h2><p>${lbl}</p>${statsHtml}${tabla.outerHTML}`);
+}
+
+function imprimirCorteDiario() {
+  const lbl = $('cd-resumen-lbl').textContent;
+
+  const statCards = [...$('cd-stats').querySelectorAll('.stat-card')];
+  const statsHtml = '<div class="stats">' + statCards.map(c => {
+    const v = c.querySelector('.stat-val')?.textContent || '';
+    const l = c.querySelector('.stat-lbl')?.textContent || '';
+    return `<div class="stat"><div class="stat-v">${v}</div><div class="stat-l">${l}</div></div>`;
+  }).join('') + '</div>';
+
+  // Construir tabla unificada por día
+  const totalGral = _cdPagosRaw.reduce((s, p) => s + parseFloat(p.monto || 0), 0);
+
+  const porDia = {};
+  _cdPagosRaw.forEach(p => {
+    if (!porDia[p.fecha_pago]) porDia[p.fecha_pago] = [];
+    porDia[p.fecha_pago].push(p);
+  });
+
+  const diasHtml = Object.keys(porDia).sort().map(dia => {
+    const filas = porDia[dia];
+    const totalDia = filas.reduce((s, p) => s + parseFloat(p.monto || 0), 0);
+    return `
+      <div class="dia-hdr">
+        <span>${fmtDate(dia)}</span>
+        <span>${fmtMoney(totalDia)}</span>
+      </div>
+      <table>
+        <thead><tr><th>Alumno</th><th>Concepto</th><th>Forma de pago</th><th>Recibió</th><th style="text-align:right">Monto</th></tr></thead>
+        <tbody>
+          ${filas.map(p => `<tr>
+            <td>${esc(p._nombre)}</td>
+            <td>${esc(p.concepto||'—')}</td>
+            <td>${esc(p.forma_pago||'—')}</td>
+            <td>${esc(p.recibio||'—')}</td>
+            <td style="text-align:right;font-weight:600">${fmtMoney(parseFloat(p.monto||0))}</td>
+          </tr>`).join('')}
+        </tbody>
+        <tfoot><tr><td colspan="4">Total del día</td><td style="text-align:right">${fmtMoney(totalDia)}</td></tr></tfoot>
+      </table>`;
+  }).join('');
+
+  _abrirVentanaPDF('Corte Diario de Pagos',
+    `<h2>Corte Diario de Pagos</h2><p>${lbl}</p>${statsHtml}${diasHtml}
+     <div class="total-gral">TOTAL GENERAL: ${fmtMoney(totalGral)}</div>`);
 }
 
 function _doExportDiario() {
