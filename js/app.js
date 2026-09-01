@@ -328,16 +328,24 @@ async function savePago(p) {
     mes_correspondiente: p.mesCorrespondiente || null,
     forma_pago:          p.formaPago || null,
     recibio:             p.recibio   || null,
-    comprobante_url:     p.comprobanteUrl || null,
     metodo:              p.metodo || 'manual',
     referencia:          p.referencia || null,
     estado:              p.estado || 'confirmado',
   };
-  if (p.id) payload.id = parseInt(p.id);
-  const { data, error } = await _sb.from('pagos').upsert(payload).select();
-  if (error) throw error;
-  if (!data || !data.length) throw new Error('No se pudo guardar el pago.');
-  return data[0];
+  if (p.id) {
+    // UPDATE — solo cambia comprobante_url si se subió archivo nuevo
+    if (p.comprobanteUrl !== undefined) payload.comprobante_url = p.comprobanteUrl;
+    const { data, error } = await _sb.from('pagos').update(payload).eq('id', parseInt(p.id)).select();
+    if (error) throw error;
+    if (!data || !data.length) throw new Error('No se pudo actualizar el pago.');
+    return data[0];
+  } else {
+    payload.comprobante_url = p.comprobanteUrl || null;
+    const { data, error } = await _sb.from('pagos').insert(payload).select();
+    if (error) throw error;
+    if (!data || !data.length) throw new Error('No se pudo guardar el pago.');
+    return data[0];
+  }
 }
 
 async function deletePago(id) {

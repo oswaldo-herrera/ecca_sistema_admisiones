@@ -1146,7 +1146,8 @@ async function guardarPagoForm() {
   const btn = $('pf-save');
   btn.disabled = true;
   try {
-    let comprobanteUrl = null;
+    // En edición sin archivo nuevo → undefined preserva el comprobante existente
+    let comprobanteUrl = _paEditandoPagoId ? undefined : null;
     const file = $('pf-comprobante').files[0];
     if (file) comprobanteUrl = await uploadComprobante(file, _paAlumno.folio);
     await savePago({

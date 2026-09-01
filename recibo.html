@@ -183,6 +183,10 @@
                 <span class="r-val" id="r-recibio"></span>
               </div>
             </div>
+            <div class="r-row" id="r-row-corresponde" style="display:none">
+              <span class="r-lbl">Corresponde al:</span>
+              <span class="r-val" id="r-corresponde"></span>
+            </div>
 
             <div class="r-sigs">
               <div class="sig-blk"><div class="sig-line"></div><div class="sig-lbl">Padre o Tutor</div></div>
@@ -222,6 +226,13 @@ function llenarRecibo(rec, pago) {
   $('r-fpago').textContent      = pago.forma_pago  || '';
   $('r-fecha-pago').textContent = pago.fecha_pago  ? fmtDate(pago.fecha_pago) : '';
   $('r-recibio').textContent    = pago.recibio     || '';
+  if (pago.mes_correspondiente) {
+    $('r-corresponde').textContent = fmtDate(pago.mes_correspondiente);
+    $('r-row-corresponde').style.display = '';
+  } else {
+    $('r-corresponde').textContent = '';
+    $('r-row-corresponde').style.display = 'none';
+  }
 
   // Generar segunda copia (control interno)
   const pair = $('print-pair');
