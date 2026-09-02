@@ -242,6 +242,9 @@
             <button id="vbtn-grid" class="active" onclick="setVista('grid')"><i class="fas fa-border-all"></i> Cuadrícula</button>
             <button id="vbtn-lista" onclick="setVista('lista')"><i class="fas fa-list"></i> Lista</button>
           </div>
+          <button class="btn btn-secondary btn-sm" onclick="imprimirHorarioPDF()" title="Descargar horario como PDF">
+            <i class="fas fa-file-pdf"></i> Imprimir PDF
+          </button>
           <button class="btn btn-primary btn-sm" onclick="abrirHorario()">
             <i class="fas fa-plus"></i> Nuevo Horario
           </button>
@@ -709,14 +712,31 @@ function renderGrid() {
         html += `<td class="cell-empty" onclick="abrirHorario(${dia},'${p.inicio}')"></td>`;
       } else {
         html += `<td class="horario-entry-cell">`;
+        const filMae = $('fil-maestro').value;
+        const filGrp = $('fil-grupo').value;
         entries.forEach(h => {
           const mat = _materias.find(m => m.id === h.materia_id);
           const mae = _maestros.find(m => m.id === h.maestro_id);
+          const grp = _grupos.find(g => g.id === h.grupo_id);
           const color = mat ? `hc${(mat.id - 1) % 10}` : 'hc0';
-          html += `<div class="he ${color}" onclick="editarHorario(${h.id})" title="Editar">
-            <span class="he-mat">${esc(mat?.nombre || 'Sin materia')}</span>
-            <span class="he-mae">${esc(mae?.nombre || '—')}</span>
-            <span class="he-info">${h.hora_inicio}–${h.hora_fin}${h.aula ? ' · ' + esc(h.aula) : ''}</span>
+          // Línea secundaria: si filtro por maestro → mostrar grupo; si no → mostrar maestro
+          const linea2 = filMae
+            ? esc(grp?.nombre || '—')
+            : esc(mae?.nombre || '—');
+          // Línea terciaria: si no hay ningún filtro → mostrar grupo también
+          const linea3 = (!filMae && !filGrp && grp)
+            ? `<span class="he-info" style="opacity:.75">${esc(grp.nombre)}</span>`
+            : '';
+          html += `<div class="he ${color}" style="position:relative">
+            <span class="he-mat" onclick="editarHorario(${h.id})" style="cursor:pointer;display:block">${esc(mat?.nombre || 'Sin materia')}</span>
+            <span class="he-mae" onclick="editarHorario(${h.id})" style="cursor:pointer;display:block">${linea2}</span>
+            ${linea3}
+            <button onclick="event.stopPropagation();borrarHorario(${h.id})" title="Eliminar horario"
+              style="position:absolute;top:3px;right:3px;border:none;background:rgba(0,0,0,.35);color:#fff;
+                     border-radius:3px;width:18px;height:18px;cursor:pointer;font-size:10px;
+                     display:flex;align-items:center;justify-content:center;padding:0;line-height:1">
+              <i class="fas fa-trash"></i>
+            </button>
           </div>`;
         });
         html += `</td>`;
@@ -860,6 +880,111 @@ function poblarSelectsHorario() {
   $('fil-maestro').innerHTML = '<option value="">— Todos los maestros —</option>' +
     _maestros.map(m => `<option value="${m.id}">${esc(m.nombre)}</option>`).join('');
   $('fil-materia').innerHTML = buildMateriasOpts('— Todas las materias —');
+}
+
+/* ── PDF del horario ── */
+function imprimirHorarioPDF() {
+  var C = '<'; var S = '>';
+  var fil = getHorariosFiltrados();
+  var maestroId  = $('fil-maestro').value;
+  var grupoId    = $('fil-grupo').value;
+  var maestroNom = maestroId
+    ? (_maestros.find(function(m){ return String(m.id) === maestroId; })?.nombre || '')
+    : '';
+  var grupoNom = grupoId
+    ? (_grupos.find(function(g){ return String(g.id) === grupoId; })?.nombre || '')
+    : '';
+
+  // mapa dia-inicio → entries
+  var map = {};
+  fil.forEach(function(h) {
+    var key = h.dia + '-' + h.hora_inicio;
+    if (!map[key]) map[key] = [];
+    map[key].push(h);
+  });
+
+  var DIAS_H = ['LUNES','MARTES','MIÉRCOLES','JUEVES','VIERNES','SÁBADO'];
+  var DIAS_N = 6; // Lun-Sáb
+
+  // encabezado de columnas
+  var thead = C + 'tr' + S + C + 'th style="background:#1e3a5f;color:#fff;padding:7px 10px;border:1px solid #ccc;min-width:85px;font-size:11px"' + S + 'HORA' + C + '/th' + S;
+  for (var d = 0; d < DIAS_N; d++) {
+    thead += C + 'th style="background:#1e3a5f;color:#fff;padding:7px 10px;border:1px solid #ccc;min-width:110px;font-size:11px"' + S + DIAS_H[d] + C + '/th' + S;
+  }
+  thead += C + '/tr' + S;
+
+  // filas de períodos
+  var tbody = '';
+  PERIODOS.forEach(function(p) {
+    if (p.receso) {
+      tbody += C + 'tr' + S +
+        C + 'td colspan="' + (DIAS_N + 1) + '" style="text-align:center;background:#fef9e7;font-weight:700;font-size:11px;padding:6px;border:1px solid #ccc;letter-spacing:1px;color:#7c5a00"' + S +
+        'RECESO &nbsp;·&nbsp; 9:20 – 9:50' +
+        C + '/td' + S + C + '/tr' + S;
+      return;
+    }
+    var tdHora = C + 'td style="background:#f5f7fa;font-weight:700;font-size:11px;padding:6px 8px;border:1px solid #ccc;white-space:nowrap;text-align:center"' + S +
+      p.inicio + C + 'br' + S + C + 'span style="font-weight:400;font-size:10px;color:#666"' + S + p.fin + C + '/span' + S + C + '/td' + S;
+    var tds = '';
+    for (var dia = 1; dia <= DIAS_N; dia++) {
+      var entries = map[dia + '-' + p.inicio] || [];
+      var cell = '';
+      entries.forEach(function(h) {
+        var mat = _materias.find(function(m){ return m.id === h.materia_id; });
+        var grp = _grupos.find(function(g){ return g.id === h.grupo_id; });
+        var mae = _maestros.find(function(m){ return m.id === h.maestro_id; });
+        var txt = C + 'div style="margin-bottom:2px"' + S;
+        txt += C + 'strong style="font-size:11px"' + S + esc(mat?.nombre || '—') + C + '/strong' + S;
+        // Si filtro por maestro → mostrar grupo; si filtro por grupo → mostrar maestro; sin filtro → ambos
+        if (maestroId) {
+          if (grp) txt += C + 'br' + S + C + 'span style="font-size:10px;color:#444"' + S + esc(grp.nombre) + C + '/span' + S;
+        } else {
+          if (mae) txt += C + 'br' + S + C + 'span style="font-size:10px;color:#444"' + S + esc(mae.nombre) + C + '/span' + S;
+          if (!grupoId && grp) txt += C + 'br' + S + C + 'span style="font-size:10px;color:#666"' + S + esc(grp.nombre) + C + '/span' + S;
+        }
+        txt += C + '/div' + S;
+        cell += txt;
+      });
+      tds += C + 'td style="padding:5px 7px;border:1px solid #ccc;vertical-align:top;font-size:11px"' + S + cell + C + '/td' + S;
+    }
+    tbody += C + 'tr' + S + tdHora + tds + C + '/tr' + S;
+  });
+
+  // subtítulo del encabezado
+  var subTit = '';
+  if (maestroNom) subTit = C + 'div style="margin-top:6px;font-size:13px"' + S + C + 'strong' + S + 'MAESTRO:' + C + '/strong' + S + ' ' + C + 'span style="text-decoration:underline;font-size:14px"' + S + esc(maestroNom) + C + '/span' + S + C + '/div' + S;
+  else if (grupoNom) subTit = C + 'div style="margin-top:6px;font-size:13px"' + S + C + 'strong' + S + 'GRUPO:' + C + '/strong' + S + ' ' + C + 'span style="text-decoration:underline;font-size:14px"' + S + esc(grupoNom) + C + '/span' + S + C + '/div' + S;
+  else subTit = C + 'div style="margin-top:6px;font-size:12px;color:#555"' + S + 'TODOS LOS MAESTROS' + C + '/div' + S;
+
+  var hdr = C + 'div style="display:flex;align-items:center;gap:14px;margin-bottom:18px;border-bottom:2px solid #1e3a5f;padding-bottom:12px"' + S +
+    C + 'img src="images/ecca_logo.png" style="height:60px;object-fit:contain"' + S +
+    C + 'div' + S +
+      C + 'div style="font-size:13px;font-weight:700;color:#1e3a5f;letter-spacing:.5px"' + S + 'ECCA PREPARATORIA' + C + '/div' + S +
+      C + 'div style="font-size:11px;color:#555"' + S + 'ESCUELA DE CIENCIAS CONTABLES Y ADMINISTRATIVAS' + C + '/div' + S +
+      C + 'div style="font-size:11px;color:#555"' + S + 'SEMESTRAL' + C + '/div' + S +
+      subTit +
+    C + '/div' + S +
+  C + '/div' + S;
+
+  var tabla = C + 'table style="width:100%;border-collapse:collapse"' + S +
+    C + 'thead' + S + thead + C + '/thead' + S +
+    C + 'tbody' + S + tbody + C + '/tbody' + S +
+  C + '/table' + S;
+
+  var css = 'body{font-family:Arial,sans-serif;font-size:12px;margin:20px;color:#111}' +
+    '@media print{@page{size:letter landscape;margin:12mm 10mm}body{margin:0}}';
+
+  var w = window.open('', '_blank', 'width=1000,height=700');
+  w.document.open();
+  w.document.write('<!DOCTYPE html>' + C + 'html' + S + C + 'head' + S +
+    C + 'meta charset="UTF-8"' + S +
+    C + 'title' + S + 'Horario ECCA' + C + '/title' + S +
+    C + 'style' + S + css + C + '/style' + S +
+    C + '/head' + S + C + 'body' + S +
+    hdr + tabla +
+    C + '/body' + S + C + '/html' + S);
+  w.document.close();
+  setTimeout(function(){ w.print(); w.close(); }, 600);
 }
 
 /* ── Init ── */
