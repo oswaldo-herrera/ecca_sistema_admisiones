@@ -972,8 +972,39 @@ function imprimirCorteDiario() {
       </table>`;
   }).join('');
 
+  // Resumen por forma de pago
+  const porForma = {};
+  _cdPagosRaw.forEach(p => {
+    const k = p.forma_pago || 'Sin especificar';
+    porForma[k] = (porForma[k] || 0) + parseFloat(p.monto || 0);
+  });
+  const formasOrden = Object.keys(porForma).sort();
+  const resumenHtml = `
+    <div class="resumen-forma" style="margin-top:22px;border-top:2px solid #1e3a5f;padding-top:14px">
+      <div style="font-size:13px;font-weight:700;color:#1e3a5f;margin-bottom:10px">
+        <i class="fas fa-chart-pie"></i> Desglose por forma de pago
+      </div>
+      <table style="width:340px">
+        <thead><tr>
+          <th style="text-align:left;padding:5px 10px;background:#f1f5f9;border:1px solid #dde3ea;font-size:11px;color:#64748b">Forma de pago</th>
+          <th style="text-align:right;padding:5px 10px;background:#f1f5f9;border:1px solid #dde3ea;font-size:11px;color:#64748b">Total</th>
+        </tr></thead>
+        <tbody>
+          ${formasOrden.map(f => `<tr>
+            <td style="padding:5px 10px;border:1px solid #dde3ea;font-size:12px">${esc(f)}</td>
+            <td style="padding:5px 10px;border:1px solid #dde3ea;font-size:12px;text-align:right;font-weight:600">${fmtMoney(porForma[f])}</td>
+          </tr>`).join('')}
+        </tbody>
+        <tfoot><tr>
+          <td style="padding:6px 10px;border:1px solid #dde3ea;font-weight:700;font-size:12px;background:#f8fafc">Total</td>
+          <td style="padding:6px 10px;border:1px solid #dde3ea;font-weight:700;font-size:12px;text-align:right;background:#f8fafc">${fmtMoney(totalGral)}</td>
+        </tr></tfoot>
+      </table>
+    </div>`;
+
   _abrirVentanaPDF('Corte Diario de Pagos',
     `<h2>Corte Diario de Pagos</h2><p>${lbl}</p>${statsHtml}${diasHtml}
+     ${resumenHtml}
      <div class="total-gral">TOTAL GENERAL: ${fmtMoney(totalGral)}</div>`);
 }
 
