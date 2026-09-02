@@ -67,6 +67,27 @@
 /* ── Lista view ── */
 .dia-badge{display:inline-block;padding:1px 8px;border-radius:8px;font-size:11px;
   font-weight:600;background:var(--navy);color:#fff}
+
+/* ── Fila de receso en cuadrícula ── */
+.hora-receso td,.hora-receso-cell{background:color-mix(in srgb,var(--gold) 18%,transparent)!important;
+  text-align:center;font-size:11px;font-weight:700;color:#7c5a00;letter-spacing:.5px;
+  padding:5px 8px!important;height:auto!important;border-bottom:2px solid var(--gold)!important;
+  border-top:2px solid var(--gold)!important}
+
+/* ── Multi-select materias (modal maestro) ── */
+.mm-mat-list{max-height:160px;overflow-y:auto;border:1px solid var(--border);
+  border-radius:var(--r-sm);margin-top:5px;background:var(--bg)}
+.mm-mat-item{display:flex;align-items:center;gap:8px;padding:6px 10px;cursor:pointer;
+  border-bottom:1px solid var(--border);font-size:13px;user-select:none}
+.mm-mat-item:last-child{border-bottom:none}
+.mm-mat-item:hover{background:var(--bg-card)}
+.mm-mat-item.msel{background:color-mix(in srgb,var(--navy) 10%,transparent)}
+.mm-mat-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;min-height:4px}
+.mm-mat-tag{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;
+  border-radius:12px;background:var(--navy);color:#fff;font-size:11px;font-weight:600}
+.mm-mat-tag-rm{border:none;background:none;color:#fff;cursor:pointer;padding:0;
+  font-size:13px;line-height:1;opacity:.7}
+.mm-mat-tag-rm:hover{opacity:1}
 </style>
 </head>
 <body data-modulo="horarios">
@@ -249,7 +270,7 @@
 
 <!-- ===== MODAL MAESTRO ===== -->
 <div class="modal-ov" id="modal-maestro">
-  <div class="modal-box" style="max-width:460px">
+  <div class="modal-box" style="max-width:540px">
     <div class="modal-header">
       <h3 id="mm-titulo">Nuevo Maestro</h3>
       <button class="modal-close" onclick="closeModal('modal-maestro')">&#10005;</button>
@@ -278,6 +299,12 @@
             <option value="true">Activo</option>
             <option value="false">Inactivo</option>
           </select>
+        </div>
+        <div class="field full" style="margin-top:4px">
+          <label class="field-label"><i class="fas fa-book" style="color:var(--navy)"></i> Materias que imparte</label>
+          <input class="field-input" id="mm-mat-q" type="text" placeholder="Buscar materia..." oninput="filtrarMmMaterias()" style="margin-bottom:0">
+          <div class="mm-mat-list" id="mm-mat-list"></div>
+          <div class="mm-mat-tags" id="mm-mat-tags"></div>
         </div>
       </div>
     </div>
@@ -365,16 +392,16 @@
           <label class="field-label">Aula / Salón</label>
           <input class="field-input" id="mh-aula" type="text" placeholder="Ej. A-103">
         </div>
-        <div class="field">
-          <label class="field-label">Hora inicio <span class="req">*</span></label>
-          <select class="field-select" id="mh-inicio">
-            <option value="">—</option>
-          </select>
-        </div>
-        <div class="field">
-          <label class="field-label">Hora fin <span class="req">*</span></label>
-          <select class="field-select" id="mh-fin">
-            <option value="">—</option>
+        <div class="field full">
+          <label class="field-label">Período <span class="req">*</span></label>
+          <select class="field-select" id="mh-periodo">
+            <option value="">— Seleccionar período —</option>
+            <option value="08:00|08:40">08:00 – 08:40 &nbsp;(1er período)</option>
+            <option value="08:40|09:20">08:40 – 09:20 &nbsp;(2do período)</option>
+            <option value="09:50|10:30">09:50 – 10:30 &nbsp;(3er período)</option>
+            <option value="10:30|11:10">10:30 – 11:10 &nbsp;(4to período)</option>
+            <option value="11:10|11:30">11:10 – 11:30 &nbsp;(5to período)</option>
+            <option value="11:30|13:00">11:30 – 13:00 &nbsp;(6to período)</option>
           </select>
         </div>
       </div>
@@ -418,8 +445,17 @@ let _editHorario = null;
 
 const DIAS_NOM = ['','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
 const DIAS_CORTO = ['','Lun','Mar','Mié','Jue','Vie','Sáb'];
-const HORAS = ['07:00','08:00','09:00','10:00','11:00','12:00','13:00',
-               '14:00','15:00','16:00','17:00','18:00','19:00','20:00','21:00'];
+const PERIODOS = [
+  { inicio: '08:00', fin: '08:40', num: '1°' },
+  { inicio: '08:40', fin: '09:20', num: '2°' },
+  { receso: true,    rango: '9:20 – 9:50' },
+  { inicio: '09:50', fin: '10:30', num: '3°' },
+  { inicio: '10:30', fin: '11:10', num: '4°' },
+  { inicio: '11:10', fin: '11:30', num: '5°' },
+  { inicio: '11:30', fin: '13:00', num: '6°' },
+];
+// HORAS solo para compatibilidad con selects legacy
+const HORAS = PERIODOS.filter(p => !p.receso).map(p => p.inicio);
 
 /* ── Tab switching ── */
 function setTab(t) {
@@ -469,6 +505,8 @@ function renderMaestros() {
     </tr>`).join('');
 }
 
+var _mmSelMaterias = [];
+
 function abrirMaestro(id) {
   _editMaestro = id || null;
   const m = id ? _maestros.find(x => x.id === id) : null;
@@ -478,10 +516,57 @@ function abrirMaestro(id) {
   sv('mm-telefono',    m?.telefono || '');
   sv('mm-correo',      m?.correo || '');
   sv('mm-activo',      m?.activo === false ? 'false' : 'true');
+  _mmSelMaterias = Array.isArray(m?.materias_ids) ? [...m.materias_ids] : [];
+  sv('mm-mat-q', '');
+  _renderMmLista();
+  _renderMmTags();
   openModal('modal-maestro');
   setTimeout(() => $('mm-nombre').focus(), 80);
 }
 function editarMaestro(id) { abrirMaestro(id); }
+
+function filtrarMmMaterias() { _renderMmLista(); }
+
+function _renderMmLista() {
+  const q = ($('mm-mat-q')?.value || '').toLowerCase();
+  const fil = q ? _materias.filter(m =>
+    (m.nombre||'').toLowerCase().includes(q) || (m.clave||'').toLowerCase().includes(q)
+  ) : _materias;
+  const list = $('mm-mat-list');
+  if (!fil.length) {
+    list.innerHTML = '<div style="padding:10px;text-align:center;color:var(--text-muted);font-size:12px">Sin resultados</div>';
+    return;
+  }
+  list.innerHTML = fil.map(m => {
+    const sel = _mmSelMaterias.includes(m.id);
+    const meta = [m.grado ? 'Grado: ' + esc(m.grado) : '', m.clave ? esc(m.clave) : ''].filter(Boolean).join(' · ');
+    return '<div class="mm-mat-item ' + (sel ? 'msel' : '') + '" onclick="toggleMmMateria(' + m.id + ')">' +
+      '<input type="checkbox" ' + (sel ? 'checked' : '') + ' onclick="event.stopPropagation()">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;width:100%;gap:8px">' +
+        '<span style="font-weight:500">' + esc(m.nombre) + '</span>' +
+        (meta ? '<span style="color:var(--text-muted);font-size:11px;white-space:nowrap">' + meta + '</span>' : '') +
+      '</div></div>';
+  }).join('');
+}
+
+function toggleMmMateria(id) {
+  const idx = _mmSelMaterias.indexOf(id);
+  if (idx >= 0) _mmSelMaterias.splice(idx, 1);
+  else _mmSelMaterias.push(id);
+  _renderMmLista();
+  _renderMmTags();
+}
+
+function _renderMmTags() {
+  const tags = $('mm-mat-tags');
+  if (!_mmSelMaterias.length) { tags.innerHTML = ''; return; }
+  tags.innerHTML = _mmSelMaterias.map(id => {
+    const m = _materias.find(x => x.id === id);
+    if (!m) return '';
+    return '<span class="mm-mat-tag">' + esc(m.nombre) +
+      '<button class="mm-mat-tag-rm" onclick="toggleMmMateria(' + id + ')" title="Quitar">&#10005;</button></span>';
+  }).join('');
+}
 
 async function guardarMaestro() {
   const nombre = $('mm-nombre').value.trim();
@@ -493,6 +578,7 @@ async function guardarMaestro() {
       telefono: $('mm-telefono').value.trim(),
       correo:   $('mm-correo').value.trim(),
       activo:   $('mm-activo').value !== 'false',
+      materiasIds: [..._mmSelMaterias],
     });
     closeModal('modal-maestro');
     toast('Maestro guardado.', 'ok');
@@ -611,12 +697,16 @@ function renderGrid() {
     ${DIAS_CORTO.slice(1).map(d => `<th>${d}</th>`).join('')}
   </tr></thead><tbody>`;
 
-  HORAS.forEach(hora => {
-    html += `<tr><td class="hora-td">${hora}</td>`;
+  PERIODOS.forEach(p => {
+    if (p.receso) {
+      html += `<tr class="hora-receso"><td colspan="7" class="hora-receso-cell">RECESO &nbsp;·&nbsp; ${p.rango}</td></tr>`;
+      return;
+    }
+    html += `<tr><td class="hora-td">${p.inicio}<br><span style="font-weight:400;font-size:10px;opacity:.75">${p.fin}</span></td>`;
     for (let dia = 1; dia <= 6; dia++) {
-      const entries = map[`${dia}-${hora}`] || [];
+      const entries = map[`${dia}-${p.inicio}`] || [];
       if (!entries.length) {
-        html += `<td class="cell-empty" onclick="abrirHorario(${dia},'${hora}')"></td>`;
+        html += `<td class="cell-empty" onclick="abrirHorario(${dia},'${p.inicio}')"></td>`;
       } else {
         html += `<td class="horario-entry-cell">`;
         entries.forEach(h => {
@@ -665,6 +755,11 @@ function renderLista() {
   }).join('');
 }
 
+function _periodoVal(inicio, fin) {
+  const p = PERIODOS.find(x => !x.receso && x.inicio === inicio);
+  return p ? p.inicio + '|' + p.fin : (inicio && fin ? inicio + '|' + fin : '');
+}
+
 function abrirHorario(diaPreset, horaPreset) {
   _editHorario = null;
   $('mh-titulo').textContent = 'Nuevo Horario';
@@ -673,8 +768,7 @@ function abrirHorario(diaPreset, horaPreset) {
   sv('mh-maestro', '');
   sv('mh-dia',     diaPreset ? String(diaPreset) : '');
   sv('mh-aula',    '');
-  sv('mh-inicio',  horaPreset || '');
-  sv('mh-fin',     '');
+  sv('mh-periodo', _periodoVal(horaPreset, ''));
   openModal('modal-horario');
 }
 
@@ -688,8 +782,7 @@ function editarHorario(id) {
   sv('mh-maestro', h.maestro_id ? String(h.maestro_id) : '');
   sv('mh-dia',     String(h.dia));
   sv('mh-aula',    h.aula || '');
-  sv('mh-inicio',  h.hora_inicio || '');
-  sv('mh-fin',     h.hora_fin || '');
+  sv('mh-periodo', _periodoVal(h.hora_inicio, h.hora_fin));
   openModal('modal-horario');
 }
 
@@ -697,14 +790,12 @@ async function guardarHorario() {
   const grupo   = $('mh-grupo').value;
   const materia = $('mh-materia').value;
   const dia     = $('mh-dia').value;
-  const inicio  = $('mh-inicio').value;
-  const fin     = $('mh-fin').value;
+  const periodo = $('mh-periodo').value;
   if (!grupo)   { toast('Selecciona un grupo.', 'warn'); return; }
   if (!materia) { toast('Selecciona una materia.', 'warn'); return; }
   if (!dia)     { toast('Selecciona el día.', 'warn'); return; }
-  if (!inicio)  { toast('Selecciona la hora de inicio.', 'warn'); return; }
-  if (!fin)     { toast('Selecciona la hora de fin.', 'warn'); return; }
-  if (inicio >= fin) { toast('La hora fin debe ser mayor que la hora inicio.', 'warn'); return; }
+  if (!periodo) { toast('Selecciona el período.', 'warn'); return; }
+  const [inicio, fin] = periodo.split('|');
   try {
     await saveHorario({
       id: _editHorario,
@@ -763,10 +854,6 @@ function poblarSelectsHorario() {
   // Maestros
   $('mh-maestro').innerHTML = '<option value="">— Sin maestro —</option>' +
     _maestros.filter(m => m.activo !== false).map(m => `<option value="${m.id}">${esc(m.nombre)}</option>`).join('');
-  // Horas
-  const horaOpts = HORAS.map(h => `<option value="${h}">${h}</option>`).join('');
-  $('mh-inicio').innerHTML = '<option value="">—</option>' + horaOpts;
-  $('mh-fin').innerHTML    = '<option value="">—</option>' + horaOpts;
   // Filtros
   $('fil-grupo').innerHTML = '<option value="">— Todos los grupos —</option>' +
     _grupos.map(g => `<option value="${g.id}">${esc(g.nombre)}</option>`).join('');

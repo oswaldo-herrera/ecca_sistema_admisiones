@@ -660,7 +660,8 @@ async function getMaestros() {
 }
 async function saveMaestro(m) {
   const p = { nombre: m.nombre, correo: m.correo||null, telefono: m.telefono||null,
-               especialidad: m.especialidad||null, activo: m.activo !== false };
+               especialidad: m.especialidad||null, activo: m.activo !== false,
+               materias_ids: m.materiasIds || [] };
   if (m.id) p.id = parseInt(m.id);
   const { data, error } = await _sb.from('maestros').upsert(p).select();
   if (error) throw error;
