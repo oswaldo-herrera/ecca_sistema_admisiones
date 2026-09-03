@@ -551,7 +551,7 @@ function _aplicarPermisos(rol, nombre) {
 (async function() {
   const page = window.location.pathname.split('/').pop() || 'index.html';
 
-  if (page === 'login.html') return;
+  if (page === 'login.html' || page === 'checkin.html') return;
 
   const paginasProtegidas = ['formulario.html','base-datos.html','grupos.html',
     'pagos.html','recibo.html','credencial.html','usuarios.html'];
@@ -858,4 +858,77 @@ document.addEventListener('input', e => {
   el.value = sinAcento(el.value);
   try { el.setSelectionRange(pos, pos); } catch(_) {}
 });
+
+/* ---- Asistencia QR ---- */
+async function crearSesionQR(d) {
+  const { data, error } = await _sb.from('sesiones_qr').insert({
+    grupo_id:     d.grupoId     || null,
+    grupo_nombre: d.grupoNombre || null,
+    materia:      d.materia     || null,
+    profesor:     d.profesor    || null,
+    fecha:        d.fecha,
+    expira_at:    d.expiraAt,
+    activa:       true,
+  }).select();
+  if (error) throw error;
+  return data[0];
+}
+
+async function getSesionQR(id) {
+  const { data, error } = await _sb.from('sesiones_qr').select('*').eq('id', id).maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+async function cerrarSesionQR(id) {
+  const { error } = await _sb.from('sesiones_qr').update({ activa: false }).eq('id', id);
+  if (error) throw error;
+}
+
+async function registrarAsistencia(d) {
+  const { data, error } = await _sb.from('asistencias').insert({
+    sesion_id:    d.sesionId,
+    folio:        d.folio,
+    nombre:       d.nombre      || null,
+    grupo_id:     d.grupoId     || null,
+    grupo_nombre: d.grupoNombre || null,
+    materia:      d.materia     || null,
+    fecha:        d.fecha,
+  }).select();
+  if (error) throw error;
+  return data[0];
+}
+
+async function getAsistenciasSesion(sesionId) {
+  const { data, error } = await _sb.from('asistencias')
+    .select('*').eq('sesion_id', sesionId).order('created_at');
+  if (error) throw error;
+  return data || [];
+}
+
+async function getSesionesQR({ grupoId, materia, desde, hasta } = {}) {
+  let q = _sb.from('sesiones_qr').select('*')
+    .order('fecha', { ascending: false })
+    .order('created_at', { ascending: false });
+  if (desde) q = q.gte('fecha', desde);
+  if (hasta) q = q.lte('fecha', hasta);
+  if (grupoId) q = q.eq('grupo_id', parseInt(grupoId));
+  if (materia) q = q.ilike('materia', '%' + materia + '%');
+  const { data, error } = await q;
+  if (error) throw error;
+  return data || [];
+}
+
+async function getAsistenciasBySesiones(sesionIds) {
+  if (!sesionIds.length) return [];
+  const { data, error } = await _sb.from('asistencias')
+    .select('*').in('sesion_id', sesionIds).order('created_at');
+  if (error) throw error;
+  return data || [];
+}
+
+async function eliminarAsistencia(id) {
+  const { error } = await _sb.from('asistencias').delete().eq('id', id);
+  if (error) throw error;
+}
 

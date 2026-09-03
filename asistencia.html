@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ECCA — Asistencia QR</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="css/styles.css">
+<style>
+  .as-countdown { font-size: 48px; font-weight: 800; color: var(--gold); text-align: center; line-height: 1; letter-spacing: -2px; }
+  .as-countdown.urgente { color: #ef4444; }
+  .as-qr-wrap { display: flex; justify-content: center; padding: 12px 0; }
+  .as-qr-wrap canvas, .as-qr-wrap img { border-radius: 8px; box-shadow: 0 2px 16px rgba(0,0,0,.15); }
+  .as-url-box { background: var(--bg-hover); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; font-size: 11px; color: var(--navy); word-break: break-all; text-align: center; margin: 8px 0; }
+  .as-alumno-fila { display: flex; align-items: center; gap: 12px; padding: 9px 16px; border-bottom: 1px solid var(--border); animation: fadeIn .3s ease; }
+  .as-alumno-fila:last-child { border-bottom: none; }
+  .as-num { width: 28px; height: 28px; border-radius: 50%; background: var(--navy); color: #fff; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .as-info { flex: 1; min-width: 0; }
+  .as-nom { font-weight: 600; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .as-meta { font-size: 11px; color: var(--text-muted); }
+  .as-hora { font-size: 11px; color: var(--text-muted); white-space: nowrap; }
+  .as-espera { text-align: center; padding: 40px 20px; color: var(--text-muted); }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+</style>
+</head>
+<body data-modulo="asistencia">
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-brand">
+      <div class="sb-logo" style="background:#fff;padding:3px">
+        <img src="images/ecca_logo.png" alt="Logo ECCA" style="width:100%;height:100%;object-fit:contain;display:block">
+      </div>
+      <div>
+        <div class="sb-brand-name">ECCA Prepa León</div>
+        <div class="sb-brand-sub">Sistema de Admisiones</div>
+      </div>
+    </div>
+    <nav class="sb-nav">
+      <div class="sb-group-label">Principal</div>
+      <a href="index.html" class="sb-item" data-modulo="inicio"><i class="fas fa-house"></i><span>Inicio</span></a>
+      <a href="formulario.html" class="sb-item" data-modulo="nueva-inscripcion"><i class="fas fa-user-plus"></i><span>Nueva Inscripción</span></a>
+      <div class="sb-group-label">Gestión</div>
+      <a href="base-datos.html" class="sb-item" data-modulo="base-datos"><i class="fas fa-table-list"></i><span>Base de Datos</span><span class="sb-badge">0</span></a>
+      <a href="grupos.html" class="sb-item" data-modulo="grupos"><i class="fas fa-people-group"></i><span>Grupos</span></a>
+      <a href="sin-grupo.html" class="sb-item" style="display:none"><i class="fas fa-user-clock"></i><span>Sin Grupo</span></a>
+      <a href="deportes.html" class="sb-item" data-modulo="deportes"><i class="fas fa-futbol"></i><span>Deportes</span></a>
+      <a href="horarios.html" class="sb-item" data-modulo="horarios"><i class="fas fa-calendar-week"></i><span>Horarios</span></a>
+      <a href="asistencia.html" class="sb-item" data-modulo="asistencia"><i class="fas fa-qrcode"></i><span>Asistencia QR</span></a>
+      <a href="lista-asistencias.html" class="sb-item" data-modulo="lista-asistencias"><i class="fas fa-clipboard-check"></i><span>Listas de Asistencia</span></a>
+      <a href="calificaciones.html" class="sb-item" data-modulo="calificaciones"><i class="fas fa-star-half-stroke"></i><span>Calificaciones</span></a>
+      <a href="documentos.html" class="sb-item" data-modulo="documentos"><i class="fas fa-folder-open"></i><span>Documentos</span></a>
+      <a href="pagos.html" class="sb-item" data-modulo="pagos"><i class="fas fa-circle-dollar-to-slot"></i><span>Pagos</span></a>
+      <a href="recibo.html" class="sb-item" data-modulo="recibo"><i class="fas fa-file-invoice"></i><span>Recibo</span></a>
+      <a href="credencial.html" class="sb-item" data-modulo="credencial"><i class="fas fa-id-card"></i><span>Credencial</span></a>
+      <div class="sb-group-label">Administración</div>
+      <a href="bitacora.html" class="sb-item" data-modulo="bitacora"><i class="fas fa-clipboard-list"></i><span>Bitácora</span></a>
+      <a href="usuarios.html" class="sb-item" data-modulo="usuarios"><i class="fas fa-users-gear"></i><span>Usuarios</span></a>
+    </nav>
+    <div class="sb-footer">
+      <i class="fas fa-location-dot"></i> 5 de Febrero 628, Centro, León, Gto.<br>
+      Tel. 479 153 4007
+    </div>
+  </aside>
+  <div class="sidebar-overlay"></div>
+
+  <!-- MAIN -->
+  <div class="main-content">
+
+    <header class="topbar">
+      <button class="topbar-hamburger" aria-label="Menú"><i class="fas fa-bars"></i></button>
+      <nav class="topbar-breadcrumb">
+        <a href="index.html"><i class="fas fa-house"></i></a>
+        <span class="sep">›</span>
+        <span class="current">Asistencia QR</span>
+      </nav>
+    </header>
+
+    <div class="page-header">
+      <div>
+        <div class="page-title">Control de Asistencia</div>
+        <div class="page-sub">Genera un QR por clase — los alumnos lo escanean con su celular y quedan registrados automáticamente.</div>
+      </div>
+    </div>
+
+    <div class="page-body">
+
+      <!-- ===== PANEL: CREAR SESIÓN ===== -->
+      <div id="panel-nueva">
+        <div class="card" style="max-width:540px">
+          <div class="card-header">
+            <div class="ch-icon ch-navy"><i class="fas fa-qrcode"></i></div>
+            <div>
+              <div class="ch-title">Nueva sesión de asistencia</div>
+              <div class="ch-sub">Configura la clase y genera el QR para los alumnos</div>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="form-grid" style="margin-bottom:14px">
+              <div class="field full">
+                <label class="field-label">Grupo <span class="req">*</span></label>
+                <select class="field-select" id="as-grupo">
+                  <option value="">— Seleccionar grupo —</option>
+                </select>
+              </div>
+              <div class="field">
+                <label class="field-label">Materia <span class="req">*</span></label>
+                <input class="field-input" id="as-materia" type="text" placeholder="Ej. Matemáticas" data-mayus>
+              </div>
+              <div class="field">
+                <label class="field-label">Profesor <span class="req">*</span></label>
+                <input class="field-input" id="as-profesor" type="text" placeholder="Nombre del profesor" data-mayus>
+              </div>
+              <div class="field">
+                <label class="field-label">Duración del QR</label>
+                <select class="field-select" id="as-duracion">
+                  <option value="10">10 minutos</option>
+                  <option value="15" selected>15 minutos</option>
+                  <option value="20">20 minutos</option>
+                  <option value="30">30 minutos</option>
+                  <option value="60">1 hora completa</option>
+                </select>
+              </div>
+            </div>
+            <button class="btn btn-primary" onclick="generarSesion()">
+              <i class="fas fa-qrcode"></i> Generar QR de asistencia
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== PANEL: SESIÓN ACTIVA ===== -->
+      <div id="panel-activo" style="display:none">
+        <div style="display:grid;grid-template-columns:280px 1fr;gap:16px;align-items:start">
+
+          <!-- Columna QR -->
+          <div class="card" style="text-align:center">
+            <div class="card-body">
+              <div class="as-qr-wrap" id="as-qr-wrap"></div>
+              <div class="as-countdown" id="as-timer">--:--</div>
+              <div style="font-size:11px;color:var(--text-muted);margin-bottom:12px">Tiempo restante</div>
+              <div class="as-url-box" id="as-url-box"></div>
+              <div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap">
+                <button class="btn btn-secondary btn-sm" onclick="copiarUrl()">
+                  <i class="fas fa-copy"></i> Copiar enlace
+                </button>
+                <button class="btn btn-danger btn-sm" onclick="cerrarSesionActiva()">
+                  <i class="fas fa-stop"></i> Cerrar
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Columna info + lista -->
+          <div>
+            <!-- Info sesión -->
+            <div class="card" style="margin-bottom:12px">
+              <div class="card-body" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                <div>
+                  <div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px">Grupo</div>
+                  <div style="font-weight:700;font-size:15px;color:var(--navy)" id="as-info-grupo">—</div>
+                </div>
+                <div>
+                  <div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px">Materia</div>
+                  <div style="font-weight:700;font-size:15px;color:var(--navy)" id="as-info-materia">—</div>
+                </div>
+                <div>
+                  <div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px">Profesor</div>
+                  <div style="font-weight:600;font-size:13px" id="as-info-profesor">—</div>
+                </div>
+                <div>
+                  <div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px">Fecha</div>
+                  <div style="font-weight:600;font-size:13px" id="as-info-fecha">—</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Lista asistencias -->
+            <div class="card">
+              <div class="card-header">
+                <div class="ch-icon ch-gold"><i class="fas fa-users-line"></i></div>
+                <div>
+                  <div class="ch-title">Alumnos presentes</div>
+                  <div class="ch-sub"><span id="as-count">0</span> registrado(s)</div>
+                </div>
+                <span style="flex:1"></span>
+                <button class="btn btn-secondary btn-sm" onclick="refrescarAsistencias()">
+                  <i class="fas fa-rotate-right"></i> Actualizar
+                </button>
+              </div>
+              <div id="as-lista">
+                <div class="as-espera">
+                  <i class="fas fa-mobile-screen" style="font-size:36px;opacity:.25;display:block;margin-bottom:10px"></i>
+                  Esperando que los alumnos escaneen el QR...
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div><!-- /page-body -->
+  </div><!-- /main-content -->
+</div><!-- /layout -->
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="js/config.js"></script>
+<script src="js/app.js"></script>
+<script>
+let _asGrupos     = [];
+let _asSesion     = null;
+let _asAsistencias = [];
+let _asTimerInt   = null;
+let _asPollInt    = null;
+let _asUrl        = '';
+
+async function initAsistencia() {
+  _asGrupos = await getGrupos();
+  const sel = $('as-grupo');
+  _asGrupos.forEach(g => {
+    const o = document.createElement('option');
+    o.value = g.id; o.textContent = g.nombre;
+    sel.appendChild(o);
+  });
+  const nombre = sessionStorage.getItem('ecca_nombre') || '';
+  if (nombre) sv('as-profesor', nombre);
+}
+
+async function generarSesion() {
+  const grupoId  = gv('as-grupo');
+  const materia  = gv('as-materia');
+  const profesor = gv('as-profesor');
+  const mins     = parseInt($('as-duracion').value) || 15;
+  if (!grupoId)  { toast('Selecciona un grupo.', 'warn'); return; }
+  if (!materia)  { toast('Indica la materia.', 'warn'); return; }
+  if (!profesor) { toast('Indica el nombre del profesor.', 'warn'); return; }
+
+  const grupo    = _asGrupos.find(g => g.id === parseInt(grupoId));
+  const expiraAt = new Date(Date.now() + mins * 60 * 1000).toISOString();
+
+  try {
+    _asSesion = await crearSesionQR({
+      grupoId:     parseInt(grupoId),
+      grupoNombre: grupo?.nombre || '',
+      materia, profesor,
+      fecha:       today(),
+      expiraAt,
+    });
+
+    _asUrl = window.location.origin + '/checkin.html?sesion=' + _asSesion.id;
+
+    $('as-info-grupo').textContent    = grupo?.nombre || '—';
+    $('as-info-materia').textContent  = materia;
+    $('as-info-profesor').textContent = profesor;
+    $('as-info-fecha').textContent    = new Date().toLocaleDateString('es-MX', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
+    $('as-url-box').textContent       = _asUrl;
+
+    // QR
+    $('as-qr-wrap').innerHTML = '';
+    new QRCode($('as-qr-wrap'), {
+      text: _asUrl, width: 220, height: 220,
+      colorDark: '#1e3a5f', colorLight: '#ffffff',
+      correctLevel: QRCode.CorrectLevel.H
+    });
+
+    $('panel-nueva').style.display  = 'none';
+    $('panel-activo').style.display = 'block';
+
+    startCountdown(new Date(expiraAt));
+    _asAsistencias = [];
+    renderLista();
+    _asPollInt = setInterval(refrescarAsistencias, 5000);
+
+    toast('QR generado. ¡Los alumnos ya pueden escanear!', 'ok');
+  } catch(e) {
+    toast('Error al crear sesión: ' + e.message, 'err');
+  }
+}
+
+function startCountdown(expira) {
+  clearInterval(_asTimerInt);
+  const el = $('as-timer');
+  _asTimerInt = setInterval(async () => {
+    const resta = expira - new Date();
+    if (resta <= 0) {
+      clearInterval(_asTimerInt);
+      clearInterval(_asPollInt);
+      el.textContent = '00:00';
+      el.classList.add('urgente');
+      if (_asSesion) await cerrarSesionQR(_asSesion.id).catch(() => {});
+      toast('El tiempo del QR terminó. La sesión fue cerrada.', 'warn');
+      setTimeout(() => {
+        $('panel-activo').style.display = 'none';
+        $('panel-nueva').style.display  = 'block';
+        _asSesion = null;
+      }, 2500);
+      return;
+    }
+    const m = Math.floor(resta / 60000);
+    const s = Math.floor((resta % 60000) / 1000);
+    el.textContent = String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+    el.classList.toggle('urgente', resta < 60000);
+  }, 1000);
+}
+
+async function refrescarAsistencias() {
+  if (!_asSesion) return;
+  try {
+    const prev = _asAsistencias.length;
+    _asAsistencias = await getAsistenciasSesion(_asSesion.id);
+    renderLista();
+    if (_asAsistencias.length > prev) {
+      const nuevo = _asAsistencias[_asAsistencias.length - 1];
+      toast((nuevo.nombre || nuevo.folio) + ' registró asistencia.', 'ok');
+    }
+  } catch(e) { console.error(e); }
+}
+
+function renderLista() {
+  $('as-count').textContent = _asAsistencias.length;
+  if (!_asAsistencias.length) {
+    $('as-lista').innerHTML = `<div class="as-espera">
+      <i class="fas fa-mobile-screen" style="font-size:36px;opacity:.25;display:block;margin-bottom:10px"></i>
+      Esperando que los alumnos escaneen el QR...
+    </div>`;
+    return;
+  }
+  $('as-lista').innerHTML = _asAsistencias.map((a, i) => `
+    <div class="as-alumno-fila">
+      <div class="as-num">${i + 1}</div>
+      <div class="as-info">
+        <div class="as-nom">${esc(a.nombre || a.folio)}</div>
+        <div class="as-meta">${esc(a.folio)}${a.grupo_nombre ? ' · ' + esc(a.grupo_nombre) : ''}</div>
+      </div>
+      <div class="as-hora"><i class="fas fa-clock" style="margin-right:3px"></i>${new Date(a.created_at).toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'})}</div>
+    </div>`).join('');
+}
+
+async function cerrarSesionActiva() {
+  clearInterval(_asTimerInt);
+  clearInterval(_asPollInt);
+  if (_asSesion) {
+    await refrescarAsistencias();
+    await cerrarSesionQR(_asSesion.id).catch(() => {});
+    toast(`Sesión cerrada. ${_asAsistencias.length} asistencia(s) registrada(s).`, 'ok');
+    _asSesion = null;
+  }
+  $('panel-activo').style.display = 'none';
+  $('panel-nueva').style.display  = 'block';
+}
+
+function copiarUrl() {
+  navigator.clipboard.writeText(_asUrl)
+    .then(() => toast('Enlace copiado al portapapeles.', 'ok'))
+    .catch(() => { prompt('Copia este enlace para compartirlo:', _asUrl); });
+}
+
+initAsistencia();
+</script>
+</body>
+</html>

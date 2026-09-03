@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ECCA — Registro de Asistencia</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f0f4f8; min-height: 100vh; }
+
+  .ck-wrap { max-width: 420px; margin: 0 auto; padding: 14px 14px 40px; }
+
+  /* Header */
+  .ck-hdr { background: #1e3a5f; color: #fff; border-radius: 14px; padding: 14px 16px; display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+  .ck-hdr img { height: 46px; object-fit: contain; background: #fff; border-radius: 8px; padding: 3px; flex-shrink: 0; }
+  .ck-hdr h1 { font-size: 15px; font-weight: 800; line-height: 1.2; }
+  .ck-hdr p  { font-size: 11px; opacity: .7; margin-top: 2px; }
+
+  /* Card */
+  .ck-card { background: #fff; border-radius: 14px; padding: 16px; margin-bottom: 12px; box-shadow: 0 1px 6px rgba(0,0,0,.08); }
+  .ck-sec  { font-size: 11px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: .6px; margin-bottom: 10px; }
+
+  /* Info clase */
+  .ck-row  { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 5px; font-size: 13px; }
+  .ck-lbl  { color: #6b7280; }
+  .ck-val  { font-weight: 700; color: #1e3a5f; text-align: right; max-width: 60%; }
+
+  /* Timer */
+  .ck-timer { text-align: center; font-size: 36px; font-weight: 900; color: #b45309; margin-top: 6px; letter-spacing: -1px; }
+  .ck-timer.urgente { color: #dc2626; }
+  .ck-timer-lbl { text-align: center; font-size: 11px; color: #9ca3af; margin-top: 1px; }
+
+  /* Buscar alumno */
+  .ck-input { width: 100%; padding: 13px 14px; border: 2px solid #e5e7eb; border-radius: 10px; font-size: 15px; outline: none; transition: border-color .15s; }
+  .ck-input:focus { border-color: #1e3a5f; }
+  .ck-results { margin-top: 6px; max-height: 260px; overflow-y: auto; }
+  .ck-item { padding: 11px 13px; border-radius: 8px; cursor: pointer; border: 2px solid #e5e7eb; margin-bottom: 5px; transition: border-color .12s, background .12s; }
+  .ck-item:hover { border-color: #1e3a5f; background: #eff6ff; }
+  .ck-item-name { font-weight: 700; font-size: 14px; color: #111827; }
+  .ck-item-meta { font-size: 11px; color: #6b7280; margin-top: 1px; }
+
+  /* Alumno seleccionado */
+  .ck-sel { background: #f0fdf4; border: 2px solid #16a34a; border-radius: 10px; padding: 12px 14px; display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+  .ck-sel-icon { font-size: 24px; color: #16a34a; flex-shrink: 0; }
+  .ck-sel-name { font-weight: 700; font-size: 14px; }
+  .ck-sel-meta { font-size: 11px; color: #6b7280; }
+  .ck-desel { margin-left: auto; background: none; border: none; color: #9ca3af; cursor: pointer; font-size: 18px; padding: 4px; flex-shrink: 0; }
+
+  /* Botón principal */
+  .ck-btn { width: 100%; padding: 16px; background: #1e3a5f; color: #fff; border: none; border-radius: 12px; font-size: 16px; font-weight: 800; cursor: pointer; margin-top: 10px; transition: background .15s; letter-spacing: .3px; }
+  .ck-btn:hover:not(:disabled) { background: #162e4d; }
+  .ck-btn:disabled { opacity: .45; cursor: not-allowed; }
+
+  /* Estados éxito / error */
+  .ck-state { text-align: center; padding: 30px 16px; }
+  .ck-state .si { font-size: 72px; display: block; margin-bottom: 12px; }
+  .ck-state h2 { font-size: 22px; font-weight: 800; color: #1e3a5f; margin-bottom: 8px; }
+  .ck-state p  { color: #6b7280; font-size: 13px; line-height: 1.5; }
+  .si-ok  { color: #16a34a; }
+  .si-err { color: #dc2626; }
+
+  /* Loading */
+  .ck-loading { text-align: center; padding: 50px 16px; color: #6b7280; }
+  .ck-loading i { font-size: 36px; color: #1e3a5f; display: block; margin-bottom: 12px; }
+</style>
+</head>
+<body>
+<div class="ck-wrap">
+
+  <!-- Header escuela -->
+  <div class="ck-hdr">
+    <img src="images/ecca_logo.png" alt="ECCA">
+    <div>
+      <h1>ECCA Prepa León</h1>
+      <p>Registro de Asistencia</p>
+    </div>
+  </div>
+
+  <!-- Cargando -->
+  <div id="ck-loading" class="ck-card">
+    <div class="ck-loading">
+      <i class="fas fa-spinner fa-spin"></i>
+      Verificando sesión...
+    </div>
+  </div>
+
+  <!-- Error -->
+  <div id="ck-error" style="display:none" class="ck-card">
+    <div class="ck-state">
+      <i class="fas fa-circle-xmark si si-err"></i>
+      <h2 id="ck-err-titulo">Sesión no disponible</h2>
+      <p id="ck-err-msg">El código QR no es válido o ya expiró.</p>
+    </div>
+  </div>
+
+  <!-- Formulario principal -->
+  <div id="ck-form" style="display:none">
+
+    <!-- Info de la clase -->
+    <div class="ck-card">
+      <div class="ck-sec"><i class="fas fa-chalkboard-user" style="margin-right:5px"></i>Clase</div>
+      <div class="ck-row"><span class="ck-lbl">Materia</span><span class="ck-val" id="ck-materia">—</span></div>
+      <div class="ck-row"><span class="ck-lbl">Grupo</span><span class="ck-val" id="ck-grupo">—</span></div>
+      <div class="ck-row"><span class="ck-lbl">Profesor</span><span class="ck-val" id="ck-profesor">—</span></div>
+      <div class="ck-row"><span class="ck-lbl">Fecha</span><span class="ck-val" id="ck-fecha">—</span></div>
+      <div class="ck-timer" id="ck-timer">--:--</div>
+      <div class="ck-timer-lbl">Tiempo para registrarse</div>
+    </div>
+
+    <!-- Buscar alumno -->
+    <div class="ck-card">
+      <div class="ck-sec"><i class="fas fa-user-graduate" style="margin-right:5px"></i>¿Quién eres?</div>
+
+      <div id="ck-busqueda">
+        <input class="ck-input" id="ck-q" type="text" placeholder="Escribe tu nombre o folio..." autocomplete="off" autocorrect="off" spellcheck="false" oninput="buscarAlumnoCk()">
+        <div class="ck-results" id="ck-results"></div>
+      </div>
+
+      <div id="ck-sel-panel" style="display:none">
+        <div class="ck-sel">
+          <i class="fas fa-circle-check ck-sel-icon"></i>
+          <div>
+            <div class="ck-sel-name" id="ck-sel-nombre"></div>
+            <div class="ck-sel-meta" id="ck-sel-folio"></div>
+          </div>
+          <button class="ck-desel" onclick="deseleccionar()" title="Cambiar"><i class="fas fa-xmark"></i></button>
+        </div>
+      </div>
+
+      <button class="ck-btn" id="ck-btn" onclick="confirmar()" disabled>
+        <i class="fas fa-signature"></i>&nbsp; Confirmar mi asistencia
+      </button>
+    </div>
+
+  </div>
+
+  <!-- Éxito -->
+  <div id="ck-ok" style="display:none" class="ck-card">
+    <div class="ck-state">
+      <i class="fas fa-circle-check si si-ok"></i>
+      <h2>¡Asistencia registrada!</h2>
+      <p id="ck-ok-msg">Tu asistencia fue registrada correctamente.</p>
+    </div>
+  </div>
+
+</div><!-- /ck-wrap -->
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script src="js/app.js"></script>
+<script>
+let _ckSesion   = null;
+let _ckAlumno   = null;
+let _ckAlumnos  = [];
+let _ckTimerInt = null;
+
+function esc2(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function mostrarError(titulo, msg) {
+  $('ck-loading').style.display = 'none';
+  $('ck-form').style.display    = 'none';
+  $('ck-error').style.display   = 'block';
+  $('ck-err-titulo').textContent = titulo;
+  $('ck-err-msg').textContent    = msg;
+}
+
+function tickTimer(expira) {
+  const el = $('ck-timer');
+  if (!el) return;
+  const resta = expira - new Date();
+  if (resta <= 0) {
+    clearInterval(_ckTimerInt);
+    el.textContent = '00:00';
+    el.classList.add('urgente');
+    mostrarError('Tiempo agotado', 'El tiempo para registrar asistencia ya terminó. Pide al profesor que vuelva a abrir la sesión.');
+    return;
+  }
+  const m = Math.floor(resta / 60000);
+  const s = Math.floor((resta % 60000) / 1000);
+  el.textContent = String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+  if (resta < 60000) el.classList.add('urgente');
+}
+
+async function initCheckin() {
+  const params   = new URLSearchParams(window.location.search);
+  const sesionId = params.get('sesion');
+  if (!sesionId) { mostrarError('QR inválido', 'El enlace no contiene información de sesión. Escanea el código QR nuevamente.'); return; }
+
+  try {
+    _ckSesion = await getSesionQR(sesionId);
+
+    if (!_ckSesion) {
+      mostrarError('Sesión no encontrada', 'No se encontró ninguna sesión con este código. Pide al profesor que genere un nuevo QR.');
+      return;
+    }
+    if (!_ckSesion.activa) {
+      mostrarError('Sesión cerrada', 'El profesor ya cerró esta sesión de asistencia.');
+      return;
+    }
+    if (new Date(_ckSesion.expira_at) < new Date()) {
+      mostrarError('Sesión expirada', 'El tiempo para registrar asistencia ya terminó. Pide al profesor que genere un nuevo QR.');
+      return;
+    }
+
+    // Llenar info clase
+    $('ck-materia').textContent  = _ckSesion.materia      || '—';
+    $('ck-grupo').textContent    = _ckSesion.grupo_nombre  || '—';
+    $('ck-profesor').textContent = _ckSesion.profesor      || '—';
+    $('ck-fecha').textContent    = new Date(_ckSesion.fecha + 'T00:00:00').toLocaleDateString('es-MX', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
+
+    // Cargar lista de alumnos del grupo para búsqueda
+    let q = _sb.from('inscripciones').select('folio, nombre').not('nombre', 'is', null);
+    if (_ckSesion.grupo_id) q = q.eq('grupo_id', _ckSesion.grupo_id);
+    const { data: alumnos } = await q.order('nombre');
+    _ckAlumnos = alumnos || [];
+
+    $('ck-loading').style.display = 'none';
+    $('ck-form').style.display    = 'block';
+    $('ck-q').focus();
+
+    // Countdown
+    const expira = new Date(_ckSesion.expira_at);
+    tickTimer(expira);
+    _ckTimerInt = setInterval(() => tickTimer(expira), 1000);
+
+  } catch(e) {
+    mostrarError('Error de conexión', 'No se pudo verificar la sesión: ' + e.message);
+  }
+}
+
+function buscarAlumnoCk() {
+  const q    = ($('ck-q').value || '').toLowerCase().trim();
+  const cont = $('ck-results');
+  if (!q) { cont.innerHTML = ''; return; }
+
+  const res = _ckAlumnos.filter(a =>
+    (a.nombre || '').toLowerCase().includes(q) || (a.folio || '').toLowerCase().includes(q)
+  ).slice(0, 7);
+
+  if (!res.length) {
+    cont.innerHTML = '<div style="padding:12px;color:#9ca3af;font-size:12px;text-align:center">Sin resultados — intenta con otro nombre o folio</div>';
+    return;
+  }
+  cont.innerHTML = res.map(a => `
+    <div class="ck-item" onclick="seleccionar('${esc2(a.folio)}','${esc2(a.nombre || '')}')">
+      <div class="ck-item-name">${esc2(a.nombre || a.folio)}</div>
+      <div class="ck-item-meta">${esc2(a.folio)}</div>
+    </div>`).join('');
+}
+
+function seleccionar(folio, nombre) {
+  _ckAlumno = { folio, nombre };
+  $('ck-q').value          = '';
+  $('ck-results').innerHTML = '';
+  $('ck-busqueda').style.display   = 'none';
+  $('ck-sel-panel').style.display  = 'block';
+  $('ck-sel-nombre').textContent   = nombre || folio;
+  $('ck-sel-folio').textContent    = folio;
+  $('ck-btn').disabled = false;
+}
+
+function deseleccionar() {
+  _ckAlumno = null;
+  $('ck-busqueda').style.display  = 'block';
+  $('ck-sel-panel').style.display = 'none';
+  $('ck-btn').disabled = true;
+  $('ck-q').focus();
+}
+
+async function confirmar() {
+  if (!_ckAlumno || !_ckSesion) return;
+  const btn = $('ck-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>&nbsp; Registrando...';
+
+  try {
+    await registrarAsistencia({
+      sesionId:    _ckSesion.id,
+      folio:       _ckAlumno.folio,
+      nombre:      _ckAlumno.nombre,
+      grupoId:     _ckSesion.grupo_id,
+      grupoNombre: _ckSesion.grupo_nombre,
+      materia:     _ckSesion.materia,
+      fecha:       _ckSesion.fecha,
+    });
+    mostrarExito(_ckAlumno.nombre, _ckSesion.materia, _ckSesion.grupo_nombre);
+  } catch(e) {
+    if ((e.message || '').includes('duplicate') || e.code === '23505') {
+      // Ya estaba registrado — no es un error real
+      mostrarExito(_ckAlumno.nombre, _ckSesion.materia, _ckSesion.grupo_nombre, true);
+    } else {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-signature"></i>&nbsp; Confirmar mi asistencia';
+      alert('No se pudo registrar la asistencia: ' + e.message);
+    }
+  }
+}
+
+function mostrarExito(nombre, materia, grupo, yaRegistrado) {
+  clearInterval(_ckTimerInt);
+  $('ck-form').style.display = 'none';
+  $('ck-ok').style.display   = 'block';
+  $('ck-ok-msg').innerHTML   = yaRegistrado
+    ? `Ya tenías asistencia registrada en esta sesión, <strong>${esc2(nombre)}</strong>.`
+    : `<strong>${esc2(nombre)}</strong> — ${esc2(materia)} · ${esc2(grupo)}<br><span style="font-size:12px;color:#9ca3af;margin-top:4px;display:block">${new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'})}</span>`;
+}
+
+initCheckin();
+</script>
+</body>
+</html>

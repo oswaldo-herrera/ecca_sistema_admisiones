@@ -792,7 +792,8 @@ async function generarCorteDiario() {
     // Obtener folios del grupo
     let folios = null;
     let alumnosMap = {};
-    let grupoNomMap = {};  // folio → nombre del grupo
+    let grupoNomMap = {};      // folio → nombre del grupo
+    let folioModalidadMap = {}; // folio → modalidad del grupo
     if (grupoId) {
       const { data } = await _sb.from('inscripciones')
         .select('folio, nombre, grupo_id')
@@ -800,7 +801,7 @@ async function generarCorteDiario() {
       (data || []).forEach(a => {
         alumnosMap[a.folio] = a.nombre;
         const g = _ctGrupos.find(x => x.id === a.grupo_id);
-        if (g) grupoNomMap[a.folio] = g.nombre;
+        if (g) { grupoNomMap[a.folio] = g.nombre; folioModalidadMap[a.folio] = g.modalidad || ''; }
       });
       folios = Object.keys(alumnosMap);
       if (!folios.length) { $('ct-empty').style.display = 'block'; return; }
@@ -809,7 +810,7 @@ async function generarCorteDiario() {
       (data || []).forEach(a => {
         alumnosMap[a.folio] = a.nombre;
         const g = _ctGrupos.find(x => x.id === a.grupo_id);
-        if (g) grupoNomMap[a.folio] = g.nombre;
+        if (g) { grupoNomMap[a.folio] = g.nombre; folioModalidadMap[a.folio] = g.modalidad || ''; }
       });
     }
 
@@ -826,7 +827,7 @@ async function generarCorteDiario() {
     if (error) throw error;
 
     const pagos = (pagosData || []).filter(p => p.estado === 'confirmado' || !p.estado);
-    _cdPagosRaw = pagos.map(p => ({ ...p, _nombre: alumnosMap[p.folio] || p.folio, _grupo: grupoNomMap[p.folio] || '—' }));
+    _cdPagosRaw = pagos.map(p => ({ ...p, _nombre: alumnosMap[p.folio] || p.folio, _grupo: grupoNomMap[p.folio] || '—', _modalidad: folioModalidadMap[p.folio] || '' }));
 
     if (!_cdPagosRaw.length) { $('ct-empty').style.display = 'block'; return; }
 
@@ -1089,13 +1090,25 @@ function imprimirCorteDiario() {
   });
   const formasOrden = Object.keys(porForma).sort();
 
-  // Resumen por concepto
+  // Resumen por concepto — Colegiatura separada por modalidad
   const porConcepto = {};
   _cdPagosRaw.forEach(p => {
-    const k = p.concepto || 'Sin concepto';
+    let k = p.concepto || 'Sin concepto';
+    if (k === 'Colegiatura') {
+      const mod = (p._modalidad || '').toLowerCase();
+      const grp = (p._grupo     || '').toLowerCase();
+      if      (mod.includes('cuatri') || grp.includes('cuatri')) k = 'Colegiatura Cuatrimestral';
+      else if (mod.includes('sem')    || grp.includes('sem'))    k = 'Colegiatura Semestral';
+      // si no se puede determinar queda como 'Colegiatura'
+    }
     porConcepto[k] = (porConcepto[k] || 0) + parseFloat(p.monto || 0);
   });
-  const conceptosOrden = Object.keys(porConcepto).sort();
+  // Ordenar: Colegiatura Semestral y Cuatrimestral primero, luego resto alfabético
+  const _colKeys = ['Colegiatura Semestral', 'Colegiatura Cuatrimestral', 'Colegiatura'];
+  const conceptosOrden = [
+    ..._colKeys.filter(k => porConcepto[k]),
+    ...Object.keys(porConcepto).filter(k => !_colKeys.includes(k)).sort()
+  ];
 
   const _thStyle = 'text-align:left;padding:5px 10px;background:#f1f5f9;border:1px solid #dde3ea;font-size:11px;color:#64748b';
   const _thR    = 'text-align:right;padding:5px 10px;background:#f1f5f9;border:1px solid #dde3ea;font-size:11px;color:#64748b';
@@ -1122,6 +1135,20 @@ function imprimirCorteDiario() {
     <tfoot><tr><td style="${_tfL}">Total</td><td style="${_tfR}">${fmtMoney(totalGral)}</td></tr></tfoot>
   </table>`;
 
+  const firmaHtml = `
+    <div style="margin-top:36px;display:grid;grid-template-columns:1fr 1fr;gap:40px">
+      <div style="text-align:center">
+        <div style="border-top:1px solid #374151;margin-bottom:6px"></div>
+        <div style="font-size:11px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.5px">Recibió</div>
+        <div style="font-size:10px;color:#6b7280;margin-top:3px">Nombre y firma</div>
+      </div>
+      <div style="text-align:center">
+        <div style="border-top:1px solid #374151;margin-bottom:6px"></div>
+        <div style="font-size:11px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.5px">Vo. Bo. Dirección</div>
+        <div style="font-size:10px;color:#6b7280;margin-top:3px">Nombre y firma</div>
+      </div>
+    </div>`;
+
   const resumenHtml = `
     <div style="margin-top:22px;border-top:2px solid #1e3a5f;padding-top:14px">
       <div style="font-size:13px;font-weight:700;color:#1e3a5f;margin-bottom:12px">Desglose de la recaudación</div>
@@ -1135,6 +1162,7 @@ function imprimirCorteDiario() {
           ${tablaConcepto}
         </div>
       </div>
+      ${firmaHtml}
     </div>`;
 
   _abrirVentanaPDF('Corte Diario de Pagos',

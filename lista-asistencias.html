@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ECCA — Lista de Asistencias</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="css/styles.css">
+<style>
+  .dia-hdr { display:flex; align-items:center; gap:10px; padding:10px 0 6px; border-bottom:2px solid var(--border); margin-bottom:10px; margin-top:20px; }
+  .dia-hdr:first-child { margin-top:0; }
+  .dia-hdr-fecha { font-size:15px; font-weight:800; color:var(--navy); }
+  .dia-hdr-sub { font-size:12px; color:var(--text-muted); }
+
+  .sesion-card { border:1px solid var(--border); border-radius:var(--r-lg); overflow:hidden; margin-bottom:12px; }
+  .sesion-hdr { background:var(--navy); color:#fff; padding:10px 16px; display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+  .sesion-materia { font-weight:800; font-size:14px; }
+  .sesion-grupo { font-size:12px; background:rgba(255,255,255,.15); padding:2px 8px; border-radius:20px; }
+  .sesion-meta { font-size:11px; opacity:.8; margin-left:auto; white-space:nowrap; }
+  .sesion-actions { display:flex; gap:6px; }
+
+  .sesion-body { padding:0; }
+  .al-row { display:flex; align-items:center; gap:10px; padding:8px 16px; border-bottom:1px solid var(--border); }
+  .al-row:last-child { border-bottom:none; }
+  .al-num { width:24px; height:24px; border-radius:50%; background:var(--bg-hover); font-size:11px; font-weight:700; color:var(--navy); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .al-nombre { font-weight:600; font-size:13px; flex:1; }
+  .al-folio { font-size:11px; color:var(--text-muted); }
+  .al-hora { font-size:11px; color:var(--text-muted); white-space:nowrap; }
+  .al-del { background:none; border:none; color:var(--text-muted); cursor:pointer; padding:3px 6px; border-radius:4px; font-size:12px; }
+  .al-del:hover { color:#ef4444; background:#fef2f2; }
+
+  .sesion-empty { text-align:center; padding:24px; color:var(--text-muted); font-size:13px; }
+  .sesion-footer { background:var(--bg-hover); padding:7px 16px; font-size:12px; display:flex; justify-content:space-between; align-items:center; }
+
+  /* Buscar para agregar */
+  .add-panel { padding:12px 16px; background:var(--bg-hover); border-top:1px solid var(--border); }
+  .add-sr { background:#fff; border:1px solid var(--border); border-radius:8px; margin-top:6px; max-height:180px; overflow-y:auto; }
+  .add-sr-item { padding:8px 12px; cursor:pointer; border-bottom:1px solid var(--border); font-size:13px; }
+  .add-sr-item:last-child { border-bottom:none; }
+  .add-sr-item:hover { background:var(--bg-hover); }
+  .add-sr-item b { display:block; font-weight:600; }
+  .add-sr-item span { font-size:11px; color:var(--text-muted); }
+</style>
+</head>
+<body data-modulo="lista-asistencias">
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-brand">
+      <div class="sb-logo" style="background:#fff;padding:3px">
+        <img src="images/ecca_logo.png" alt="Logo ECCA" style="width:100%;height:100%;object-fit:contain;display:block">
+      </div>
+      <div>
+        <div class="sb-brand-name">ECCA Prepa León</div>
+        <div class="sb-brand-sub">Sistema de Admisiones</div>
+      </div>
+    </div>
+    <nav class="sb-nav">
+      <div class="sb-group-label">Principal</div>
+      <a href="index.html" class="sb-item" data-modulo="inicio"><i class="fas fa-house"></i><span>Inicio</span></a>
+      <a href="formulario.html" class="sb-item" data-modulo="nueva-inscripcion"><i class="fas fa-user-plus"></i><span>Nueva Inscripción</span></a>
+      <div class="sb-group-label">Gestión</div>
+      <a href="base-datos.html" class="sb-item" data-modulo="base-datos"><i class="fas fa-table-list"></i><span>Base de Datos</span><span class="sb-badge">0</span></a>
+      <a href="grupos.html" class="sb-item" data-modulo="grupos"><i class="fas fa-people-group"></i><span>Grupos</span></a>
+      <a href="sin-grupo.html" class="sb-item" style="display:none"><i class="fas fa-user-clock"></i><span>Sin Grupo</span></a>
+      <a href="deportes.html" class="sb-item" data-modulo="deportes"><i class="fas fa-futbol"></i><span>Deportes</span></a>
+      <a href="horarios.html" class="sb-item" data-modulo="horarios"><i class="fas fa-calendar-week"></i><span>Horarios</span></a>
+      <a href="asistencia.html" class="sb-item" data-modulo="asistencia"><i class="fas fa-qrcode"></i><span>Asistencia QR</span></a>
+      <a href="lista-asistencias.html" class="sb-item" data-modulo="lista-asistencias"><i class="fas fa-clipboard-check"></i><span>Listas de Asistencia</span></a>
+      <a href="calificaciones.html" class="sb-item" data-modulo="calificaciones"><i class="fas fa-star-half-stroke"></i><span>Calificaciones</span></a>
+      <a href="documentos.html" class="sb-item" data-modulo="documentos"><i class="fas fa-folder-open"></i><span>Documentos</span></a>
+      <a href="pagos.html" class="sb-item" data-modulo="pagos"><i class="fas fa-circle-dollar-to-slot"></i><span>Pagos</span></a>
+      <a href="recibo.html" class="sb-item" data-modulo="recibo"><i class="fas fa-file-invoice"></i><span>Recibo</span></a>
+      <a href="credencial.html" class="sb-item" data-modulo="credencial"><i class="fas fa-id-card"></i><span>Credencial</span></a>
+      <div class="sb-group-label">Administración</div>
+      <a href="bitacora.html" class="sb-item" data-modulo="bitacora"><i class="fas fa-clipboard-list"></i><span>Bitácora</span></a>
+      <a href="usuarios.html" class="sb-item" data-modulo="usuarios"><i class="fas fa-users-gear"></i></i><span>Usuarios</span></a>
+    </nav>
+    <div class="sb-footer">
+      <i class="fas fa-location-dot"></i> 5 de Febrero 628, Centro, León, Gto.<br>
+      Tel. 479 153 4007
+    </div>
+  </aside>
+  <div class="sidebar-overlay"></div>
+
+  <!-- MAIN -->
+  <div class="main-content">
+
+    <header class="topbar">
+      <button class="topbar-hamburger" aria-label="Menú"><i class="fas fa-bars"></i></button>
+      <nav class="topbar-breadcrumb">
+        <a href="index.html"><i class="fas fa-house"></i></a>
+        <span class="sep">›</span>
+        <a href="asistencia.html">Asistencia QR</a>
+        <span class="sep">›</span>
+        <span class="current">Listas</span>
+      </nav>
+    </header>
+
+    <div class="page-header">
+      <div>
+        <div class="page-title">Listas de Asistencia</div>
+        <div class="page-sub">Consulta los registros generados por QR. Puedes agregar alumnos manualmente e imprimir listas.</div>
+      </div>
+      <div class="page-actions">
+        <a href="asistencia.html"><button class="btn btn-primary btn-sm"><i class="fas fa-qrcode"></i> Generar QR</button></a>
+      </div>
+    </div>
+
+    <div class="page-body">
+
+      <!-- Filtros -->
+      <div class="card" style="margin-bottom:14px">
+        <div class="card-body">
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:12px;align-items:end">
+            <div class="field">
+              <label class="field-label">Grupo</label>
+              <select class="field-select" id="la-grupo">
+                <option value="">Todos los grupos</option>
+              </select>
+            </div>
+            <div class="field">
+              <label class="field-label">Materia</label>
+              <input class="field-input" id="la-materia" type="text" placeholder="Todas las materias">
+            </div>
+            <div class="field">
+              <label class="field-label">Fecha inicio</label>
+              <input class="field-input" id="la-desde" type="date">
+            </div>
+            <div class="field">
+              <label class="field-label">Fecha fin</label>
+              <input class="field-input" id="la-hasta" type="date">
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="buscarListas()" style="white-space:nowrap">
+              <i class="fas fa-magnifying-glass"></i> Buscar
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats-row" id="la-stats" style="margin-bottom:14px;display:none"></div>
+
+      <!-- Resultado -->
+      <div id="la-resultado"></div>
+
+      <!-- Empty -->
+      <div id="la-empty" style="display:none;text-align:center;padding:60px;color:var(--text-muted)">
+        <i class="fas fa-clipboard-check" style="font-size:40px;opacity:.2;display:block;margin-bottom:12px"></i>
+        <p>Sin registros en el rango seleccionado.</p>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Modal agregar alumno -->
+<div class="modal-ov" id="modal-agregar">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3><i class="fas fa-user-plus" style="color:var(--gold)"></i> Agregar alumno a la lista</h3>
+      <button class="modal-close" onclick="closeModal('modal-agregar')">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px">Busca al alumno que olvidó escanear el QR.</p>
+      <input class="field-input" id="mod-q" type="text" placeholder="Nombre o folio..." oninput="buscarParaAgregar()" autocomplete="off">
+      <div id="mod-results" style="margin-top:8px;max-height:220px;overflow-y:auto"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary btn-sm" onclick="closeModal('modal-agregar')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script src="js/app.js"></script>
+<script>
+let _laGrupos    = [];
+let _laSesiones  = [];
+let _laAsistMap  = {};   // sesionId → [asistencias]
+let _laAlumnos   = [];   // para búsqueda en modal
+let _laTargetSes = null; // sesión a la que se agrega alumno manualmente
+
+/* ---- Init ---- */
+async function initListas() {
+  _laGrupos = await getGrupos();
+  const sel = $('la-grupo');
+  _laGrupos.forEach(g => {
+    const o = document.createElement('option');
+    o.value = g.id; o.textContent = g.nombre;
+    sel.appendChild(o);
+  });
+  // Defaults: última semana
+  const hoy   = new Date();
+  const lunes = new Date(hoy);
+  lunes.setDate(hoy.getDate() - 6);
+  $('la-desde').value = lunes.toISOString().slice(0, 10);
+  $('la-hasta').value = hoy.toISOString().slice(0, 10);
+}
+
+/* ---- Buscar ---- */
+async function buscarListas() {
+  const grupoId = $('la-grupo').value;
+  const materia = ($('la-materia').value || '').trim();
+  const desde   = $('la-desde').value;
+  const hasta   = $('la-hasta').value;
+  if (!desde || !hasta) { toast('Selecciona el rango de fechas.', 'warn'); return; }
+
+  $('la-resultado').innerHTML = '<div style="text-align:center;padding:40px"><i class="fas fa-spinner fa-spin" style="font-size:24px;color:var(--gold)"></i></div>';
+  $('la-empty').style.display  = 'none';
+  $('la-stats').style.display  = 'none';
+
+  try {
+    _laSesiones = await getSesionesQR({ grupoId: grupoId || null, materia: materia || null, desde, hasta });
+
+    if (!_laSesiones.length) {
+      $('la-resultado').innerHTML = '';
+      $('la-empty').style.display = 'block';
+      return;
+    }
+
+    const sesionIds = _laSesiones.map(s => s.id);
+    const asisArr   = await getAsistenciasBySesiones(sesionIds);
+
+    // Agrupar asistencias por sesion_id
+    _laAsistMap = {};
+    sesionIds.forEach(id => { _laAsistMap[id] = []; });
+    asisArr.forEach(a => { if (_laAsistMap[a.sesion_id]) _laAsistMap[a.sesion_id].push(a); });
+
+    // Stats
+    const totalSesiones  = _laSesiones.length;
+    const totalAlumnos   = asisArr.length;
+    const diasSet        = new Set(_laSesiones.map(s => s.fecha));
+    $('la-stats').style.display = '';
+    $('la-stats').innerHTML = `
+      <div class="stat-card">
+        <div class="stat-icon si-blue"><i class="fas fa-calendar-day"></i></div>
+        <div><div class="stat-val">${diasSet.size}</div><div class="stat-lbl">Día(s)</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon si-navy"><i class="fas fa-chalkboard-user"></i></div>
+        <div><div class="stat-val">${totalSesiones}</div><div class="stat-lbl">Sesiones</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon si-gold"><i class="fas fa-users-line"></i></div>
+        <div><div class="stat-val">${totalAlumnos}</div><div class="stat-lbl">Asistencias totales</div></div>
+      </div>`;
+
+    renderListas();
+  } catch(e) {
+    toast('Error al cargar: ' + e.message, 'err');
+    $('la-resultado').innerHTML = '';
+  }
+}
+
+/* ---- Render ---- */
+function renderListas() {
+  // Agrupar sesiones por fecha
+  const porFecha = {};
+  const fechaOrder = [];
+  _laSesiones.forEach(s => {
+    if (!porFecha[s.fecha]) { porFecha[s.fecha] = []; fechaOrder.push(s.fecha); }
+    porFecha[s.fecha].push(s);
+  });
+
+  $('la-resultado').innerHTML = fechaOrder.map(fecha => {
+    const sesiones = porFecha[fecha];
+    const d = new Date(fecha + 'T00:00:00');
+    const diaLabel = d.toLocaleDateString('es-MX', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
+    const totalDia = sesiones.reduce((s, ses) => s + (_laAsistMap[ses.id]?.length || 0), 0);
+
+    return `
+      <div class="dia-hdr">
+        <i class="fas fa-calendar-day" style="color:var(--gold)"></i>
+        <span class="dia-hdr-fecha">${diaLabel}</span>
+        <span class="dia-hdr-sub">${sesiones.length} sesión(es) · ${totalDia} asistencias</span>
+      </div>
+      ${sesiones.map(ses => renderSesionCard(ses)).join('')}`;
+  }).join('');
+}
+
+function renderSesionCard(ses) {
+  const lista   = _laAsistMap[ses.id] || [];
+  const horaIni = new Date(ses.created_at).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+
+  const filas = lista.length
+    ? lista.map((a, i) => `
+        <div class="al-row" id="al-row-${a.id}">
+          <div class="al-num">${i + 1}</div>
+          <div style="flex:1;min-width:0">
+            <div class="al-nombre">${esc(a.nombre || a.folio)}</div>
+            <div class="al-folio">${esc(a.folio)}</div>
+          </div>
+          <div class="al-hora"><i class="fas fa-clock" style="margin-right:3px"></i>${new Date(a.created_at).toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'})}</div>
+          <button class="al-del" onclick="quitarAlumno('${ses.id}',${a.id})" title="Quitar de la lista"><i class="fas fa-xmark"></i></button>
+        </div>`).join('')
+    : `<div class="sesion-empty"><i class="fas fa-user-slash" style="display:block;font-size:24px;opacity:.2;margin-bottom:6px"></i>Ningún alumno escaneó el QR en esta sesión</div>`;
+
+  const addId = 'add-' + ses.id;
+
+  return `
+    <div class="sesion-card" id="sc-${ses.id}">
+      <div class="sesion-hdr">
+        <div>
+          <div class="sesion-materia">${esc(ses.materia || '—')}</div>
+          <div style="font-size:11px;margin-top:2px;opacity:.8">Prof. ${esc(ses.profesor || '—')}</div>
+        </div>
+        <span class="sesion-grupo">${esc(ses.grupo_nombre || '—')}</span>
+        <span class="sesion-meta"><i class="fas fa-clock" style="margin-right:4px"></i>${horaIni}</span>
+        <div class="sesion-actions">
+          <button class="btn btn-secondary btn-sm" style="background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.3);color:#fff" onclick="imprimirSesion('${ses.id}')">
+            <i class="fas fa-print"></i> PDF
+          </button>
+          <button class="btn btn-secondary btn-sm" style="background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.3);color:#fff" onclick="abrirAgregar('${ses.id}',${ses.grupo_id || 'null'})">
+            <i class="fas fa-user-plus"></i> Agregar
+          </button>
+        </div>
+      </div>
+      <div class="sesion-body" id="sb-${ses.id}">
+        ${filas}
+      </div>
+      <div class="sesion-footer">
+        <span><i class="fas fa-users" style="margin-right:4px;color:var(--gold)"></i><strong id="cnt-${ses.id}">${lista.length}</strong> alumno(s) presentes</span>
+        ${ses.activa ? '<span style="color:#16a34a;font-size:11px"><i class="fas fa-circle" style="font-size:8px;margin-right:4px"></i>Sesión activa</span>' : '<span style="font-size:11px;color:var(--text-muted)">Sesión cerrada</span>'}
+      </div>
+      <div id="${addId}" style="display:none"></div>
+    </div>`;
+}
+
+/* ---- Quitar alumno ---- */
+async function quitarAlumno(sesionId, asistenciaId) {
+  confirm2('Quitar alumno', '¿Quitar a este alumno de la lista? Solo se elimina el registro, no afecta al alumno.', async () => {
+    try {
+      await eliminarAsistencia(asistenciaId);
+      // Actualizar estado local
+      _laAsistMap[sesionId] = (_laAsistMap[sesionId] || []).filter(a => a.id !== asistenciaId);
+      // Re-renderizar esa sesión
+      const ses = _laSesiones.find(s => s.id === sesionId);
+      if (ses) {
+        const card = document.getElementById('sc-' + sesionId);
+        if (card) card.outerHTML = renderSesionCard(ses);
+      }
+      toast('Alumno quitado de la lista.', 'ok');
+    } catch(e) { toast('Error: ' + e.message, 'err'); }
+  }, 'Quitar', 'btn-danger');
+}
+
+/* ---- Agregar alumno manualmente ---- */
+async function abrirAgregar(sesionId, grupoId) {
+  _laTargetSes = sesionId;
+  // Cargar alumnos del grupo
+  let q = _sb.from('inscripciones').select('folio, nombre').not('nombre', 'is', null);
+  if (grupoId) q = q.eq('grupo_id', grupoId);
+  const { data } = await q.order('nombre');
+  _laAlumnos = data || [];
+  sv('mod-q', '');
+  $('mod-results').innerHTML = '';
+  openModal('modal-agregar');
+  setTimeout(() => $('mod-q').focus(), 100);
+}
+
+function buscarParaAgregar() {
+  const q = ($('mod-q').value || '').toLowerCase().trim();
+  if (!q) { $('mod-results').innerHTML = ''; return; }
+  const res = _laAlumnos.filter(a =>
+    (a.nombre || '').toLowerCase().includes(q) || (a.folio || '').toLowerCase().includes(q)
+  ).slice(0, 8);
+  if (!res.length) {
+    $('mod-results').innerHTML = '<div style="padding:10px;color:var(--text-muted);font-size:12px;text-align:center">Sin resultados</div>';
+    return;
+  }
+  $('mod-results').innerHTML = res.map(a => `
+    <div class="add-sr-item" onclick="agregarAlumno('${esc(a.folio)}','${esc(a.nombre || '')}')">
+      <b>${esc(a.nombre || a.folio)}</b>
+      <span>${esc(a.folio)}</span>
+    </div>`).join('');
+}
+
+async function agregarAlumno(folio, nombre) {
+  if (!_laTargetSes) return;
+  const ses = _laSesiones.find(s => s.id === _laTargetSes);
+  // Verificar si ya está
+  const yaEsta = (_laAsistMap[_laTargetSes] || []).some(a => a.folio === folio);
+  if (yaEsta) { toast('Este alumno ya está en la lista.', 'warn'); return; }
+  try {
+    const nuevo = await registrarAsistencia({
+      sesionId:    _laTargetSes,
+      folio,
+      nombre,
+      grupoId:     ses?.grupo_id   || null,
+      grupoNombre: ses?.grupo_nombre || null,
+      materia:     ses?.materia    || null,
+      fecha:       ses?.fecha      || today(),
+    });
+    _laAsistMap[_laTargetSes].push(nuevo);
+    // Re-renderizar la card
+    if (ses) {
+      const card = document.getElementById('sc-' + _laTargetSes);
+      if (card) card.outerHTML = renderSesionCard(ses);
+    }
+    closeModal('modal-agregar');
+    toast(nombre + ' agregado a la lista.', 'ok');
+  } catch(e) {
+    if ((e.message || '').includes('duplicate') || e.code === '23505') {
+      toast('Este alumno ya tiene asistencia en esta sesión.', 'warn');
+    } else {
+      toast('Error: ' + e.message, 'err');
+    }
+  }
+}
+
+/* ---- PDF de una sesión ---- */
+function imprimirSesion(sesionId) {
+  const ses   = _laSesiones.find(s => s.id === sesionId);
+  const lista = _laAsistMap[sesionId] || [];
+  if (!ses) return;
+
+  const fecha = new Date(ses.fecha + 'T00:00:00').toLocaleDateString('es-MX', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
+  const horaIni = new Date(ses.created_at).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+
+  const C = '<'; const S = '>';
+  const css = 'body{font-family:Arial,sans-serif;font-size:11px;color:#111;margin:20px 24px}' +
+    'h2{font-size:16px;margin:0 0 2px;color:#1e3a5f}h3{font-size:13px;color:#6b7280;font-weight:400;margin:0 0 14px}' +
+    'table{width:100%;border-collapse:collapse;font-size:11px}' +
+    'th{background:#1e3a5f;color:#fff;padding:6px 10px;text-align:left}' +
+    'td{padding:5px 10px;border-bottom:1px solid #e5e7eb}' +
+    'tr:nth-child(even) td{background:#f8fafc}' +
+    '.meta{display:flex;gap:20px;margin-bottom:14px;font-size:11px}' +
+    '.meta-item b{display:block;font-size:10px;color:#6b7280;text-transform:uppercase;margin-bottom:1px}' +
+    '.logo-hdr{display:flex;align-items:center;gap:12px;margin-bottom:12px;border-bottom:2px solid #1e3a5f;padding-bottom:8px}' +
+    '.empty{text-align:center;padding:30px;color:#9ca3af;font-size:12px}' +
+    '@media print{@page{size:letter portrait;margin:12mm 10mm}}';
+
+  const filas = lista.length
+    ? lista.map((a, i) => C + 'tr' + S +
+        C + 'td' + S + (i + 1) + C + '/td' + S +
+        C + 'td style="font-weight:600"' + S + esc(a.nombre || a.folio) + C + '/td' + S +
+        C + 'td' + S + esc(a.folio) + C + '/td' + S +
+        C + 'td' + S + new Date(a.created_at).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }) + C + '/td' + S +
+        C + '/tr' + S).join('')
+    : C + 'tr' + S + C + 'td colspan="4" class="empty"' + S + 'Ningún alumno registró asistencia en esta sesión' + C + '/td' + S + C + '/tr' + S;
+
+  const body =
+    C + 'div class="logo-hdr"' + S +
+      C + 'div' + S +
+        C + 'div style="font-size:18px;font-weight:800;color:#1e3a5f"' + S + 'ECCA Prepa León' + C + '/div' + S +
+        C + 'div style="font-size:11px;color:#6b7280"' + S + 'Sistema de Admisiones' + C + '/div' + S +
+      C + '/div' + S +
+    C + '/div' + S +
+    C + 'h2' + S + 'Lista de Asistencia' + C + '/h2' + S +
+    C + 'h3' + S + fecha + C + '/h3' + S +
+    C + 'div class="meta"' + S +
+      C + 'div class="meta-item"' + S + C + 'b' + S + 'Materia' + C + '/b' + S + esc(ses.materia || '—') + C + '/div' + S +
+      C + 'div class="meta-item"' + S + C + 'b' + S + 'Grupo' + C + '/b' + S + esc(ses.grupo_nombre || '—') + C + '/div' + S +
+      C + 'div class="meta-item"' + S + C + 'b' + S + 'Profesor' + C + '/b' + S + esc(ses.profesor || '—') + C + '/div' + S +
+      C + 'div class="meta-item"' + S + C + 'b' + S + 'Hora inicio' + C + '/b' + S + horaIni + C + '/div' + S +
+      C + 'div class="meta-item"' + S + C + 'b' + S + 'Presentes' + C + '/b' + S + lista.length + C + '/div' + S +
+    C + '/div' + S +
+    C + 'table' + S +
+      C + 'thead' + S + C + 'tr' + S +
+        C + 'th style="width:40px"' + S + '#' + C + '/th' + S +
+        C + 'th' + S + 'Nombre' + C + '/th' + S +
+        C + 'th' + S + 'Folio' + C + '/th' + S +
+        C + 'th style="width:80px"' + S + 'Hora' + C + '/th' + S +
+      C + '/tr' + S + C + '/thead' + S +
+      C + 'tbody' + S + filas + C + '/tbody' + S +
+    C + '/table' + S +
+    C + 'div style="margin-top:30px;font-size:10px;color:#9ca3af;border-top:1px solid #e5e7eb;padding-top:8px"' + S +
+      'Generado el ' + new Date().toLocaleDateString('es-MX') + ' · ECCA Prepa León' +
+    C + '/div' + S;
+
+  var w = window.open('', '_blank', 'width=800,height:650');
+  w.document.open();
+  w.document.write('<!DOCTYPE html>' + C + 'html' + S + C + 'head' + S +
+    C + 'meta charset="UTF-8"' + S +
+    C + 'title' + S + 'Lista de Asistencia — ' + (ses.materia || '') + C + '/title' + S +
+    C + 'style' + S + css + C + '/style' + S +
+    C + '/head' + S + C + 'body' + S + body + C + '/body' + S + C + '/html' + S);
+  w.document.close();
+  setTimeout(function() { w.print(); w.close(); }, 600);
+}
+
+initListas();
+</script>
+</body>
+</html>
