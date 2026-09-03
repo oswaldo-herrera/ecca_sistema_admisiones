@@ -979,27 +979,53 @@ function imprimirCorteDiario() {
     porForma[k] = (porForma[k] || 0) + parseFloat(p.monto || 0);
   });
   const formasOrden = Object.keys(porForma).sort();
+
+  // Resumen por concepto
+  const porConcepto = {};
+  _cdPagosRaw.forEach(p => {
+    const k = p.concepto || 'Sin concepto';
+    porConcepto[k] = (porConcepto[k] || 0) + parseFloat(p.monto || 0);
+  });
+  const conceptosOrden = Object.keys(porConcepto).sort();
+
+  const _thStyle = 'text-align:left;padding:5px 10px;background:#f1f5f9;border:1px solid #dde3ea;font-size:11px;color:#64748b';
+  const _thR    = 'text-align:right;padding:5px 10px;background:#f1f5f9;border:1px solid #dde3ea;font-size:11px;color:#64748b';
+  const _td     = 'padding:5px 10px;border:1px solid #dde3ea;font-size:12px';
+  const _tdR    = 'padding:5px 10px;border:1px solid #dde3ea;font-size:12px;text-align:right;font-weight:600';
+  const _tfL    = 'padding:6px 10px;border:1px solid #dde3ea;font-weight:700;font-size:12px;background:#f8fafc';
+  const _tfR    = 'padding:6px 10px;border:1px solid #dde3ea;font-weight:700;font-size:12px;text-align:right;background:#f8fafc';
+
+  const tablaForma = `<table style="width:100%;border-collapse:collapse">
+    <thead><tr><th style="${_thStyle}">Forma de pago</th><th style="${_thR}">Total</th></tr></thead>
+    <tbody>${formasOrden.map(f => `<tr>
+      <td style="${_td}">${esc(f)}</td>
+      <td style="${_tdR}">${fmtMoney(porForma[f])}</td>
+    </tr>`).join('')}</tbody>
+    <tfoot><tr><td style="${_tfL}">Total</td><td style="${_tfR}">${fmtMoney(totalGral)}</td></tr></tfoot>
+  </table>`;
+
+  const tablaConcepto = `<table style="width:100%;border-collapse:collapse">
+    <thead><tr><th style="${_thStyle}">Concepto</th><th style="${_thR}">Total</th></tr></thead>
+    <tbody>${conceptosOrden.map(c => `<tr>
+      <td style="${_td}">${esc(c)}</td>
+      <td style="${_tdR}">${fmtMoney(porConcepto[c])}</td>
+    </tr>`).join('')}</tbody>
+    <tfoot><tr><td style="${_tfL}">Total</td><td style="${_tfR}">${fmtMoney(totalGral)}</td></tr></tfoot>
+  </table>`;
+
   const resumenHtml = `
-    <div class="resumen-forma" style="margin-top:22px;border-top:2px solid #1e3a5f;padding-top:14px">
-      <div style="font-size:13px;font-weight:700;color:#1e3a5f;margin-bottom:10px">
-        <i class="fas fa-chart-pie"></i> Desglose por forma de pago
+    <div style="margin-top:22px;border-top:2px solid #1e3a5f;padding-top:14px">
+      <div style="font-size:13px;font-weight:700;color:#1e3a5f;margin-bottom:12px">Desglose de la recaudación</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+        <div>
+          <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Por forma de pago</div>
+          ${tablaForma}
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Por concepto</div>
+          ${tablaConcepto}
+        </div>
       </div>
-      <table style="width:340px">
-        <thead><tr>
-          <th style="text-align:left;padding:5px 10px;background:#f1f5f9;border:1px solid #dde3ea;font-size:11px;color:#64748b">Forma de pago</th>
-          <th style="text-align:right;padding:5px 10px;background:#f1f5f9;border:1px solid #dde3ea;font-size:11px;color:#64748b">Total</th>
-        </tr></thead>
-        <tbody>
-          ${formasOrden.map(f => `<tr>
-            <td style="padding:5px 10px;border:1px solid #dde3ea;font-size:12px">${esc(f)}</td>
-            <td style="padding:5px 10px;border:1px solid #dde3ea;font-size:12px;text-align:right;font-weight:600">${fmtMoney(porForma[f])}</td>
-          </tr>`).join('')}
-        </tbody>
-        <tfoot><tr>
-          <td style="padding:6px 10px;border:1px solid #dde3ea;font-weight:700;font-size:12px;background:#f8fafc">Total</td>
-          <td style="padding:6px 10px;border:1px solid #dde3ea;font-weight:700;font-size:12px;text-align:right;background:#f8fafc">${fmtMoney(totalGral)}</td>
-        </tr></tfoot>
-      </table>
     </div>`;
 
   _abrirVentanaPDF('Corte Diario de Pagos',
