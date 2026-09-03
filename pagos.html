@@ -274,6 +274,7 @@
               <tfoot id="ct-tfoot"></tfoot>
             </table>
           </div>
+          <div id="ct-breakdown"></div>
         </div>
 
         <!-- Resultado DIARIO -->
@@ -572,41 +573,54 @@ async function generarCorte() {
       $('ct-empty').style.display = 'block'; return;
     }
 
-    // 2. Obtener pagos en el rango de fechas
+    // 2. Construir mapa folio → grupo nombre
+    const grupoNomMap = {};
+    foliosAlumnos.forEach(a => {
+      const g = _ctGrupos.find(x => x.id === a.grupo_id);
+      if (g) grupoNomMap[a.folio] = g.nombre;
+    });
+
+    // 3. Obtener pagos en el rango de fechas
     const desdeDate = desde + '-01';
     const [hy, hm] = hasta.split('-').map(Number);
     const hastaDate = hasta + '-' + String(new Date(hy, hm, 0).getDate()).padStart(2,'0');
     const folios = foliosAlumnos.map(a => a.folio);
 
+    // 4. Calcular meses del rango primero (para filtrar en JS)
+    const meses = _mesesEntre(desde, hasta);
+
+    // Traer todos los pagos de estos alumnos y filtrar por mes_correspondiente en JS
     let q = _sb.from('pagos')
-      .select('folio, concepto, monto, fecha_pago, estado')
-      .in('folio', folios)
-      .gte('fecha_pago', desdeDate)
-      .lte('fecha_pago', hastaDate);
+      .select('folio, concepto, monto, fecha_pago, mes_correspondiente, estado, forma_pago')
+      .in('folio', folios);
     if (concepto) q = q.eq('concepto', concepto);
 
     const { data: pagosData, error } = await q;
     if (error) throw error;
 
-    const pagos = (pagosData || []).filter(p => p.estado === 'confirmado' || !p.estado);
+    // Filtrar confirmados y cuyo mes correspondiente (o fecha_pago) caiga en el rango
+    const pagos = (pagosData || [])
+      .filter(p => p.estado === 'confirmado' || !p.estado)
+      .filter(p => meses.includes((p.mes_correspondiente || p.fecha_pago || '').slice(0, 7)));
 
-    // 3. Construir mapa folio → mes → total
-    const meses = _mesesEntre(desde, hasta);
+    // 5. Construir mapa folio → mes → total (usa mes_correspondiente si existe)
     const mapaAlumno = {};
     pagos.forEach(p => {
-      const mes = (p.fecha_pago || '').slice(0,7);
+      const mes = (p.mes_correspondiente || p.fecha_pago || '').slice(0,7);
       if (!mapaAlumno[p.folio]) mapaAlumno[p.folio] = {};
       mapaAlumno[p.folio][mes] = (mapaAlumno[p.folio][mes] || 0) + parseFloat(p.monto || 0);
     });
 
-    // 4. Render tabla
-    _renderCorteTabla(foliosAlumnos, meses, mapaAlumno, concepto, grupoId);
+    // 5. Render tabla
+    _renderCorteTabla(foliosAlumnos, meses, mapaAlumno, concepto, grupoId, grupoNomMap, pagos);
     $('ct-resultado').style.display = 'block';
 
   } catch(e) { toast('Error al generar corte: ' + e.message, 'err'); }
 }
 
-function _renderCorteTabla(alumnos, meses, mapa, concepto, grupoId) {
+function _renderCorteTabla(alumnos, meses, mapa, concepto, grupoId, grupoNomMap, pagosRaw) {
+  grupoNomMap = grupoNomMap || {};
+  _ctPagosRaw = pagosRaw || [];
   const grupo = _ctGrupos.find(g => g.id === parseInt(grupoId));
 
   // Label resumen
@@ -643,6 +657,7 @@ function _renderCorteTabla(alumnos, meses, mapa, concepto, grupoId) {
   // Thead
   $('ct-thead').innerHTML = `<tr>
     <th style="min-width:180px;position:sticky;left:0;background:var(--bg-card);z-index:1">Alumno</th>
+    <th style="white-space:nowrap">Grupo</th>
     ${meses.map(m => `<th style="text-align:center;white-space:nowrap">${_lblMes(m)}</th>`).join('')}
     <th style="text-align:right;white-space:nowrap">Total</th>
   </tr>`;
@@ -657,6 +672,7 @@ function _renderCorteTabla(alumnos, meses, mapa, concepto, grupoId) {
     }, 0);
     return `<tr>
       <td style="font-size:12.5px;font-weight:500;position:sticky;left:0;background:var(--bg-card)">${esc(a.nombre || a.folio)}</td>
+      <td style="font-size:12px;color:var(--text-muted);white-space:nowrap">${esc(grupoNomMap[a.folio] || '—')}</td>
       ${meses.map(m => {
         const v = mapa[a.folio]?.[m] || 0;
         return `<td style="text-align:center;font-size:12px;${v > 0 ? 'color:#16a34a;font-weight:600' : 'color:var(--text-muted)'}">
@@ -671,9 +687,51 @@ function _renderCorteTabla(alumnos, meses, mapa, concepto, grupoId) {
   const totalTodos = totalesMes.reduce((s, v) => s + v, 0);
   $('ct-tfoot').innerHTML = `<tr style="background:var(--bg-hover);font-weight:700">
     <td style="position:sticky;left:0;background:var(--bg-hover)">TOTAL</td>
+    <td></td>
     ${totalesMes.map(v => `<td style="text-align:center;font-size:12px">${v > 0 ? fmtMoney(v) : '—'}</td>`).join('')}
     <td style="text-align:right">${fmtMoney(totalTodos)}</td>
   </tr>`;
+
+  // Desglose por forma de pago y por concepto
+  const porForma = {}, porConcepto = {};
+  _ctPagosRaw.forEach(p => {
+    const f = p.forma_pago || 'Sin especificar';
+    porForma[f] = (porForma[f] || 0) + parseFloat(p.monto || 0);
+    const c2 = p.concepto || 'Sin concepto';
+    porConcepto[c2] = (porConcepto[c2] || 0) + parseFloat(p.monto || 0);
+  });
+
+  const _tdS  = 'padding:5px 10px;border-bottom:1px solid var(--border);font-size:12px';
+  const _tdSR = 'padding:5px 10px;border-bottom:1px solid var(--border);font-size:12px;text-align:right;font-weight:600;color:#16a34a';
+  const _thS  = 'padding:5px 10px;background:var(--bg-hover);font-size:11px;font-weight:700;text-align:left';
+  const _thSR = 'padding:5px 10px;background:var(--bg-hover);font-size:11px;font-weight:700;text-align:right';
+  const _tfSL = 'padding:6px 10px;font-weight:700;font-size:12px;border-top:2px solid var(--border)';
+  const _tfSR = 'padding:6px 10px;font-weight:700;font-size:12px;text-align:right;border-top:2px solid var(--border)';
+
+  const mkTab = (obj, col1) => {
+    const keys = Object.keys(obj).sort();
+    const tot = keys.reduce((s, k) => s + obj[k], 0);
+    return `<table style="width:100%;border-collapse:collapse;border:1px solid var(--border);border-radius:6px;overflow:hidden">
+      <thead><tr><th style="${_thS}">${col1}</th><th style="${_thSR}">Total</th></tr></thead>
+      <tbody>${keys.map(k => `<tr><td style="${_tdS}">${esc(k)}</td><td style="${_tdSR}">${fmtMoney(obj[k])}</td></tr>`).join('')}</tbody>
+      <tfoot><tr><td style="${_tfSL}">Total</td><td style="${_tfSR}">${fmtMoney(tot)}</td></tr></tfoot>
+    </table>`;
+  };
+
+  $('ct-breakdown').innerHTML = _ctPagosRaw.length ? `
+    <div style="border-top:2px solid var(--border);padding-top:16px;margin-top:8px">
+      <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:12px">Desglose de la recaudación</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div>
+          <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Por forma de pago</div>
+          ${mkTab(porForma, 'Forma de pago')}
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Por concepto</div>
+          ${mkTab(porConcepto, 'Concepto')}
+        </div>
+      </div>
+    </div>` : '';
 }
 
 function exportarCorteExcel() {
@@ -693,6 +751,7 @@ function _doExportCorte() {
 }
 
 /* ========== CORTE DIARIO ========== */
+let _ctPagosRaw = [];
 let _cdTipo = 'mensual';
 let _cdPagosRaw = [];
 
@@ -733,16 +792,25 @@ async function generarCorteDiario() {
     // Obtener folios del grupo
     let folios = null;
     let alumnosMap = {};
+    let grupoNomMap = {};  // folio → nombre del grupo
     if (grupoId) {
       const { data } = await _sb.from('inscripciones')
         .select('folio, nombre, grupo_id')
         .eq('grupo_id', parseInt(grupoId));
-      (data || []).forEach(a => { alumnosMap[a.folio] = a.nombre; });
+      (data || []).forEach(a => {
+        alumnosMap[a.folio] = a.nombre;
+        const g = _ctGrupos.find(x => x.id === a.grupo_id);
+        if (g) grupoNomMap[a.folio] = g.nombre;
+      });
       folios = Object.keys(alumnosMap);
       if (!folios.length) { $('ct-empty').style.display = 'block'; return; }
     } else {
-      const { data } = await _sb.from('inscripciones').select('folio, nombre');
-      (data || []).forEach(a => { alumnosMap[a.folio] = a.nombre; });
+      const { data } = await _sb.from('inscripciones').select('folio, nombre, grupo_id');
+      (data || []).forEach(a => {
+        alumnosMap[a.folio] = a.nombre;
+        const g = _ctGrupos.find(x => x.id === a.grupo_id);
+        if (g) grupoNomMap[a.folio] = g.nombre;
+      });
     }
 
     // Obtener pagos en el rango exacto de fechas
@@ -758,7 +826,7 @@ async function generarCorteDiario() {
     if (error) throw error;
 
     const pagos = (pagosData || []).filter(p => p.estado === 'confirmado' || !p.estado);
-    _cdPagosRaw = pagos.map(p => ({ ...p, _nombre: alumnosMap[p.folio] || p.folio }));
+    _cdPagosRaw = pagos.map(p => ({ ...p, _nombre: alumnosMap[p.folio] || p.folio, _grupo: grupoNomMap[p.folio] || '—' }));
 
     if (!_cdPagosRaw.length) { $('ct-empty').style.display = 'block'; return; }
 
@@ -829,7 +897,7 @@ function _renderCorteDiario(desde, hasta, grupoId, concepto) {
         <table class="dtbl" style="margin:0;border:none">
           <thead>
             <tr>
-              <th>Alumno</th><th>Concepto</th><th>Forma de pago</th><th>Recibió</th>
+              <th>Alumno</th><th>Grupo</th><th>Concepto</th><th>Forma de pago</th><th>Recibió</th>
               <th style="text-align:right">Monto</th>
             </tr>
           </thead>
@@ -837,6 +905,7 @@ function _renderCorteDiario(desde, hasta, grupoId, concepto) {
             ${filas.map(p => `
               <tr>
                 <td style="font-size:12px">${esc(p._nombre)}</td>
+                <td style="font-size:12px;color:var(--text-muted)">${esc(p._grupo || '—')}</td>
                 <td style="font-size:12px">${esc(p.concepto || '—')}</td>
                 <td style="font-size:12px">${esc(p.forma_pago || '—')}</td>
                 <td style="font-size:12px">${esc(p.recibio || '—')}</td>
@@ -845,7 +914,7 @@ function _renderCorteDiario(desde, hasta, grupoId, concepto) {
           </tbody>
           <tfoot>
             <tr style="background:var(--bg-hover);font-weight:700">
-              <td colspan="4">Total del día</td>
+              <td colspan="5">Total del día</td>
               <td style="text-align:right">${fmtMoney(totalDia)}</td>
             </tr>
           </tfoot>
@@ -911,14 +980,11 @@ function _abrirVentanaPDF(titulo, bodyHtml) {
 
 function imprimirCorteMensual() {
   const lbl = $('ct-resumen-lbl').textContent;
-  // Clonar la tabla para no modificar el DOM original
   const tabla = $('ct-tabla').cloneNode(true);
-  // Quitar sticky y box-shadow del clon
   tabla.querySelectorAll('[style]').forEach(el => {
     el.style.position = ''; el.style.zIndex = '';
   });
 
-  // Stats texto
   const statCards = [...$('ct-stats').querySelectorAll('.stat-card')];
   const statsHtml = '<div class="stats">' + statCards.map(c => {
     const v = c.querySelector('.stat-val')?.textContent || '';
@@ -926,8 +992,50 @@ function imprimirCorteMensual() {
     return `<div class="stat"><div class="stat-v">${v}</div><div class="stat-l">${l}</div></div>`;
   }).join('') + '</div>';
 
+  // Desglose por forma de pago y concepto
+  const totalGral = _ctPagosRaw.reduce((s, p) => s + parseFloat(p.monto || 0), 0);
+  const porForma = {}, porConcepto = {};
+  _ctPagosRaw.forEach(p => {
+    const f = p.forma_pago || 'Sin especificar';
+    porForma[f] = (porForma[f] || 0) + parseFloat(p.monto || 0);
+    const c = p.concepto || 'Sin concepto';
+    porConcepto[c] = (porConcepto[c] || 0) + parseFloat(p.monto || 0);
+  });
+
+  const _thStyle = 'text-align:left;padding:5px 10px;background:#f1f5f9;border:1px solid #dde3ea;font-size:11px;color:#64748b';
+  const _thR    = 'text-align:right;padding:5px 10px;background:#f1f5f9;border:1px solid #dde3ea;font-size:11px;color:#64748b';
+  const _td     = 'padding:5px 10px;border:1px solid #dde3ea;font-size:12px';
+  const _tdR    = 'padding:5px 10px;border:1px solid #dde3ea;font-size:12px;text-align:right;font-weight:600';
+  const _tfL    = 'padding:6px 10px;border:1px solid #dde3ea;font-weight:700;font-size:12px;background:#f8fafc';
+  const _tfR    = 'padding:6px 10px;border:1px solid #dde3ea;font-weight:700;font-size:12px;text-align:right;background:#f8fafc';
+
+  const mkPdfTab = (obj, col1) => {
+    const keys = Object.keys(obj).sort();
+    const tot = keys.reduce((s, k) => s + obj[k], 0);
+    return `<table style="width:100%;border-collapse:collapse">
+      <thead><tr><th style="${_thStyle}">${col1}</th><th style="${_thR}">Total</th></tr></thead>
+      <tbody>${keys.map(k => `<tr><td style="${_td}">${esc(k)}</td><td style="${_tdR}">${fmtMoney(obj[k])}</td></tr>`).join('')}</tbody>
+      <tfoot><tr><td style="${_tfL}">Total</td><td style="${_tfR}">${fmtMoney(tot)}</td></tr></tfoot>
+    </table>`;
+  };
+
+  const resumenHtml = _ctPagosRaw.length ? `
+    <div style="margin-top:22px;border-top:2px solid #1e3a5f;padding-top:14px">
+      <div style="font-size:13px;font-weight:700;color:#1e3a5f;margin-bottom:12px">Desglose de la recaudación</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+        <div>
+          <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Por forma de pago</div>
+          ${mkPdfTab(porForma, 'Forma de pago')}
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Por concepto</div>
+          ${mkPdfTab(porConcepto, 'Concepto')}
+        </div>
+      </div>
+    </div>` : '';
+
   _abrirVentanaPDF('Corte Mensual de Pagos',
-    `<h2>Corte Mensual de Pagos</h2><p>${lbl}</p>${statsHtml}${tabla.outerHTML}`);
+    `<h2>Corte Mensual de Pagos</h2><p>${lbl}</p>${statsHtml}${tabla.outerHTML}${resumenHtml}`);
 }
 
 function imprimirCorteDiario() {
@@ -958,17 +1066,18 @@ function imprimirCorteDiario() {
         <span>${fmtMoney(totalDia)}</span>
       </div>
       <table>
-        <thead><tr><th>Alumno</th><th>Concepto</th><th>Forma de pago</th><th>Recibió</th><th style="text-align:right">Monto</th></tr></thead>
+        <thead><tr><th>Alumno</th><th>Grupo</th><th>Concepto</th><th>Forma de pago</th><th>Recibió</th><th style="text-align:right">Monto</th></tr></thead>
         <tbody>
           ${filas.map(p => `<tr>
             <td>${esc(p._nombre)}</td>
+            <td style="color:#555">${esc(p._grupo||'—')}</td>
             <td>${esc(p.concepto||'—')}</td>
             <td>${esc(p.forma_pago||'—')}</td>
             <td>${esc(p.recibio||'—')}</td>
             <td style="text-align:right;font-weight:600">${fmtMoney(parseFloat(p.monto||0))}</td>
           </tr>`).join('')}
         </tbody>
-        <tfoot><tr><td colspan="4">Total del día</td><td style="text-align:right">${fmtMoney(totalDia)}</td></tr></tfoot>
+        <tfoot><tr><td colspan="5">Total del día</td><td style="text-align:right">${fmtMoney(totalDia)}</td></tr></tfoot>
       </table>`;
   }).join('');
 
@@ -1140,22 +1249,54 @@ function renderCargos() {
 
 function renderPagos() {
   const cont = $('pa-pagos');
-  if (!_paPagos.length) { cont.innerHTML = '<div style="text-align:center;padding:18px;color:var(--text-light)">Aún no hay pagos registrados.</div>'; return; }
+  if (!_paPagos.length) {
+    cont.innerHTML = '<div style="text-align:center;padding:18px;color:var(--text-light)">Aún no hay pagos registrados.</div>';
+    return;
+  }
+
+  // Agrupar por concepto + mes_correspondiente para detectar abonos parciales
+  const grupos = {};
+  const grupoOrder = [];
+  _paPagos.forEach(p => {
+    const key = (p.concepto || '—') + '|' + (p.mes_correspondiente || p.fecha_pago || '');
+    if (!grupos[key]) { grupos[key] = []; grupoOrder.push(key); }
+    grupos[key].push(p);
+  });
+
+  const renderRow = p => `
+    <div class="pago-row">
+      <div class="pago-info">
+        <span class="pago-concepto">${esc(p.concepto)}${p.mes_correspondiente ? ' <span style="font-size:11px;font-weight:400;color:var(--text-muted);margin-left:6px">(corresponde: ' + fmtDate(p.mes_correspondiente) + ')</span>' : ''}</span>
+        <span class="pago-meta">${fmtDate(p.fecha_pago)}${p.forma_pago ? '  ·  ' + esc(p.forma_pago) : ''}${p.recibio ? '  ·  Recibió: ' + esc(p.recibio) : ''}</span>
+      </div>
+      <div class="pago-monto">${fmtMoney(p.monto)}</div>
+      <div class="pago-actions">
+        ${p.comprobante_url ? `<a class="btn-sm-tbl bst-navy" href="${esc(p.comprobante_url)}" target="_blank"><i class="fas fa-paperclip"></i> Comprobante</a>` : ''}
+        <button class="btn-sm-tbl bst-navy" onclick="imprimirRecibo(${p.id})"><i class="fas fa-print"></i> Recibo</button>
+        <button class="btn-sm-tbl bst-gold" onclick="editarPago(${p.id})"><i class="fas fa-pen"></i> Editar</button>
+        <button class="btn-sm-tbl bst-red" onclick="eliminarPago(${p.id})"><i class="fas fa-trash"></i></button>
+      </div>
+    </div>`;
+
   cont.innerHTML = '<div class="pago-col-hdr"><span></span><span>Cantidad</span><span></span></div>' +
-    _paPagos.map(p => `
-      <div class="pago-row">
-        <div class="pago-info">
-          <span class="pago-concepto">${esc(p.concepto)}${p.mes_correspondiente ? ' <span style="font-size:11px;font-weight:400;color:var(--text-muted);margin-left:6px">(corresponde: ' + fmtDate(p.mes_correspondiente) + ')</span>' : ''}</span>
-          <span class="pago-meta">${fmtDate(p.fecha_pago)}${p.forma_pago ? '  ·  ' + esc(p.forma_pago) : ''}${p.recibio ? '  ·  Recibió: ' + esc(p.recibio) : ''}</span>
+    grupoOrder.map(key => {
+      const gp = grupos[key];
+      if (gp.length === 1) return renderRow(gp[0]);
+      // Múltiples abonos al mismo concepto+mes: mostrar agrupado con subtotal
+      const total = gp.reduce((s, p) => s + parseFloat(p.monto || 0), 0);
+      const mesLabel = gp[0].mes_correspondiente ? ' · ' + fmtDate(gp[0].mes_correspondiente) : '';
+      return `<div style="border:1px solid var(--gold);border-radius:var(--r-lg);margin-bottom:6px;overflow:hidden">
+        <div style="background:#fef9ec;padding:8px 14px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--gold)">
+          <span style="font-size:12px;font-weight:700;color:var(--navy)">
+            <i class="fas fa-layer-group" style="color:var(--gold);margin-right:6px"></i>
+            ${esc(gp[0].concepto)}${mesLabel}
+            <span style="font-size:11px;font-weight:400;color:var(--text-muted);margin-left:8px">${gp.length} abonos</span>
+          </span>
+          <span style="font-weight:700;color:#16a34a;font-size:13px">${fmtMoney(total)} <span style="font-size:10px;color:var(--text-muted);font-weight:400">acumulado</span></span>
         </div>
-        <div class="pago-monto">${fmtMoney(p.monto)}</div>
-        <div class="pago-actions">
-          ${p.comprobante_url ? `<a class="btn-sm-tbl bst-navy" href="${esc(p.comprobante_url)}" target="_blank"><i class="fas fa-paperclip"></i> Comprobante</a>` : ''}
-          <button class="btn-sm-tbl bst-navy" onclick="imprimirRecibo(${p.id})"><i class="fas fa-print"></i> Recibo</button>
-          <button class="btn-sm-tbl bst-gold" onclick="editarPago(${p.id})"><i class="fas fa-pen"></i> Editar</button>
-          <button class="btn-sm-tbl bst-red" onclick="eliminarPago(${p.id})"><i class="fas fa-trash"></i></button>
-        </div>
-      </div>`).join('');
+        ${gp.map(renderRow).join('')}
+      </div>`;
+    }).join('');
 }
 
 /* ---- Modal: registrar / editar pago ---- */
