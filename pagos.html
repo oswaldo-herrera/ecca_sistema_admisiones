@@ -871,24 +871,25 @@ async function generarCorteDiario() {
     }
 
     // Obtener pagos en el rango exacto de fechas
+    const soloMis = $('cd-solo-mis')?.checked;
+    let miUserId = null;
+    if (soloMis) {
+      try { const { data: { user } } = await _sb.auth.getUser(); miUserId = user?.id || null; } catch(_) {}
+    }
+
     let q = _sb.from('pagos')
-      .select('folio, concepto, monto, fecha_pago, forma_pago, recibio, estado')
+      .select('folio, concepto, monto, fecha_pago, forma_pago, recibio, estado, registrado_por_id')
       .gte('fecha_pago', desde)
       .lte('fecha_pago', hasta)
       .order('fecha_pago,folio');
     if (folios) q = q.in('folio', folios);
     if (concepto) q = q.eq('concepto', concepto);
+    if (soloMis && miUserId) q = q.eq('registrado_por_id', miUserId);
 
     const { data: pagosData, error } = await q;
     if (error) throw error;
 
     let pagos = (pagosData || []).filter(p => p.estado === 'confirmado' || !p.estado);
-    // Filtro "Solo mis cobros"
-    const soloMis = $('cd-solo-mis')?.checked;
-    const miNom   = (sessionStorage.getItem('ecca_nombre') || '').trim().toLowerCase();
-    if (soloMis && miNom) {
-      pagos = pagos.filter(p => (p.recibio || '').toLowerCase().includes(miNom));
-    }
     _cdPagosRaw = pagos.map(p => ({ ...p, _nombre: alumnosMap[p.folio] || p.folio, _grupo: grupoNomMap[p.folio] || '—', _modalidad: folioModalidadMap[p.folio] || '' }));
 
     if (!_cdPagosRaw.length) { $('ct-empty').style.display = 'block'; return; }
@@ -1451,7 +1452,8 @@ function abrirPagoForm(cargoId) {
   sv('pf-cargo', cargoId || '');
   sv('pf-fecha', today());
   sv('pf-mes', today());
-  sv('pf-monto', ''); sv('pf-forma', ''); sv('pf-recibio', '');
+  sv('pf-monto', ''); sv('pf-forma', '');
+  sv('pf-recibio', sessionStorage.getItem('ecca_nombre') || '');
   $('pf-comprobante').value = '';
   const cargo = cargoId ? _paCargos.find(c => c.id === cargoId) : null;
   sv('pf-concepto', cargo ? cargo.concepto : '');

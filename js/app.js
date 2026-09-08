@@ -341,6 +341,11 @@ async function savePago(p) {
     return data[0];
   } else {
     payload.comprobante_url = p.comprobanteUrl || null;
+    // Guardar quién registró el pago por su user_id
+    try {
+      const { data: { user } } = await _sb.auth.getUser();
+      if (user?.id) payload.registrado_por_id = user.id;
+    } catch (_) {}
     const { data, error } = await _sb.from('pagos').insert(payload).select();
     if (error) throw error;
     if (!data || !data.length) throw new Error('No se pudo guardar el pago.');
