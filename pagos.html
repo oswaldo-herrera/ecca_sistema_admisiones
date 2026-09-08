@@ -250,6 +250,12 @@
                 <i class="fas fa-magnifying-glass"></i> Generar
               </button>
             </div>
+            <div style="margin-top:10px;display:flex;align-items:center;gap:8px">
+              <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;user-select:none">
+                <input type="checkbox" id="cd-solo-mis" onchange="generarCorteDiario()" style="width:14px;height:14px;accent-color:var(--gold)">
+                <span>Solo mis cobros <span id="cd-user-lbl" style="color:var(--text-muted);font-size:11px"></span></span>
+              </label>
+            </div>
           </div>
         </div>
 
@@ -541,6 +547,27 @@ function _lblMesPago(ym) {
   return _MESES_LARGO[parseInt(m) - 1] + ' ' + y;
 }
 
+function _prefijoMod(modalidad, grupoNombre) {
+  const m = (modalidad || '').toLowerCase();
+  const g = (grupoNombre || '').toLowerCase();
+  if (m.includes('cuatri') || g.includes('cuatri')) return 'CT';
+  if (m.includes('sab')    || g.includes('sab'))    return 'SB';
+  if (m.includes('sem')    || g.includes('sem'))     return 'SM';
+  return '';
+}
+function _folioLabel(folio, modalidad, grupoNombre) {
+  const p = _prefijoMod(modalidad, grupoNombre);
+  return p ? p + '-' + folio : folio;
+}
+function _nombreModalidad(modalidad, grupoNombre) {
+  const m = (modalidad || '').toLowerCase();
+  const g = (grupoNombre || '').toLowerCase();
+  if (m.includes('cuatri') || g.includes('cuatri')) return 'Cuatrimestral';
+  if (m.includes('sab')    || g.includes('sab'))    return 'Sabatino';
+  if (m.includes('sem')    || g.includes('sem'))     return 'Semestral';
+  return 'Sin modalidad';
+}
+
 async function generarCorte() {
   const grupoId  = $('ct-grupo').value;
   const concepto = $('ct-concepto').value;
@@ -620,7 +647,13 @@ async function generarCorte() {
 
 function _renderCorteTabla(alumnos, meses, mapa, concepto, grupoId, grupoNomMap, pagosRaw) {
   grupoNomMap = grupoNomMap || {};
-  _ctPagosRaw = pagosRaw || [];
+  // Enriquecer pagos con modalidad del grupo de cada alumno
+  const _fModMap = {};
+  alumnos.forEach(a => {
+    const g = _ctGrupos.find(x => x.id === a.grupo_id);
+    _fModMap[a.folio] = g?.modalidad || '';
+  });
+  _ctPagosRaw = (pagosRaw || []).map(p => ({ ...p, _modalidad: _fModMap[p.folio] || '', _grupo: grupoNomMap[p.folio] || '—' }));
   const grupo = _ctGrupos.find(g => g.id === parseInt(grupoId));
 
   // Label resumen
@@ -656,7 +689,8 @@ function _renderCorteTabla(alumnos, meses, mapa, concepto, grupoId, grupoNomMap,
 
   // Thead
   $('ct-thead').innerHTML = `<tr>
-    <th style="min-width:180px;position:sticky;left:0;background:var(--bg-card);z-index:1">Alumno</th>
+    <th style="white-space:nowrap;position:sticky;left:0;background:var(--bg-card);z-index:1">Folio</th>
+    <th style="min-width:180px;white-space:nowrap">Alumno</th>
     <th style="white-space:nowrap">Grupo</th>
     ${meses.map(m => `<th style="text-align:center;white-space:nowrap">${_lblMes(m)}</th>`).join('')}
     <th style="text-align:right;white-space:nowrap">Total</th>
@@ -671,7 +705,8 @@ function _renderCorteTabla(alumnos, meses, mapa, concepto, grupoId, grupoNomMap,
       return s + v;
     }, 0);
     return `<tr>
-      <td style="font-size:12.5px;font-weight:500;position:sticky;left:0;background:var(--bg-card)">${esc(a.nombre || a.folio)}</td>
+      <td style="font-size:11px;font-family:monospace;color:var(--navy);font-weight:700;white-space:nowrap;position:sticky;left:0;background:var(--bg-card)">${esc(_folioLabel(a.folio, _fModMap[a.folio], grupoNomMap[a.folio]))}</td>
+      <td style="font-size:12.5px;font-weight:500;white-space:nowrap">${esc(a.nombre || a.folio)}</td>
       <td style="font-size:12px;color:var(--text-muted);white-space:nowrap">${esc(grupoNomMap[a.folio] || '—')}</td>
       ${meses.map(m => {
         const v = mapa[a.folio]?.[m] || 0;
@@ -687,6 +722,7 @@ function _renderCorteTabla(alumnos, meses, mapa, concepto, grupoId, grupoNomMap,
   const totalTodos = totalesMes.reduce((s, v) => s + v, 0);
   $('ct-tfoot').innerHTML = `<tr style="background:var(--bg-hover);font-weight:700">
     <td style="position:sticky;left:0;background:var(--bg-hover)">TOTAL</td>
+    <td></td>
     <td></td>
     ${totalesMes.map(v => `<td style="text-align:center;font-size:12px">${v > 0 ? fmtMoney(v) : '—'}</td>`).join('')}
     <td style="text-align:right">${fmtMoney(totalTodos)}</td>
@@ -718,6 +754,17 @@ function _renderCorteTabla(alumnos, meses, mapa, concepto, grupoId, grupoNomMap,
     </table>`;
   };
 
+  // Desglose por modalidad (on-screen)
+  const porMod = {};
+  _ctPagosRaw.forEach(p => {
+    const k = _nombreModalidad(p._modalidad, p._grupo);
+    porMod[k] = (porMod[k] || 0) + parseFloat(p.monto || 0);
+  });
+  const _ctModOrd = ['Semestral', 'Cuatrimestral', 'Sabatino', 'Sin modalidad'];
+  const modTabObj = {};
+  [..._ctModOrd.filter(k => porMod[k]), ...Object.keys(porMod).filter(k => !_ctModOrd.includes(k)).sort()]
+    .forEach(k => { modTabObj[k] = porMod[k]; });
+
   $('ct-breakdown').innerHTML = _ctPagosRaw.length ? `
     <div style="border-top:2px solid var(--border);padding-top:16px;margin-top:8px">
       <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:12px">Desglose de la recaudación</div>
@@ -731,6 +778,10 @@ function _renderCorteTabla(alumnos, meses, mapa, concepto, grupoId, grupoNomMap,
           ${mkTab(porConcepto, 'Concepto')}
         </div>
       </div>
+      ${Object.keys(modTabObj).length > 1 ? `<div style="margin-top:14px">
+        <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Por modalidad</div>
+        ${mkTab(modTabObj, 'Modalidad')}
+      </div>` : ''}
     </div>` : '';
 }
 
@@ -785,6 +836,11 @@ async function generarCorteDiario() {
   if (!desde || !hasta) { toast('Selecciona el rango de fechas.', 'warn'); return; }
   if (desde > hasta)    { toast('La fecha inicio debe ser anterior a la fecha fin.', 'warn'); return; }
 
+  // Mostrar nombre de usuario en el toggle
+  const _miNombre = sessionStorage.getItem('ecca_nombre') || '';
+  const _uLbl = $('cd-user-lbl');
+  if (_uLbl) _uLbl.textContent = _miNombre ? '(' + _miNombre + ')' : '';
+
   $('cd-resultado').style.display = 'none';
   $('ct-empty').style.display = 'none';
 
@@ -826,7 +882,13 @@ async function generarCorteDiario() {
     const { data: pagosData, error } = await q;
     if (error) throw error;
 
-    const pagos = (pagosData || []).filter(p => p.estado === 'confirmado' || !p.estado);
+    let pagos = (pagosData || []).filter(p => p.estado === 'confirmado' || !p.estado);
+    // Filtro "Solo mis cobros"
+    const soloMis = $('cd-solo-mis')?.checked;
+    const miNom   = (sessionStorage.getItem('ecca_nombre') || '').trim().toLowerCase();
+    if (soloMis && miNom) {
+      pagos = pagos.filter(p => (p.recibio || '').toLowerCase().includes(miNom));
+    }
     _cdPagosRaw = pagos.map(p => ({ ...p, _nombre: alumnosMap[p.folio] || p.folio, _grupo: grupoNomMap[p.folio] || '—', _modalidad: folioModalidadMap[p.folio] || '' }));
 
     if (!_cdPagosRaw.length) { $('ct-empty').style.display = 'block'; return; }
@@ -898,13 +960,14 @@ function _renderCorteDiario(desde, hasta, grupoId, concepto) {
         <table class="dtbl" style="margin:0;border:none">
           <thead>
             <tr>
-              <th>Alumno</th><th>Grupo</th><th>Concepto</th><th>Forma de pago</th><th>Recibió</th>
+              <th>Folio</th><th>Alumno</th><th>Grupo</th><th>Concepto</th><th>Forma de pago</th><th>Recibió</th>
               <th style="text-align:right">Monto</th>
             </tr>
           </thead>
           <tbody>
             ${filas.map(p => `
               <tr>
+                <td style="font-size:11px;font-family:monospace;color:var(--navy);font-weight:700;white-space:nowrap">${esc(_folioLabel(p.folio, p._modalidad, p._grupo))}</td>
                 <td style="font-size:12px">${esc(p._nombre)}</td>
                 <td style="font-size:12px;color:var(--text-muted)">${esc(p._grupo || '—')}</td>
                 <td style="font-size:12px">${esc(p.concepto || '—')}</td>
@@ -915,7 +978,7 @@ function _renderCorteDiario(desde, hasta, grupoId, concepto) {
           </tbody>
           <tfoot>
             <tr style="background:var(--bg-hover);font-weight:700">
-              <td colspan="5">Total del día</td>
+              <td colspan="6">Total del día</td>
               <td style="text-align:right">${fmtMoney(totalDia)}</td>
             </tr>
           </tfoot>
@@ -993,14 +1056,16 @@ function imprimirCorteMensual() {
     return `<div class="stat"><div class="stat-v">${v}</div><div class="stat-l">${l}</div></div>`;
   }).join('') + '</div>';
 
-  // Desglose por forma de pago y concepto
+  // Desglose por forma de pago, concepto y modalidad
   const totalGral = _ctPagosRaw.reduce((s, p) => s + parseFloat(p.monto || 0), 0);
-  const porForma = {}, porConcepto = {};
+  const porForma = {}, porConcepto = {}, porMod = {};
   _ctPagosRaw.forEach(p => {
     const f = p.forma_pago || 'Sin especificar';
     porForma[f] = (porForma[f] || 0) + parseFloat(p.monto || 0);
     const c = p.concepto || 'Sin concepto';
     porConcepto[c] = (porConcepto[c] || 0) + parseFloat(p.monto || 0);
+    const mk = _nombreModalidad(p._modalidad, p._grupo);
+    porMod[mk] = (porMod[mk] || 0) + parseFloat(p.monto || 0);
   });
 
   const _thStyle = 'text-align:left;padding:5px 10px;background:#f1f5f9;border:1px solid #dde3ea;font-size:11px;color:#64748b';
@@ -1010,15 +1075,32 @@ function imprimirCorteMensual() {
   const _tfL    = 'padding:6px 10px;border:1px solid #dde3ea;font-weight:700;font-size:12px;background:#f8fafc';
   const _tfR    = 'padding:6px 10px;border:1px solid #dde3ea;font-weight:700;font-size:12px;text-align:right;background:#f8fafc';
 
-  const mkPdfTab = (obj, col1) => {
-    const keys = Object.keys(obj).sort();
+  const mkPdfTab = (obj, col1, customOrder) => {
+    const keys = customOrder
+      ? [...customOrder.filter(k => obj[k]), ...Object.keys(obj).filter(k => !customOrder.includes(k)).sort()]
+      : Object.keys(obj).sort();
     const tot = keys.reduce((s, k) => s + obj[k], 0);
     return `<table style="width:100%;border-collapse:collapse">
       <thead><tr><th style="${_thStyle}">${col1}</th><th style="${_thR}">Total</th></tr></thead>
       <tbody>${keys.map(k => `<tr><td style="${_td}">${esc(k)}</td><td style="${_tdR}">${fmtMoney(obj[k])}</td></tr>`).join('')}</tbody>
-      <tfoot><tr><td style="${_tfL}">Total</td><td style="${_tfR}">${fmtMoney(tot)}</td></tr></tfoot>
+      <tfoot><tr><td style="${_tfL}">Total General</td><td style="${_tfR}">${fmtMoney(tot)}</td></tr></tfoot>
     </table>`;
   };
+
+  const _modPdfOrd = ['Semestral', 'Cuatrimestral', 'Sabatino', 'Sin modalidad'];
+  const firmaHtmlCT = `
+    <div style="margin-top:36px;display:grid;grid-template-columns:1fr 1fr;gap:40px">
+      <div style="text-align:center">
+        <div style="border-top:1px solid #374151;margin-bottom:6px"></div>
+        <div style="font-size:11px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.5px">Recibió</div>
+        <div style="font-size:10px;color:#6b7280;margin-top:3px">Nombre y firma</div>
+      </div>
+      <div style="text-align:center">
+        <div style="border-top:1px solid #374151;margin-bottom:6px"></div>
+        <div style="font-size:11px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.5px">Vo. Bo. Dirección</div>
+        <div style="font-size:10px;color:#6b7280;margin-top:3px">Nombre y firma</div>
+      </div>
+    </div>`;
 
   const resumenHtml = _ctPagosRaw.length ? `
     <div style="margin-top:22px;border-top:2px solid #1e3a5f;padding-top:14px">
@@ -1033,6 +1115,11 @@ function imprimirCorteMensual() {
           ${mkPdfTab(porConcepto, 'Concepto')}
         </div>
       </div>
+      ${Object.keys(porMod).length > 1 ? `<div style="margin-top:16px">
+        <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Por modalidad</div>
+        ${mkPdfTab(porMod, 'Modalidad', _modPdfOrd)}
+      </div>` : ''}
+      ${firmaHtmlCT}
     </div>` : '';
 
   _abrirVentanaPDF('Corte Mensual de Pagos',
@@ -1067,9 +1154,10 @@ function imprimirCorteDiario() {
         <span>${fmtMoney(totalDia)}</span>
       </div>
       <table>
-        <thead><tr><th>Alumno</th><th>Grupo</th><th>Concepto</th><th>Forma de pago</th><th>Recibió</th><th style="text-align:right">Monto</th></tr></thead>
+        <thead><tr><th>Folio</th><th>Alumno</th><th>Grupo</th><th>Concepto</th><th>Forma de pago</th><th>Recibió</th><th style="text-align:right">Monto</th></tr></thead>
         <tbody>
           ${filas.map(p => `<tr>
+            <td style="font-family:monospace;font-weight:700;white-space:nowrap">${esc(_folioLabel(p.folio, p._modalidad, p._grupo))}</td>
             <td>${esc(p._nombre)}</td>
             <td style="color:#555">${esc(p._grupo||'—')}</td>
             <td>${esc(p.concepto||'—')}</td>
@@ -1078,7 +1166,7 @@ function imprimirCorteDiario() {
             <td style="text-align:right;font-weight:600">${fmtMoney(parseFloat(p.monto||0))}</td>
           </tr>`).join('')}
         </tbody>
-        <tfoot><tr><td colspan="5">Total del día</td><td style="text-align:right">${fmtMoney(totalDia)}</td></tr></tfoot>
+        <tfoot><tr><td colspan="6">Total del día</td><td style="text-align:right">${fmtMoney(totalDia)}</td></tr></tfoot>
       </table>`;
   }).join('');
 
@@ -1135,6 +1223,25 @@ function imprimirCorteDiario() {
     <tfoot><tr><td style="${_tfL}">Total</td><td style="${_tfR}">${fmtMoney(totalGral)}</td></tr></tfoot>
   </table>`;
 
+  // Desglose por modalidad
+  const porModalidad = {};
+  _cdPagosRaw.forEach(p => {
+    const k = _nombreModalidad(p._modalidad, p._grupo);
+    porModalidad[k] = (porModalidad[k] || 0) + parseFloat(p.monto || 0);
+  });
+  const _modOrden = ['Semestral', 'Cuatrimestral', 'Sabatino', 'Sin modalidad'];
+  const modOrden  = [..._modOrden.filter(k => porModalidad[k]),
+                     ...Object.keys(porModalidad).filter(k => !_modOrden.includes(k)).sort()];
+
+  const tablaModalidad = modOrden.length > 1 ? `<table style="width:100%;border-collapse:collapse">
+    <thead><tr><th style="${_thStyle}">Modalidad</th><th style="${_thR}">Total</th></tr></thead>
+    <tbody>${modOrden.map(k => `<tr>
+      <td style="${_td}">${esc(k)}</td>
+      <td style="${_tdR}">${fmtMoney(porModalidad[k])}</td>
+    </tr>`).join('')}</tbody>
+    <tfoot><tr><td style="${_tfL}">Total General</td><td style="${_tfR}">${fmtMoney(totalGral)}</td></tr></tfoot>
+  </table>` : '';
+
   const firmaHtml = `
     <div style="margin-top:36px;display:grid;grid-template-columns:1fr 1fr;gap:40px">
       <div style="text-align:center">
@@ -1162,6 +1269,10 @@ function imprimirCorteDiario() {
           ${tablaConcepto}
         </div>
       </div>
+      ${tablaModalidad ? `<div style="margin-top:16px">
+        <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Por modalidad</div>
+        ${tablaModalidad}
+      </div>` : ''}
       ${firmaHtml}
     </div>`;
 
