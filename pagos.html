@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>ECCA — Pagos</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <link rel="stylesheet" href="css/styles.css">
@@ -181,6 +184,9 @@
           <button class="btn btn-secondary btn-sm" id="ct-tipo-diario" onclick="setCorteType('diario')">
             <i class="fas fa-calendar-day"></i> Diario
           </button>
+          <button class="btn btn-secondary btn-sm" id="ct-tipo-concentrado" onclick="setCorteType('concentrado')">
+            <i class="fas fa-table-cells"></i> Concentrado
+          </button>
         </div>
 
         <!-- Filtros MENSUAL -->
@@ -305,6 +311,39 @@
           <p>Sin pagos en el rango seleccionado.</p>
         </div>
 
+        <!-- ===== CONCENTRADO MENSUAL ===== -->
+        <div id="ct-filtros-concentrado" style="display:none;margin-bottom:14px">
+          <div class="card">
+            <div class="card-body">
+              <div style="display:flex;gap:12px;align-items:end;flex-wrap:wrap">
+                <div class="field" style="flex:0 0 200px">
+                  <label class="field-label">Mes</label>
+                  <input class="field-input" type="month" id="conc-mes">
+                </div>
+                <button class="btn btn-primary btn-sm" onclick="generarConcentrado()">
+                  <i class="fas fa-magnifying-glass"></i> Generar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="conc-resultado" style="display:none">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+            <div id="conc-lbl" style="font-size:13px;color:var(--text-muted)"></div>
+            <button class="btn btn-secondary btn-sm" onclick="imprimirConcentrado()">
+              <i class="fas fa-file-pdf"></i> PDF
+            </button>
+          </div>
+          <div style="overflow-x:auto">
+            <table class="dtbl" id="conc-tabla" style="font-size:11px;min-width:900px">
+              <thead id="conc-thead"></thead>
+              <tbody id="conc-tbody"></tbody>
+              <tfoot id="conc-tfoot"></tfoot>
+            </table>
+          </div>
+        </div>
+
       </div><!-- /panel-corte -->
 
     </div><!-- /page-body -->
@@ -365,7 +404,7 @@
         </div>
         <div class="field">
           <label class="field-label">Fecha que corresponde</label>
-          <input class="field-input" id="pf-mes" type="date" title="¿A qué fecha/período corresponde este pago?">
+          <input class="field-input" id="pf-mes" type="month" title="¿A qué mes corresponde este pago?">
         </div>
         <div class="field">
           <label class="field-label">Forma de pago</label>
@@ -483,8 +522,8 @@
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/config.js"></script>
-<script src="js/app.js"></script>
+<script src="js/config.js?v=2"></script>
+<script src="js/app.js?v=2"></script>
 <script>
 let _paAlumno   = null;
 let _paCargos   = [];
@@ -808,13 +847,16 @@ let _cdPagosRaw = [];
 
 function setCorteType(tipo) {
   _cdTipo = tipo;
-  $('ct-tipo-mensual').className = 'btn btn-sm ' + (tipo === 'mensual' ? 'btn-primary' : 'btn-secondary');
-  $('ct-tipo-diario').className  = 'btn btn-sm ' + (tipo === 'diario'  ? 'btn-primary' : 'btn-secondary');
-  $('ct-filtros-mensual').style.display = tipo === 'mensual' ? '' : 'none';
-  $('ct-filtros-diario').style.display  = tipo === 'diario'  ? '' : 'none';
-  $('ct-resultado').style.display = 'none';
-  $('cd-resultado').style.display = 'none';
-  $('ct-empty').style.display = 'none';
+  $('ct-tipo-mensual').className     = 'btn btn-sm ' + (tipo === 'mensual'     ? 'btn-primary' : 'btn-secondary');
+  $('ct-tipo-diario').className      = 'btn btn-sm ' + (tipo === 'diario'      ? 'btn-primary' : 'btn-secondary');
+  $('ct-tipo-concentrado').className = 'btn btn-sm ' + (tipo === 'concentrado' ? 'btn-primary' : 'btn-secondary');
+  $('ct-filtros-mensual').style.display     = tipo === 'mensual'     ? '' : 'none';
+  $('ct-filtros-diario').style.display      = tipo === 'diario'      ? '' : 'none';
+  $('ct-filtros-concentrado').style.display = tipo === 'concentrado' ? '' : 'none';
+  $('ct-resultado').style.display    = 'none';
+  $('cd-resultado').style.display    = 'none';
+  $('conc-resultado').style.display  = 'none';
+  $('ct-empty').style.display        = 'none';
   // Copiar selección de grupo al filtro diario si ya se cargó
   if (tipo === 'diario' && $('cd-grupo').options.length <= 1) {
     _ctGrupos.forEach(g => {
@@ -825,6 +867,10 @@ function setCorteType(tipo) {
     const hoy = today();
     $('cd-desde').value = hoy;
     $('cd-hasta').value = hoy;
+  }
+  // Pre-llenar mes actual en concentrado
+  if (tipo === 'concentrado' && !$('conc-mes').value) {
+    $('conc-mes').value = today().slice(0, 7);
   }
 }
 
@@ -1399,10 +1445,12 @@ function renderPagos() {
     grupos[key].push(p);
   });
 
-  const renderRow = p => `
+  const renderRow = p => {
+    const numRec = p.numero_recibo ? `<span style="font-family:monospace;font-weight:700;color:var(--navy);background:#eef2ff;border-radius:4px;padding:1px 5px;font-size:11px;margin-right:6px">Recibo #${String(p.numero_recibo).padStart(4,'0')}</span>` : '';
+    return `
     <div class="pago-row">
       <div class="pago-info">
-        <span class="pago-concepto">${esc(p.concepto)}${p.mes_correspondiente ? ' <span style="font-size:11px;font-weight:400;color:var(--text-muted);margin-left:6px">(corresponde: ' + fmtDate(p.mes_correspondiente) + ')</span>' : ''}</span>
+        <span class="pago-concepto">${numRec}${esc(p.concepto)}${p.mes_correspondiente ? ' <span style="font-size:11px;font-weight:400;color:var(--text-muted);margin-left:6px">(corresponde: ' + fmtDate(p.mes_correspondiente) + ')</span>' : ''}</span>
         <span class="pago-meta">${fmtDate(p.fecha_pago)}${p.forma_pago ? '  ·  ' + esc(p.forma_pago) : ''}${p.recibio ? '  ·  Recibió: ' + esc(p.recibio) : ''}</span>
       </div>
       <div class="pago-monto">${fmtMoney(p.monto)}</div>
@@ -1413,6 +1461,7 @@ function renderPagos() {
         <button class="btn-sm-tbl bst-red" onclick="eliminarPago(${p.id})"><i class="fas fa-trash"></i></button>
       </div>
     </div>`;
+  };
 
   cont.innerHTML = '<div class="pago-col-hdr"><span></span><span>Cantidad</span><span></span></div>' +
     grupoOrder.map(key => {
@@ -1447,7 +1496,7 @@ function abrirPagoForm(cargoId) {
       `<option value="${c.id}">${esc(c.descripcion || c.concepto)} (${fmtMoney(c.monto)})</option>`).join('');
   sv('pf-cargo', cargoId || '');
   sv('pf-fecha', today());
-  sv('pf-mes', today());
+  sv('pf-mes', today().slice(0, 7));
   sv('pf-monto', ''); sv('pf-forma', '');
   sv('pf-recibio', sessionStorage.getItem('ecca_nombre') || '');
   $('pf-comprobante').value = '';
@@ -1468,7 +1517,7 @@ function editarPago(id) {
   sv('pf-concepto', p.concepto || '');
   sv('pf-monto', p.monto || '');
   sv('pf-fecha', p.fecha_pago || today());
-  sv('pf-mes', p.mes_correspondiente || p.fecha_pago || today());
+  sv('pf-mes', (p.mes_correspondiente || p.fecha_pago || today()).slice(0, 7));
   sv('pf-forma', p.forma_pago || '');
   sv('pf-recibio', p.recibio || '');
   $('pf-comprobante').value = '';
@@ -1492,7 +1541,7 @@ async function guardarPagoForm() {
       cargoId: gv('pf-cargo') || null,
       concepto, monto,
       fechaPago: gv('pf-fecha'),
-      mesCorrespondiente: gv('pf-mes') || null,
+      mesCorrespondiente: gv('pf-mes') ? gv('pf-mes') + '-01' : null,
       formaPago: gv('pf-forma'),
       recibio: gv('pf-recibio'),
       comprobanteUrl,
@@ -1691,6 +1740,191 @@ cambiarTab('alumno');
   _paSearch = await getRecords();
   await seleccionarAlumno(folio);
 })();
+
+/* ========== CONCENTRADO MENSUAL ========== */
+async function generarConcentrado() {
+  const mes = $('conc-mes').value; // 'YYYY-MM'
+  if (!mes) { toast('Selecciona un mes.', 'warn'); return; }
+
+  $('conc-resultado').style.display = 'none';
+  $('ct-empty').style.display = 'none';
+
+  try {
+    // 1. Cargar todos los pagos del mes
+    const [yy, mm] = mes.split('-');
+    const desdeD = mes + '-01';
+    const diasMes = new Date(parseInt(yy), parseInt(mm), 0).getDate();
+    const hastaD  = mes + '-' + String(diasMes).padStart(2, '0');
+
+    const { data: pagosData, error } = await _sb.from('pagos')
+      .select('folio, concepto, monto, fecha_pago, estado')
+      .gte('fecha_pago', desdeD)
+      .lte('fecha_pago', hastaD);
+    if (error) throw error;
+
+    const pagos = (pagosData || []).filter(p => p.estado === 'confirmado' || !p.estado);
+
+    // 2. Mapa folio → modalidad (usar _ctGrupos ya cargados)
+    let folioModMap = {};
+    if (pagos.length) {
+      const foliosUnicos = [...new Set(pagos.map(p => p.folio))];
+      const { data: insc } = await _sb.from('inscripciones')
+        .select('folio, grupo_id').in('folio', foliosUnicos);
+      (insc || []).forEach(a => {
+        const g = _ctGrupos.find(x => x.id === a.grupo_id);
+        folioModMap[a.folio] = g?.modalidad || '';
+      });
+    }
+
+    // 3. Construir tabla por día (31 filas)
+    const dias = Array.from({ length: diasMes }, (_, i) => i + 1);
+    const cols = {
+      sem: {}, cuatri: {}, sab: {},
+      insc: {}, cert: {}, extr: {}, unif: {}, otro: {}
+    };
+
+    pagos.forEach(p => {
+      const dia = parseInt((p.fecha_pago || '').split('-')[2]);
+      if (!dia) return;
+      const m   = parseFloat(p.monto || 0);
+      const con = (p.concepto || '').toLowerCase();
+      const mod = (folioModMap[p.folio] || '').toLowerCase();
+      const grp = '';
+
+      if (con === 'colegiatura') {
+        if      (mod.includes('cuatri')) _concAdd(cols.cuatri, dia, m);
+        else if (mod.includes('sab'))    _concAdd(cols.sab,    dia, m);
+        else                             _concAdd(cols.sem,    dia, m);
+      } else if (con === 'inscripción' || con === 'reinscripción') {
+        _concAdd(cols.insc,  dia, m);
+      } else if (con === 'certificado' || con === 'constancia') {
+        _concAdd(cols.cert,  dia, m);
+      } else if (con === 'examen' || con === 'extraordinario') {
+        _concAdd(cols.extr,  dia, m);
+      } else if (con === 'uniforme') {
+        _concAdd(cols.unif,  dia, m);
+      } else {
+        _concAdd(cols.otro,  dia, m);
+      }
+    });
+
+    // 4. Render
+    const _MESES_N = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+    $('conc-lbl').textContent = 'Concentrado mensual — ' + _MESES_N[parseInt(mm) - 1] + ' ' + yy;
+
+    const _th = s => `<th style="text-align:center;font-size:10px;padding:5px 6px;white-space:nowrap">${s}</th>`;
+    const _td = (v, bold) => `<td style="text-align:right;font-size:11px;padding:4px 6px;${bold?'font-weight:700;':''}">${v ? fmtMoney(v) : '—'}</td>`;
+    const _tdn = v => `<td style="text-align:center;font-size:11px;padding:4px 6px;color:var(--navy);font-weight:700">${v}</td>`;
+
+    $('conc-thead').innerHTML = `<tr style="background:var(--navy);color:#fff">
+      ${_th('DÍA')}${_th('SEMESTRAL')}${_th('CUATRIMESTRAL')}${_th('SABATINO')}
+      ${_th('ACUM. COLEGIATURAS')}${_th('INSCRIPCIONES')}${_th('CERTIFICADOS')}
+      ${_th('EXTRAORDINARIOS')}${_th('UNIFORMES')}${_th('ACUM. OTROS')}${_th('ACUM. GLOBAL')}
+    </tr>`;
+
+    const totales = { sem:0, cuatri:0, sab:0, insc:0, cert:0, extr:0, unif:0, otro:0 };
+
+    $('conc-tbody').innerHTML = dias.map(d => {
+      const sem    = cols.sem[d]    || 0;
+      const cuatri = cols.cuatri[d] || 0;
+      const sab    = cols.sab[d]    || 0;
+      const insc   = cols.insc[d]   || 0;
+      const cert   = cols.cert[d]   || 0;
+      const extr   = cols.extr[d]   || 0;
+      const unif   = cols.unif[d]   || 0;
+      const otro   = cols.otro[d]   || 0;
+      const acCol  = sem + cuatri + sab;
+      const acOtro = insc + cert + extr + unif + otro;
+      const global = acCol + acOtro;
+
+      totales.sem    += sem;   totales.cuatri += cuatri; totales.sab  += sab;
+      totales.insc   += insc;  totales.cert   += cert;   totales.extr += extr;
+      totales.unif   += unif;  totales.otro   += otro;
+
+      const hayDatos = global > 0;
+      const bg = hayDatos ? '' : 'background:var(--bg-hover);';
+      return `<tr style="${bg}">
+        ${_tdn(d)}${_td(sem)}${_td(cuatri)}${_td(sab)}
+        ${_td(acCol, acCol>0)}${_td(insc)}${_td(cert)}
+        ${_td(extr)}${_td(unif)}${_td(acOtro, acOtro>0)}${_td(global, global>0)}
+      </tr>`;
+    }).join('');
+
+    const tAcCol  = totales.sem + totales.cuatri + totales.sab;
+    const tAcOtro = totales.insc + totales.cert + totales.extr + totales.unif + totales.otro;
+    const tGlobal = tAcCol + tAcOtro;
+    const _tfR = 'text-align:right;font-size:11px;padding:5px 6px;font-weight:700;border-top:2px solid var(--border)';
+    const _tfC = 'text-align:center;font-size:11px;padding:5px 6px;font-weight:700;border-top:2px solid var(--border)';
+    $('conc-tfoot').innerHTML = `<tr style="background:var(--bg-hover)">
+      <td style="${_tfC}">TOTAL</td>
+      <td style="${_tfR}">${fmtMoney(totales.sem)}</td>
+      <td style="${_tfR}">${fmtMoney(totales.cuatri)}</td>
+      <td style="${_tfR}">${fmtMoney(totales.sab)}</td>
+      <td style="${_tfR};color:#16a34a">${fmtMoney(tAcCol)}</td>
+      <td style="${_tfR}">${fmtMoney(totales.insc)}</td>
+      <td style="${_tfR}">${fmtMoney(totales.cert)}</td>
+      <td style="${_tfR}">${fmtMoney(totales.extr)}</td>
+      <td style="${_tfR}">${fmtMoney(totales.unif)}</td>
+      <td style="${_tfR};color:#16a34a">${fmtMoney(tAcOtro)}</td>
+      <td style="${_tfR};color:var(--navy);font-size:12px">${fmtMoney(tGlobal)}</td>
+    </tr>`;
+
+    $('conc-resultado').style.display = 'block';
+  } catch(e) { toast('Error al generar concentrado: ' + e.message, 'err'); }
+}
+
+function _concAdd(obj, dia, monto) { obj[dia] = (obj[dia] || 0) + monto; }
+
+function imprimirConcentrado() {
+  const mes = $('conc-mes').value;
+  if (!mes) return;
+  const [yy, mm] = mes.split('-');
+  const _MESES_N = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const mesLabel = _MESES_N[parseInt(mm) - 1] + ' ' + yy;
+
+  const tabla = $('conc-tabla').cloneNode(true);
+  tabla.querySelectorAll('[style]').forEach(el => { el.style.position = ''; el.style.zIndex = ''; });
+
+  const css = `
+    body{font-family:Arial,sans-serif;font-size:9px;color:#111;margin:10px 14px}
+    h2{font-size:14px;margin:0 0 1px;color:#1e3a5f}
+    p{margin:0 0 10px;font-size:10px;color:#555}
+    table{width:100%;border-collapse:collapse;font-size:9px}
+    th{background:#1e3a5f;color:#fff;padding:4px 5px;text-align:center;white-space:nowrap}
+    td{padding:3px 5px;border-bottom:1px solid #e5e7eb;text-align:right}
+    td:first-child{text-align:center;font-weight:700;color:#1e3a5f}
+    tfoot td{font-weight:700;border-top:2px solid #1e3a5f;background:#f8fafc}
+    tr:nth-child(even) td{background:#f8fafc}
+    .logo-hdr{display:flex;align-items:center;gap:10px;margin-bottom:8px;border-bottom:2px solid #1e3a5f;padding-bottom:6px}
+    @media print{@page{size:letter landscape;margin:8mm 6mm}}`;
+
+  const body = `
+    <div class="logo-hdr">
+      <div>
+        <div style="font-size:16px;font-weight:800;color:#1e3a5f">ECCA Prepa León</div>
+        <div style="font-size:10px;color:#6b7280">Sistema de Admisiones</div>
+      </div>
+    </div>
+    <h2>Concentrado Mensual de Pagos</h2>
+    <p>MES: <strong>${mesLabel}</strong></p>
+    ${tabla.outerHTML}
+    <div style="margin-top:30px;display:grid;grid-template-columns:1fr 1fr;gap:40px">
+      <div style="text-align:center">
+        <div style="border-top:1px solid #374151;margin-bottom:6px"></div>
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px">Elaboró</div>
+      </div>
+      <div style="text-align:center">
+        <div style="border-top:1px solid #374151;margin-bottom:6px"></div>
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px">Vo. Bo. Dirección</div>
+      </div>
+    </div>`;
+
+  const w = window.open('', '_blank', 'width=1050,height=680');
+  w.document.open();
+  w.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Concentrado ' + mesLabel + '</title><style>' + css + '<\/style><\/head><body>' + body + '<\/body><\/html>');
+  w.document.close();
+  setTimeout(() => { w.print(); w.close(); }, 600);
+}
 </script>
 </body>
 </html>

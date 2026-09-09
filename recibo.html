@@ -214,8 +214,9 @@
 <script src="js/app.js"></script>
 <script>
 function llenarRecibo(rec, pago) {
-  $('r-folio').textContent      = rec.folio     || '—';
-  $('tb-folio').textContent     = rec.folio     || '—';
+  const numRec = pago.numero_recibo ? String(pago.numero_recibo).padStart(4, '0') : (rec.folio || '—');
+  $('r-folio').textContent      = numRec;
+  $('tb-folio').textContent     = numRec;
   $('r-nombre').textContent     = rec.nombre    || '';
   $('r-fnac').textContent       = rec.fechaNac  ? fmtDate(rec.fechaNac) : '';
   $('r-edad').textContent       = rec.edad      ? rec.edad + ' años' : '';

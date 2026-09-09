@@ -346,6 +346,15 @@ async function savePago(p) {
       const { data: { user } } = await _sb.auth.getUser();
       if (user?.id) payload.registrado_por_id = user.id;
     } catch (_) {}
+    // Generar siguiente numero_recibo
+    try {
+      const { data: lastRec } = await _sb.from('pagos')
+        .select('numero_recibo')
+        .not('numero_recibo', 'is', null)
+        .order('numero_recibo', { ascending: false })
+        .limit(1);
+      payload.numero_recibo = ((lastRec?.[0]?.numero_recibo) || 0) + 1;
+    } catch (_) {}
     const { data, error } = await _sb.from('pagos').insert(payload).select();
     if (error) throw error;
     if (!data || !data.length) throw new Error('No se pudo guardar el pago.');
