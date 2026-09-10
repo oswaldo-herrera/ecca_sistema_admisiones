@@ -939,8 +939,8 @@ a.sb-item[href="sin-grupo.html"] { display: none !important; }
   .r-logo { width: 40px !important; height: 40px !important; border-radius: 6px !important; }
   .r-school h1 { font-size: 9.5px !important; }
   .r-school p  { font-size: 6px !important; }
-  .r-fbox .rfl { font-size: 7.5px !important; padding: 2px 7px !important; }
-  .r-fbox .rfn { font-size: 9px !important; padding: 3px 7px !important; }
+  .r-fbox .rfl { font-size: 11px !important; padding: 3px 14px !important; letter-spacing: 2px !important; }
+  .r-fbox .rfn { font-size: 18px !important; padding: 5px 14px !important; }
   .r-title-bar { padding: 5px 10px !important; font-size: 8px !important; }
   .r-body { padding: 7px 10px !important; }
   .r-row { margin-bottom: 5px !important; }
