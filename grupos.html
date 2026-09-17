@@ -34,6 +34,7 @@
       <a href="calificaciones.html" class="sb-item" data-modulo="calificaciones"><i class="fas fa-star-half-stroke"></i><span>Calificaciones</span></a>
       <a href="documentos.html" class="sb-item" data-modulo="documentos"><i class="fas fa-folder-open"></i><span>Documentos</span></a>
       <a href="pagos.html" class="sb-item" data-modulo="pagos"><i class="fas fa-circle-dollar-to-slot"></i><span>Pagos</span></a>
+      <a href="adeudos.html" class="sb-item" data-modulo="adeudos"><i class="fas fa-triangle-exclamation"></i><span>Adeudos</span></a>
       <a href="recibo.html" class="sb-item" data-modulo="recibo"><i class="fas fa-file-invoice"></i><span>Recibo</span></a>
       <a href="credencial.html" class="sb-item" data-modulo="credencial"><i class="fas fa-id-card"></i><span>Credencial</span></a>
       <div class="sb-group-label">Administración</div>
@@ -266,21 +267,25 @@ function renderGrupos(counts) {
     return;
   }
   cont.innerHTML = _grupos.map(g => {
-    const c    = counts[g.id] || { n: 0, h: 0, m: 0 };
-    const n    = c.n;
-    const pct  = g.cupo ? Math.min(100, Math.round(n / g.cupo * 100)) : 0;
-    const over = g.cupo && n > g.cupo;
+    const c      = counts[g.id] || { n: 0, h: 0, m: 0 };
+    const n      = c.n;
+    const pct    = g.cupo ? Math.min(100, Math.round(n / g.cupo * 100)) : 0;
+    const over   = g.cupo && n > g.cupo;
+    const cerrado = !!g.cerrado;
     const hmTag = (c.h || c.m)
       ? `<span style="font-size:11px;font-weight:600;color:var(--text-muted);white-space:nowrap">
            <span style="color:#3b82f6">H:${c.h}</span> <span style="color:#ec4899">M:${c.m}</span>
          </span>`
       : '';
+    const cerradoBadge = cerrado
+      ? `<span style="background:#dc2626;color:#fff;font-size:9px;font-weight:700;padding:1px 7px;border-radius:8px;letter-spacing:.5px">CERRADO</span>`
+      : '';
     return `
-    <div class="grupo-card">
+    <div class="grupo-card" style="${cerrado ? 'opacity:.55;' : ''}">
       <div class="grupo-card-hdr">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
           <div class="grupo-card-name">${esc(g.nombre)}</div>
-          ${hmTag}
+          ${cerradoBadge}${hmTag}
         </div>
         <div class="grupo-card-meta">${[g.modalidad, g.ciclo].filter(Boolean).map(esc).join(' · ') || '&nbsp;'}</div>
       </div>
@@ -294,10 +299,25 @@ function renderGrupos(counts) {
       <div class="grupo-card-ftr">
         ${tienePermiso('grupos-gestionar') ? `<button class="btn-sm-tbl bst-gold" onclick="abrirDetalleGrupo(${g.id})"><i class="fas fa-users"></i> Gestionar</button>` : ''}
         ${tienePermiso('grupos-editar')    ? `<button class="btn-sm-tbl bst-navy" onclick="abrirEditarGrupo(${g.id})"><i class="fas fa-pen"></i> Editar</button>` : ''}
+        ${tienePermiso('grupos-editar')    ? `<button class="btn-sm-tbl ${cerrado ? 'bst-gold' : 'bst-red'}" onclick="toggleCerrarGrupo(${g.id},${cerrado})"><i class="fas fa-${cerrado ? 'lock-open' : 'lock'}"></i> ${cerrado ? 'Reabrir' : 'Cerrar'}</button>` : ''}
         ${tienePermiso('grupos-eliminar')  ? `<button class="btn-sm-tbl bst-red"  onclick="eliminarGrupo(${g.id})"><i class="fas fa-trash"></i></button>` : ''}
       </div>
     </div>`;
   }).join('');
+}
+
+/* ---- Cerrar / reabrir grupo ---- */
+async function toggleCerrarGrupo(id, estaCerrado) {
+  const accion = estaCerrado ? 'reabrir' : 'cerrar';
+  if (!confirm(`¿Deseas ${accion} este grupo?`)) return;
+  try {
+    const { error } = await _sb.from('grupos').update({ cerrado: !estaCerrado }).eq('id', id);
+    if (error) throw error;
+    toast(`Grupo ${estaCerrado ? 'reabierto' : 'cerrado'} correctamente.`, 'ok');
+    _grupos = await getGrupos();
+    const counts = await contarAlumnos();
+    renderGrupos(counts);
+  } catch(e) { toast('Error: ' + e.message, 'err'); }
 }
 
 /* ---- Crear / editar grupo ---- */

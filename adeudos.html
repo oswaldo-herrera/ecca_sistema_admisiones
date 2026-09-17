@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ECCA — Adeudos de Colegiatura</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body data-modulo="adeudos">
+<div class="layout">
+
+  <!-- ===== SIDEBAR ===== -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-brand">
+      <div class="sb-logo" style="background:#fff;padding:3px">
+        <img src="images/ecca_logo.png" alt="Logo ECCA" style="width:100%;height:100%;object-fit:contain;display:block">
+      </div>
+      <div>
+        <div class="sb-brand-name">ECCA Prepa León</div>
+        <div class="sb-brand-sub">Sistema de Admisiones</div>
+      </div>
+    </div>
+    <nav class="sb-nav">
+      <div class="sb-group-label">Principal</div>
+      <a href="index.html" class="sb-item" data-modulo="inicio"><i class="fas fa-house"></i><span>Inicio</span></a>
+      <a href="formulario.html" class="sb-item" data-modulo="nueva-inscripcion"><i class="fas fa-user-plus"></i><span>Nueva Inscripción</span></a>
+      <div class="sb-group-label">Gestión</div>
+      <a href="base-datos.html" class="sb-item" data-modulo="base-datos"><i class="fas fa-table-list"></i><span>Base de Datos</span><span class="sb-badge">0</span></a>
+      <a href="grupos.html" class="sb-item" data-modulo="grupos"><i class="fas fa-people-group"></i><span>Grupos</span></a>
+      <a href="deportes.html" class="sb-item" data-modulo="deportes"><i class="fas fa-futbol"></i><span>Deportes</span></a>
+      <a href="horarios.html" class="sb-item" data-modulo="horarios"><i class="fas fa-calendar-week"></i><span>Horarios</span></a>
+      <a href="calificaciones.html" class="sb-item" data-modulo="calificaciones"><i class="fas fa-star-half-stroke"></i><span>Calificaciones</span></a>
+      <a href="documentos.html" class="sb-item" data-modulo="documentos"><i class="fas fa-folder-open"></i><span>Documentos</span></a>
+      <a href="pagos.html" class="sb-item" data-modulo="pagos"><i class="fas fa-circle-dollar-to-slot"></i><span>Pagos</span></a>
+      <a href="adeudos.html" class="sb-item active" data-modulo="adeudos"><i class="fas fa-triangle-exclamation"></i><span>Adeudos</span></a>
+      <a href="recibo.html" class="sb-item" data-modulo="recibo"><i class="fas fa-file-invoice"></i><span>Recibo</span></a>
+      <a href="credencial.html" class="sb-item" data-modulo="credencial"><i class="fas fa-id-card"></i><span>Credencial</span></a>
+      <div class="sb-group-label">Administración</div>
+      <a href="bitacora.html" class="sb-item" data-modulo="bitacora"><i class="fas fa-clipboard-list"></i><span>Bitácora</span></a>
+      <a href="usuarios.html" class="sb-item" data-modulo="usuarios"><i class="fas fa-users-gear"></i><span>Usuarios</span></a>
+    </nav>
+    <div class="sb-footer">
+      <i class="fas fa-location-dot"></i> 5 de Febrero 628, Centro, León, Gto.<br>
+      Tel. 479 153 4007
+    </div>
+  </aside>
+  <div class="sidebar-overlay"></div>
+
+  <!-- ===== MAIN ===== -->
+  <div class="main-content">
+    <header class="topbar">
+      <button class="topbar-hamburger" aria-label="Menú"><i class="fas fa-bars"></i></button>
+      <nav class="topbar-breadcrumb">
+        <a href="index.html"><i class="fas fa-house"></i></a>
+        <span class="sep">›</span>
+        <span class="current">Adeudos de Colegiatura</span>
+      </nav>
+    </header>
+
+    <div class="page-header">
+      <div>
+        <div class="page-title">Adeudos de Colegiatura</div>
+        <div class="page-sub">Alumnos que no han pagado su colegiatura por mes y grupo.</div>
+      </div>
+    </div>
+
+    <div class="page-body">
+
+      <!-- Filtros -->
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-body">
+          <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap">
+            <div class="field" style="flex:0 0 200px">
+              <label class="field-label">Mes</label>
+              <input class="field-input" type="month" id="ad-mes">
+            </div>
+            <div class="field" style="flex:0 0 240px">
+              <label class="field-label">Grupo</label>
+              <select class="field-select" id="ad-grupo">
+                <option value="">Todos los grupos</option>
+              </select>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="generarAdeudos()">
+              <i class="fas fa-magnifying-glass"></i> Buscar
+            </button>
+            <button class="btn btn-secondary btn-sm" id="ad-pdf-btn" style="display:none" onclick="imprimirAdeudos()">
+              <i class="fas fa-file-pdf"></i> PDF
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Resumen chips -->
+      <div id="ad-resumen" style="display:none;margin-bottom:14px;display:none">
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <div class="stat-card" style="flex:1;min-width:120px">
+            <div class="stat-val" id="ad-stat-grupos">—</div>
+            <div class="stat-lbl">Grupos</div>
+          </div>
+          <div class="stat-card" style="flex:1;min-width:120px">
+            <div class="stat-val" id="ad-stat-alumnos">—</div>
+            <div class="stat-lbl">Alumnos con adeudo</div>
+          </div>
+          <div class="stat-card" style="flex:1;min-width:120px">
+            <div class="stat-val" id="ad-stat-pagados">—</div>
+            <div class="stat-lbl">Ya pagaron</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabla resultados -->
+      <div id="ad-resultado" style="display:none"></div>
+      <div id="ad-empty" style="display:none;text-align:center;padding:40px;color:var(--text-muted)">
+        <i class="fas fa-circle-check" style="font-size:40px;color:#16a34a;display:block;margin-bottom:12px"></i>
+        <div style="font-size:15px;font-weight:600">Todos al corriente</div>
+        <div style="font-size:13px">Todos los alumnos han pagado su colegiatura de este mes.</div>
+      </div>
+
+    </div><!-- /page-body -->
+  </div><!-- /main-content -->
+</div><!-- /layout -->
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script src="js/app.js"></script>
+<script>
+// Pre-llenar mes actual
+(function() {
+  const hoy = new Date();
+  const mm = String(hoy.getMonth() + 1).padStart(2, '0');
+  $('ad-mes').value = hoy.getFullYear() + '-' + mm;
+})();
+
+// Cargar grupos
+async function cargarGrupos() {
+  try {
+    const { data } = await _sb.from('grupos').select('id, nombre, modalidad, cerrado').order('nombre');
+    const sel = $('ad-grupo');
+    const abiertos = (data || []).filter(g => !g.cerrado);
+    abiertos.forEach(g => {
+      const opt = document.createElement('option');
+      opt.value = g.id;
+      opt.textContent = g.nombre + (g.modalidad ? ' (' + g.modalidad + ')' : '');
+      sel.appendChild(opt);
+    });
+    return abiertos;
+  } catch(e) { return []; }
+}
+
+let _grupos = [];
+let _adDatos = []; // datos del último reporte para PDF
+
+(async function init() {
+  _grupos = await cargarGrupos();
+})();
+
+function _prefMod(modalidad) {
+  if (!modalidad) return '';
+  const m = modalidad.toUpperCase();
+  if (m.includes('CUATRI')) return 'CT';
+  if (m.includes('SEMI'))   return 'SM';
+  if (m.includes('SABAT'))  return 'SB';
+  return '';
+}
+function _fmtRecibo(pago, modalidad) {
+  if (!pago || !pago.numero_recibo) return '—';
+  const pre = _prefMod(modalidad);
+  return (pre ? pre + '-' : '') + String(pago.numero_recibo).padStart(4, '0');
+}
+
+async function generarAdeudos() {
+  const mes = $('ad-mes').value;
+  if (!mes) { alert('Selecciona un mes.'); return; }
+
+  const grupoFiltro = $('ad-grupo').value;
+  const [yy, mm] = mes.split('-');
+  const diasMes = new Date(parseInt(yy), parseInt(mm), 0).getDate();
+  const mesDesde = mes + '-01';
+  const mesHasta = mes + '-' + String(diasMes).padStart(2, '0');
+
+  $('ad-resultado').style.display = 'none';
+  $('ad-empty').style.display = 'none';
+  $('ad-resumen').style.display = 'none';
+  $('ad-pdf-btn').style.display = 'none';
+
+  try {
+    // 1. Cargar alumnos activos solo de grupos abiertos
+    const gruposAbiertosIds = _grupos.map(g => g.id);
+    let qInsc = _sb.from('inscripciones').select('folio, nombre, grupo_id');
+    if (grupoFiltro) {
+      qInsc = qInsc.eq('grupo_id', parseInt(grupoFiltro));
+    } else {
+      qInsc = qInsc.in('grupo_id', gruposAbiertosIds);
+    }
+    const { data: inscrData } = await qInsc;
+    const alumnos = inscrData || [];
+
+    if (!alumnos.length) {
+      $('ad-empty').style.display = 'block';
+      return;
+    }
+
+    // 2. Cargar pagos de colegiatura del mes (con recibo y quien registró)
+    const folios = alumnos.map(a => a.folio);
+    const { data: pagosData } = await _sb.from('pagos')
+      .select('folio, monto, mes_correspondiente, estado, numero_recibo, recibio')
+      .in('folio', folios)
+      .eq('concepto', 'Colegiatura')
+      .gte('mes_correspondiente', mesDesde)
+      .lte('mes_correspondiente', mesHasta);
+
+    // Mapa folio → pago (solo confirmados)
+    const pagoMap = {};
+    (pagosData || [])
+      .filter(p => p.estado === 'confirmado' || !p.estado)
+      .forEach(p => { pagoMap[p.folio] = p; });
+
+    // 3. Separar deudores y al corriente
+    const deudores = alumnos.filter(a => !pagoMap[a.folio]);
+    const pagados  = alumnos.filter(a =>  pagoMap[a.folio]);
+
+    // 4. Agrupar TODOS los alumnos por grupo
+    const porGrupo = {};
+    alumnos.forEach(a => {
+      const g = _grupos.find(x => x.id === a.grupo_id);
+      const gKey = g ? g.nombre : 'Sin grupo';
+      if (!porGrupo[gKey]) porGrupo[gKey] = { grupo: g, alumnos: [] };
+      porGrupo[gKey].alumnos.push(a);
+    });
+
+    _adDatos = { mes, porGrupo, deudores, pagados, alumnos, pagoMap };
+
+    // 5. Resumen
+    const numGrupos = Object.keys(porGrupo).length;
+    $('ad-stat-grupos').textContent  = numGrupos;
+    $('ad-stat-alumnos').textContent = deudores.length;
+    $('ad-stat-pagados').textContent = pagados.length;
+    document.getElementById('ad-resumen').removeAttribute('style');
+    $('ad-resumen').style.display = 'block';
+
+    // 6. Render tabla
+    const _MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+    const mesLabel = _MESES[parseInt(mm) - 1] + ' ' + yy;
+
+    let html = `<div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:12px">
+      Control de colegiatura — <span style="color:var(--gold)">${mesLabel}</span>
+      <span style="font-weight:400;color:var(--text-muted);font-size:12px;margin-left:8px">${deudores.length} alumno(s) con adeudo</span>
+    </div>`;
+
+    Object.keys(porGrupo).sort().forEach(gNom => {
+      const { grupo, alumnos: lista } = porGrupo[gNom];
+      const mod = grupo?.modalidad || '';
+      const modBadge = mod ? `<span style="background:var(--navy);color:#fff;font-size:10px;padding:1px 6px;border-radius:10px;margin-left:8px">${mod}</span>` : '';
+      const deben = lista.filter(a => !pagoMap[a.folio]).length;
+      const countBadge = deben > 0
+        ? `<span style="font-size:12px;background:#dc2626;color:#fff;padding:2px 10px;border-radius:10px">${deben} deben</span>`
+        : `<span style="font-size:12px;background:#16a34a;color:#fff;padding:2px 10px;border-radius:10px">Al corriente</span>`;
+      html += `
+        <div class="card" style="margin-bottom:14px">
+          <div class="card-body" style="padding:0">
+            <div style="background:var(--navy);color:#fff;padding:10px 16px;border-radius:var(--r-lg) var(--r-lg) 0 0;display:flex;justify-content:space-between;align-items:center">
+              <span style="font-weight:700;font-size:13px"><i class="fas fa-people-group" style="margin-right:8px;color:var(--gold)"></i>${gNom}${modBadge}</span>
+              ${countBadge}
+            </div>
+            <table style="width:100%;border-collapse:collapse">
+              <thead>
+                <tr style="background:var(--bg-hover)">
+                  <th style="text-align:left;padding:7px 16px;font-size:11px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border)">#</th>
+                  <th style="text-align:left;padding:7px 16px;font-size:11px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border)">Alumno</th>
+                  <th style="text-align:left;padding:7px 16px;font-size:11px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border)">Recibo</th>
+                  <th style="text-align:left;padding:7px 16px;font-size:11px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border)">Registró</th>
+                  <th style="text-align:center;padding:7px 16px;font-size:11px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border)">Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${lista.map((a, i) => {
+                  const pago = pagoMap[a.folio];
+                  const recibo = _fmtRecibo(pago, mod);
+                  const registró = pago?.recibio || '—';
+                  const estadoBadge = pago
+                    ? `<span style="background:#dcfce7;color:#16a34a;font-size:11px;font-weight:700;padding:2px 10px;border-radius:10px">PAGÓ</span>`
+                    : `<span style="background:#fee2e2;color:#dc2626;font-size:11px;font-weight:700;padding:2px 10px;border-radius:10px">DEBE</span>`;
+                  return `
+                  <tr style="border-bottom:1px solid var(--border)${pago ? '' : ';background:#fff9f9'}">
+                    <td style="padding:8px 16px;font-size:12px;color:var(--text-muted)">${i + 1}</td>
+                    <td style="padding:8px 16px;font-size:13px;font-weight:500">${a.nombre || a.folio}</td>
+                    <td style="padding:8px 16px;font-size:12px;font-family:monospace;font-weight:700;color:var(--navy)">${recibo}</td>
+                    <td style="padding:8px 16px;font-size:12px;color:var(--text-muted)">${registró}</td>
+                    <td style="padding:8px 16px;text-align:center">${estadoBadge}</td>
+                  </tr>`;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>`;
+    });
+
+    $('ad-resultado').innerHTML = html;
+    $('ad-resultado').style.display = 'block';
+    $('ad-pdf-btn').style.display = '';
+
+    if (!deudores.length) $('ad-empty').style.display = 'block';
+
+  } catch(e) {
+    alert('Error al generar adeudos: ' + e.message);
+  }
+}
+
+function imprimirAdeudos() {
+  if (!_adDatos || !_adDatos.alumnos) return;
+  const { mes, porGrupo, deudores, pagados, alumnos, pagoMap } = _adDatos;
+  const [yy, mm] = mes.split('-');
+  const _MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const mesLabel = _MESES[parseInt(mm) - 1] + ' ' + yy;
+
+  const css = `
+    body{font-family:Arial,sans-serif;font-size:10px;color:#111;margin:12px 16px}
+    h2{font-size:14px;margin:0 0 2px;color:#1e3a5f}
+    p{margin:0 0 10px;font-size:11px;color:#555}
+    .logo-hdr{display:flex;align-items:center;gap:10px;margin-bottom:10px;border-bottom:2px solid #1e3a5f;padding-bottom:6px}
+    .chips{display:flex;gap:16px;margin-bottom:14px}
+    .chip{border:1px solid #dde3ea;border-radius:8px;padding:6px 12px;text-align:center}
+    .chip-v{font-size:16px;font-weight:700;color:#1e3a5f}
+    .chip-l{font-size:9px;color:#6b7280;text-transform:uppercase;letter-spacing:.5px}
+    .g-hdr{background:#1e3a5f;color:#fff;padding:6px 12px;font-weight:700;font-size:11px;margin-top:12px;border-radius:4px 4px 0 0;display:flex;justify-content:space-between}
+    table{width:100%;border-collapse:collapse;margin-bottom:4px}
+    th{background:#f1f5f9;padding:4px 10px;text-align:left;font-size:9px;color:#64748b;border:1px solid #dde3ea}
+    td{padding:5px 10px;border:1px solid #dde3ea;font-size:10px}
+    .b-debe{background:#fee2e2;color:#dc2626;font-size:9px;font-weight:700;padding:1px 7px;border-radius:8px}
+    .b-pago{background:#dcfce7;color:#16a34a;font-size:9px;font-weight:700;padding:1px 7px;border-radius:8px}
+    .tr-debe{background:#fff9f9}
+    @media print{@page{size:letter portrait;margin:10mm 8mm}}`;
+
+  let gruposHtml = '';
+  Object.keys(porGrupo).sort().forEach(gNom => {
+    const { grupo, alumnos: lista } = porGrupo[gNom];
+    const mod = grupo?.modalidad || '';
+    const deben = lista.filter(a => !pagoMap[a.folio]).length;
+    gruposHtml += `
+      <div class="g-hdr"><span>${gNom}${mod ? ' · ' + mod : ''}</span><span>${deben} deben / ${lista.length} total</span></div>
+      <table>
+        <thead><tr><th>#</th><th>Alumno</th><th>Recibo</th><th>Registró</th><th>Estado</th></tr></thead>
+        <tbody>${lista.map((a, i) => {
+          const pago = pagoMap[a.folio];
+          const recibo = _fmtRecibo(pago, mod);
+          const reg = pago?.recibio || '—';
+          return `
+          <tr class="${pago ? '' : 'tr-debe'}">
+            <td style="color:#6b7280">${i + 1}</td>
+            <td style="font-weight:500">${a.nombre || a.folio}</td>
+            <td style="font-family:monospace;font-weight:700;color:#1e3a5f">${recibo}</td>
+            <td style="color:#374151">${reg}</td>
+            <td><span class="${pago ? 'b-pago' : 'b-debe'}">${pago ? 'PAGÓ' : 'DEBE'}</span></td>
+          </tr>`;
+        }).join('')}
+        </tbody>
+      </table>`;
+  });
+
+  const body = `
+    <div class="logo-hdr">
+      <div>
+        <div style="font-size:16px;font-weight:800;color:#1e3a5f">ECCA Prepa León</div>
+        <div style="font-size:10px;color:#6b7280">Sistema de Admisiones</div>
+      </div>
+    </div>
+    <h2>Control de Colegiatura</h2>
+    <p>Mes: <strong>${mesLabel}</strong> &nbsp;·&nbsp; Generado: ${new Date().toLocaleDateString('es-MX',{day:'2-digit',month:'long',year:'numeric'})}</p>
+    <div class="chips">
+      <div class="chip"><div class="chip-v">${alumnos.length}</div><div class="chip-l">Total alumnos</div></div>
+      <div class="chip"><div class="chip-v" style="color:#dc2626">${deudores.length}</div><div class="chip-l">Con adeudo</div></div>
+      <div class="chip"><div class="chip-v" style="color:#16a34a">${pagados.length}</div><div class="chip-l">Al corriente</div></div>
+    </div>
+    ${gruposHtml}`;
+
+  const C = '<', S = '>';
+  const w = window.open('', '_blank', 'width=850,height=680');
+  w.document.open();
+  w.document.write(C + '!DOCTYPE html' + S + C + 'html' + S + C + 'head' + S +
+    C + 'meta charset="UTF-8"' + S +
+    C + 'title' + S + 'Control Colegiatura ' + mesLabel + C + '/title' + S +
+    C + 'style' + S + css + C + '/style' + S +
+    C + '/head' + S + C + 'body' + S + body + C + '/body' + S + C + '/html' + S);
+  w.document.close();
+  setTimeout(() => { w.print(); w.close(); }, 600);
+}
+</script>
+</body>
+</html>
