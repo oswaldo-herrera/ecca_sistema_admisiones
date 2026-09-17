@@ -45,7 +45,7 @@
       <a href="usuarios.html" class="sb-item" data-modulo="usuarios"><i class="fas fa-users-gear"></i><span>Usuarios</span></a>
     </nav>
     <div class="sb-footer">
-      <i class="fas fa-location-dot"></i> 5 de Febrero 628, Centro, León, Gto.<br>
+      <i class="fas fa-location-dot"></i> 5 de Febrero 634, San Juan de Dios, 37000 León de los Aldama, Gto.<br>
       Tel. 479 153 4007
     </div>
   </aside>
@@ -132,72 +132,49 @@
               <span class="rfn" id="r-folio">—</span>
             </div>
           </div>
-          <div class="r-title-bar">REGISTRO DE INSCRIPCIÓN</div>
+          <div class="r-title-bar">RECIBO DE PAGO</div>
 
           <div class="r-body">
-            <div class="r-row">
-              <span class="r-lbl">Del Alumno:</span>
-              <span class="r-val" id="r-nombre"></span>
-            </div>
-            <div class="r-grid2">
-              <div class="r-row">
-                <span class="r-lbl">Nacimiento:</span>
-                <span class="r-val" id="r-fnac"></span>
-              </div>
-              <div class="r-row">
-                <span class="r-lbl">Edad:</span>
-                <span class="r-val" id="r-edad"></span>
-              </div>
-            </div>
-            <div class="r-row">
-              <span class="r-lbl">Padre o Tutor:</span>
-              <span class="r-val" id="r-padre"></span>
-            </div>
-            <div class="r-row">
-              <span class="r-lbl">Modalidad:</span>
-              <span class="r-val" id="r-modalidad"></span>
+
+            <!-- Nombre completo -->
+            <div class="r-field-full">
+              <div class="r-lbl">Nombre del Alumno</div>
+              <div class="r-val r-val-lg" id="r-nombre"></div>
             </div>
 
-            <div class="r-sec"><i class="fas fa-circle-dollar-to-slot"></i> DATOS DE PAGO</div>
-
-            <div class="r-row">
-              <span class="r-lbl">Concepto:</span>
-              <span class="r-val" id="r-concepto"></span>
-            </div>
-            <div class="r-grid2">
-              <div class="r-row">
-                <span class="r-lbl">Monto:</span>
-                <span class="r-val" id="r-monto"></span>
+            <!-- Concepto + Cantidad -->
+            <div class="r-field-row">
+              <div class="r-field">
+                <div class="r-lbl">Concepto</div>
+                <div class="r-val" id="r-concepto"></div>
               </div>
-              <div class="r-row">
-                <span class="r-lbl">Forma de Pago:</span>
-                <span class="r-val" id="r-fpago"></span>
+              <div class="r-field">
+                <div class="r-lbl">Cantidad Pagada</div>
+                <div class="r-val r-money" id="r-monto"></div>
               </div>
-            </div>
-            <div class="r-grid2">
-              <div class="r-row">
-                <span class="r-lbl">Fecha:</span>
-                <span class="r-val" id="r-fecha-pago"></span>
-              </div>
-              <div class="r-row">
-                <span class="r-lbl">Recibió:</span>
-                <span class="r-val" id="r-recibio"></span>
-              </div>
-            </div>
-            <div class="r-row" id="r-row-corresponde" style="display:none">
-              <span class="r-lbl">Corresponde al:</span>
-              <span class="r-val" id="r-corresponde"></span>
             </div>
 
+            <!-- Mes + Forma de pago -->
+            <div class="r-field-row">
+              <div class="r-field">
+                <div class="r-lbl">Mes que Corresponde</div>
+                <div class="r-val" id="r-corresponde"></div>
+              </div>
+              <div class="r-field">
+                <div class="r-lbl">Forma de Pago</div>
+                <div class="r-val" id="r-fpago"></div>
+              </div>
+            </div>
+
+            <!-- Firmas -->
             <div class="r-sigs">
-              <div class="sig-blk"><div class="sig-line"></div><div class="sig-lbl">Padre o Tutor</div></div>
-              <div class="sig-blk"><div class="sig-line"></div><div class="sig-lbl">Alumno</div></div>
-              <div class="sig-blk"><div class="sig-line"></div><div class="sig-lbl">Asesor Educativo</div></div>
+              <div class="sig-blk"><div class="sig-line"></div><div class="sig-lbl">Firma del Alumno</div></div>
+              <div class="sig-blk"><div class="sig-line"></div><div class="sig-lbl">Firma de la Institución</div></div>
             </div>
           </div>
 
           <div class="r-footer">
-            CALLE INDEPENDENCIA No. 841 COL. SAN MIGUEL &nbsp;|&nbsp; TELS. 211-5392 y 211-5393 &nbsp;|&nbsp; LEÓN, GTO.
+            5 DE FEBRERO 634, SAN JUAN DE DIOS &nbsp;|&nbsp; C.P. 37000 LEÓN DE LOS ALDAMA, GTO.
           </div>
           <div class="copy-label">Copia Alumno</div>
         </div><!-- /recibo-doc -->
@@ -214,27 +191,23 @@
 <script src="js/config.js"></script>
 <script src="js/app.js"></script>
 <script>
+function _fmtMes(fechaStr) {
+  if (!fechaStr) return '';
+  const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
+                 'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const d = new Date(fechaStr + 'T12:00:00');
+  return meses[d.getMonth()] + ' ' + d.getFullYear();
+}
+
 function llenarRecibo(rec, pago) {
   const numRec = pago.numero_recibo ? String(pago.numero_recibo).padStart(4, '0') : (rec.folio || '—');
-  $('r-folio').textContent      = numRec;
-  $('tb-folio').textContent     = numRec;
-  $('r-nombre').textContent     = rec.nombre    || '';
-  $('r-fnac').textContent       = rec.fechaNac  ? fmtDate(rec.fechaNac) : '';
-  $('r-edad').textContent       = rec.edad      ? rec.edad + ' años' : '';
-  $('r-padre').textContent      = rec.pNombre   || '';
-  $('r-modalidad').textContent  = rec.modalidad || '';
-  $('r-concepto').textContent   = pago.concepto    || '';
-  $('r-monto').textContent      = pago.monto       ? fmtMoney(pago.monto) : '';
-  $('r-fpago').textContent      = pago.forma_pago  || '';
-  $('r-fecha-pago').textContent = pago.fecha_pago  ? fmtDate(pago.fecha_pago) : '';
-  $('r-recibio').textContent    = pago.recibio     || '';
-  if (pago.mes_correspondiente) {
-    $('r-corresponde').textContent = fmtDate(pago.mes_correspondiente);
-    $('r-row-corresponde').style.display = '';
-  } else {
-    $('r-corresponde').textContent = '';
-    $('r-row-corresponde').style.display = 'none';
-  }
+  $('r-folio').textContent     = numRec;
+  $('tb-folio').textContent    = numRec;
+  $('r-nombre').textContent    = rec.nombre         || '';
+  $('r-concepto').textContent  = pago.concepto      || '';
+  $('r-monto').textContent     = pago.monto         ? fmtMoney(pago.monto) : '';
+  $('r-fpago').textContent     = pago.forma_pago    || '';
+  $('r-corresponde').textContent = pago.mes_correspondiente ? _fmtMes(pago.mes_correspondiente) : '';
 
   // Generar segunda copia (control interno)
   const pair = $('print-pair');

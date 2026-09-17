@@ -599,12 +599,12 @@ a.sb-item[href="sin-grupo.html"] { display: none !important; }
 }
 
 #recibo-doc, #recibo-doc-2 {
-  max-width: 680px; margin: 0 auto;
+  max-width: 740px; margin: 0 auto;
   background: #fff; border-radius: var(--r-lg);
   overflow: hidden; box-shadow: var(--sh-xl);
 }
 .recibo-divider {
-  max-width: 680px; margin: 14px auto;
+  max-width: 740px; margin: 16px auto;
   text-align: center; color: var(--text-muted);
   font-size: 11px; letter-spacing: .5px;
   display: flex; align-items: center; gap: 10px;
@@ -621,44 +621,40 @@ a.sb-item[href="sin-grupo.html"] { display: none !important; }
 
 .r-hdr {
   background: linear-gradient(135deg, var(--navy) 0%, var(--navy-light) 100%);
-  display: grid; grid-template-columns: 72px 1fr auto;
-  align-items: center; padding: 18px 22px; gap: 14px;
+  display: grid; grid-template-columns: 90px 1fr auto;
+  align-items: center; padding: 24px 28px; gap: 16px;
 }
 .r-logo {
-  width: 62px; height: 62px; border-radius: 14px;
+  width: 80px; height: 80px; border-radius: 16px;
   background: linear-gradient(135deg, var(--gold), var(--gold-hover));
   display: flex; align-items: center; justify-content: center;
   font-weight: 900; font-size: 14px; color: #0d1117; letter-spacing: -.5px;
 }
 .r-school     { text-align: center; }
-.r-school h1  { color: var(--gold); font-size: 16px; letter-spacing: 1px; }
-.r-school p   { color: rgba(255,255,255,.65); font-size: 9px; letter-spacing: 1px; }
-.r-fbox       { border: 2px solid var(--gold); border-radius: var(--r-sm); text-align: center; overflow: hidden; }
-.r-fbox .rfl  { background: var(--gold); color: #1a1000; font-weight: 700; font-size: 10px; padding: 3px 14px; letter-spacing: 1px; display: block; }
-.r-fbox .rfn  { color: var(--gold); font-weight: 700; font-size: 13px; padding: 5px 14px; display: block; letter-spacing: 1px; font-family: monospace; }
+.r-school h1  { color: var(--gold); font-size: 20px; letter-spacing: 1.5px; margin-bottom: 6px; }
+.r-school p   { color: rgba(255,255,255,.65); font-size: 10px; letter-spacing: 1px; }
+.r-fbox       { border: 2px solid var(--gold); border-radius: var(--r-sm); text-align: center; overflow: hidden; min-width: 90px; }
+.r-fbox .rfl  { background: var(--gold); color: #1a1000; font-weight: 700; font-size: 11px; padding: 4px 16px; letter-spacing: 2px; display: block; }
+.r-fbox .rfn  { color: var(--gold); font-weight: 800; font-size: 28px; padding: 8px 16px; display: block; letter-spacing: 2px; font-family: monospace; }
 
-.r-title-bar  { background: var(--maroon); color: #fff; text-align: center; padding: 7px; font-weight: 700; font-size: 12px; letter-spacing: 2px; }
+.r-title-bar  { background: var(--maroon); color: #fff; text-align: center; padding: 11px; font-weight: 700; font-size: 14px; letter-spacing: 4px; }
 
-.r-body { padding: 22px 24px; }
-.r-row  { display: flex; align-items: baseline; gap: 10px; margin-bottom: 10px; }
-.r-lbl  { color: var(--maroon); font-weight: 700; font-size: 11px; white-space: nowrap; min-width: 135px; text-transform: uppercase; letter-spacing: .3px; }
-.r-val  { border-bottom: 1px solid #cbd5e0; flex: 1; font-size: 13px; padding: 2px 4px; min-height: 22px; color: var(--text); }
+.r-body { padding: 32px 36px; }
 
-.r-sec  {
-  background: linear-gradient(135deg, var(--navy), var(--navy-light));
-  color: var(--gold); padding: 7px 12px; font-weight: 700;
-  font-size: 11.5px; margin: 14px 0 11px; border-radius: var(--r-sm);
-  display: flex; align-items: center; gap: 8px; letter-spacing: .5px;
-}
+/* Campos del recibo */
+.r-field-full  { margin-bottom: 28px; }
+.r-field-row   { display: grid; grid-template-columns: 1fr 1fr; gap: 20px 32px; margin-bottom: 28px; }
+.r-lbl  { color: var(--maroon); font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 8px; }
+.r-val  { display: block; border-bottom: 2px solid #e2e8f0; font-size: 20px; font-weight: 600; padding: 4px 0 10px; min-height: 38px; color: var(--text); }
+.r-val-lg  { font-size: 24px; }
+.r-money   { font-size: 30px !important; font-weight: 800; color: var(--gold) !important; }
 
-.r-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 20px; margin-bottom: 10px; }
-
-.r-sigs { margin-top: 52px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+.r-sigs { margin-top: 60px; display: grid; grid-template-columns: 1fr 1fr; gap: 48px; }
 .sig-blk { text-align: center; }
-.sig-blk .sig-line { border-top: 1px solid #374151; margin-top: 50px; }
-.sig-blk .sig-lbl  { font-size: 10px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: .5px; margin-top: 5px; }
+.sig-blk .sig-line { border-top: 2px solid #374151; margin-top: 64px; }
+.sig-blk .sig-lbl  { font-size: 12px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: .5px; margin-top: 6px; }
 
-.r-footer { background: var(--gold); color: #1a1000; text-align: center; padding: 8px; font-size: 10.5px; font-weight: 700; letter-spacing: .3px; }
+.r-footer { background: var(--gold); color: #1a1000; text-align: center; padding: 10px; font-size: 11px; font-weight: 700; letter-spacing: .3px; }
 
 /* =============================================
    CREDENCIALIZACIÓN
@@ -889,11 +885,11 @@ a.sb-item[href="sin-grupo.html"] { display: none !important; }
   .main-content { margin-left: 0; }
   .topbar-hamburger { display: inline-flex; }
   .doc-grid { grid-template-columns: repeat(3, 1fr); }
-  .r-grid2  { grid-template-columns: 1fr; }
+  .r-field-row { grid-template-columns: 1fr; }
   .r-sigs   { grid-template-columns: 1fr; }
   .stats-row{ grid-template-columns: repeat(2, 1fr); }
   .p-glass  { padding: 34px 24px; }
-  .r-hdr    { grid-template-columns: 60px 1fr auto; padding: 14px 16px; }
+  .r-hdr    { grid-template-columns: 60px 1fr auto; padding: 16px 18px; }
 }
 @media (max-width: 480px) {
   .stats-row { grid-template-columns: 1fr; }
@@ -935,23 +931,25 @@ a.sb-item[href="sin-grupo.html"] { display: none !important; }
   }
 
   /* Tamaño compacto media carta */
-  .r-hdr { padding: 7px 10px !important; grid-template-columns: 40px 1fr auto !important; gap: 8px !important; }
-  .r-logo { width: 40px !important; height: 40px !important; border-radius: 6px !important; }
-  .r-school h1 { font-size: 9.5px !important; }
-  .r-school p  { font-size: 6px !important; }
-  .r-fbox .rfl { font-size: 11px !important; padding: 3px 14px !important; letter-spacing: 2px !important; }
-  .r-fbox .rfn { font-size: 18px !important; padding: 5px 14px !important; }
-  .r-title-bar { padding: 5px 10px !important; font-size: 8px !important; }
-  .r-body { padding: 7px 10px !important; }
-  .r-row { margin-bottom: 5px !important; }
-  .r-lbl { font-size: 7.5px !important; min-width: 82px !important; }
-  .r-val { font-size: 9.5px !important; min-height: 15px !important; }
-  .r-sec { padding: 4px 10px !important; font-size: 7.5px !important; margin-bottom: 4px !important; }
-  .r-grid2 { gap: 2px 10px !important; margin-bottom: 4px !important; }
-  .r-sigs { margin-top: 10px !important; gap: 10px !important; }
-  .sig-blk .sig-line { margin-top: 16px !important; }
-  .sig-blk .sig-lbl { font-size: 7px !important; }
-  .r-footer { padding: 4px !important; font-size: 7.5px !important; }
+  .r-hdr { padding: 8px 12px !important; grid-template-columns: 46px 1fr auto !important; gap: 8px !important; }
+  .r-logo { width: 46px !important; height: 46px !important; border-radius: 8px !important; }
+  .r-school h1 { font-size: 10px !important; margin-bottom: 3px !important; }
+  .r-school p  { font-size: 6.5px !important; }
+  .r-fbox { min-width: 60px !important; }
+  .r-fbox .rfl { font-size: 8px !important; padding: 3px 8px !important; letter-spacing: 1px !important; }
+  .r-fbox .rfn { font-size: 15px !important; padding: 4px 8px !important; }
+  .r-title-bar { padding: 6px !important; font-size: 9px !important; letter-spacing: 2px !important; }
+  .r-body { padding: 10px 14px !important; }
+  .r-field-full { margin-bottom: 10px !important; }
+  .r-field-row  { gap: 8px 16px !important; margin-bottom: 10px !important; }
+  .r-lbl { font-size: 7.5px !important; margin-bottom: 4px !important; }
+  .r-val { font-size: 12px !important; min-height: 20px !important; padding: 2px 0 5px !important; border-bottom-width: 1px !important; }
+  .r-val-lg { font-size: 14px !important; }
+  .r-money { font-size: 17px !important; }
+  .r-sigs { margin-top: 14px !important; gap: 20px !important; }
+  .sig-blk .sig-line { margin-top: 22px !important; border-top-width: 1px !important; }
+  .sig-blk .sig-lbl { font-size: 7.5px !important; }
+  .r-footer { padding: 5px !important; font-size: 8px !important; }
   .copy-label { padding: 3px 6px !important; font-size: 8px !important; letter-spacing: 1.5px !important; }
 
   /* ---- Credencial ---- */
