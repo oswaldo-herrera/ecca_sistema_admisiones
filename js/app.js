@@ -811,11 +811,15 @@ async function getRolesPersonalizados() {
   return data || [];
 }
 async function saveRolPersonalizado(r) {
-  const payload = { nombre: r.nombre, color: r.color || '#1e3a5f', permisos: r.permisos || [], es_admin: r.esAdmin || false };
+  // Al actualizar, no sobreescribir es_admin a false si ya era true en BD
+  const payload = { nombre: r.nombre, color: r.color || '#1e3a5f', permisos: r.permisos || [] };
   if (r.id) {
+    // Solo incluir es_admin en el payload si se está estableciendo explícitamente a true
+    if (r.esAdmin === true) payload.es_admin = true;
     const { error } = await _sb.from('roles_personalizados').update(payload).eq('id', r.id);
     if (error) throw error;
   } else {
+    payload.es_admin = r.esAdmin || false;
     const { error } = await _sb.from('roles_personalizados').insert(payload);
     if (error) throw error;
   }
@@ -831,6 +835,10 @@ let _permisosActivos = null; // null = sin restricciones (admin / no cargado aú
 
 async function aplicarPermisosSistema() {
   try {
+    // Si el rol legacy tiene acceso completo (admin/director) no aplicar restricciones
+    const legacyRol = sessionStorage.getItem('ecca_rol');
+    if (legacyRol && _PERMISOS[legacyRol] === null) return;
+
     const { data: { user } } = await _sb.auth.getUser();
     if (!user) return;
     const { data: perfil } = await _sb.from('perfiles')
@@ -839,7 +847,7 @@ async function aplicarPermisosSistema() {
     if (!perfil?.rol_id || !perfil?.roles_personalizados) return;
     const { permisos, es_admin: esAdmin } = perfil.roles_personalizados;
     if (esAdmin) {
-      _permisosActivos = null; // admin: sin restricciones
+      _permisosActivos = null; // rol marcado como admin: sin restricciones
     } else {
       _permisosActivos = permisos || [];
       _ocultarModulos(_permisosActivos);
