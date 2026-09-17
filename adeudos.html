@@ -71,9 +71,9 @@
       <div class="card" style="margin-bottom:16px">
         <div class="card-body">
           <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap">
-            <div class="field" style="flex:0 0 200px">
-              <label class="field-label">Mes</label>
-              <input class="field-input" type="month" id="ad-mes">
+            <div class="field" style="flex:0 0 110px">
+              <label class="field-label">Año</label>
+              <input class="field-input" type="number" id="ad-anio" min="2020" max="2099" style="text-align:center">
             </div>
             <div class="field" style="flex:0 0 240px">
               <label class="field-label">Grupo</label>
@@ -125,11 +125,9 @@
 <script src="js/config.js"></script>
 <script src="js/app.js"></script>
 <script>
-// Pre-llenar mes actual
+// Pre-llenar año actual
 (function() {
-  const hoy = new Date();
-  const mm = String(hoy.getMonth() + 1).padStart(2, '0');
-  $('ad-mes').value = hoy.getFullYear() + '-' + mm;
+  $('ad-anio').value = new Date().getFullYear();
 })();
 
 // Cargar grupos
@@ -163,21 +161,37 @@ function _prefMod(modalidad) {
   if (m.includes('SABAT'))  return 'SB';
   return '';
 }
-function _fmtRecibo(pago, modalidad) {
-  if (!pago || !pago.numero_recibo) return '—';
-  const pre = _prefMod(modalidad);
-  return (pre ? pre + '-' : '') + String(pago.numero_recibo).padStart(4, '0');
+
+// Columnas de meses según modalidad
+function _colsMod(modalidad, anio) {
+  const m = (modalidad || '').toUpperCase();
+  const cols = [{ key: 'inscripcion', label: 'Insc.' }];
+  if (m.includes('SEMI') || m.includes('SABAT')) {
+    cols.push({ key: anio + '-08', label: 'Ago' });
+  }
+  cols.push(
+    { key: anio + '-09', label: 'Sep' },
+    { key: anio + '-10', label: 'Oct' },
+    { key: anio + '-11', label: 'Nov' },
+    { key: anio + '-12', label: 'Dic' }
+  );
+  return cols;
+}
+
+function _celda(pago, compact) {
+  const s = compact ? 'font-size:10px;padding:2px 5px' : 'font-size:11px;padding:3px 9px';
+  if (pago) {
+    const reg = pago._reg ? `<div style="font-size:9px;color:#6b7280;margin-top:2px;line-height:1.2">${pago._reg.split(' ')[0]}</div>` : '';
+    return `<div style="text-align:center"><span style="background:#dcfce7;color:#16a34a;font-weight:700;border-radius:8px;${s}">✓</span>${reg}</div>`;
+  }
+  return `<span style="background:#fee2e2;color:#dc2626;font-weight:700;border-radius:8px;${s}">✗</span>`;
 }
 
 async function generarAdeudos() {
-  const mes = $('ad-mes').value;
-  if (!mes) { alert('Selecciona un mes.'); return; }
+  const anio = parseInt($('ad-anio').value);
+  if (!anio || anio < 2020) { alert('Ingresa un año válido.'); return; }
 
   const grupoFiltro = $('ad-grupo').value;
-  const [yy, mm] = mes.split('-');
-  const diasMes = new Date(parseInt(yy), parseInt(mm), 0).getDate();
-  const mesDesde = mes + '-01';
-  const mesHasta = mes + '-' + String(diasMes).padStart(2, '0');
 
   $('ad-resultado').style.display = 'none';
   $('ad-empty').style.display = 'none';
@@ -185,7 +199,7 @@ async function generarAdeudos() {
   $('ad-pdf-btn').style.display = 'none';
 
   try {
-    // 1. Cargar alumnos activos solo de grupos abiertos
+    // 1. Alumnos de grupos abiertos
     const gruposAbiertosIds = _grupos.map(g => g.id);
     let qInsc = _sb.from('inscripciones').select('folio, nombre, grupo_id');
     if (grupoFiltro) {
@@ -195,32 +209,41 @@ async function generarAdeudos() {
     }
     const { data: inscrData } = await qInsc;
     const alumnos = inscrData || [];
+    if (!alumnos.length) { $('ad-empty').style.display = 'block'; return; }
 
-    if (!alumnos.length) {
-      $('ad-empty').style.display = 'block';
-      return;
-    }
-
-    // 2. Cargar pagos de colegiatura del mes (con recibo y quien registró)
+    // 2. Pagos del año (Colegiatura + Inscripción)
     const folios = alumnos.map(a => a.folio);
     const { data: pagosData } = await _sb.from('pagos')
-      .select('folio, monto, mes_correspondiente, estado, numero_recibo, recibio')
+      .select('folio, concepto, mes_correspondiente, fecha_pago, estado, numero_recibo, registrado_por_id')
       .in('folio', folios)
-      .eq('concepto', 'Colegiatura')
-      .gte('mes_correspondiente', mesDesde)
-      .lte('mes_correspondiente', mesHasta);
+      .in('concepto', ['Colegiatura', 'Inscripción']);
 
-    // Mapa folio → pago (solo confirmados)
+    // 2b. Lookup de nombres de usuarios que registraron pagos
+    const idsRegistrantes = [...new Set((pagosData || []).map(p => p.registrado_por_id).filter(Boolean))];
+    const _nombresReg = {};
+    if (idsRegistrantes.length) {
+      const { data: perfs } = await _sb.from('perfiles')
+        .select('id, nombre')
+        .in('id', idsRegistrantes);
+      (perfs || []).forEach(p => { _nombresReg[p.id] = p.nombre || ''; });
+    }
+
+    // 3. Construir mapa: pagoMap[folio]['YYYY-MM'] = pago  (o 'inscripcion')
     const pagoMap = {};
     (pagosData || [])
       .filter(p => p.estado === 'confirmado' || !p.estado)
-      .forEach(p => { pagoMap[p.folio] = p; });
+      .forEach(p => {
+        if (!pagoMap[p.folio]) pagoMap[p.folio] = {};
+        const entry = { ...p, _reg: _nombresReg[p.registrado_por_id] || '' };
+        if (p.concepto === 'Inscripción') {
+          pagoMap[p.folio]['inscripcion'] = entry;
+        } else if (p.concepto === 'Colegiatura' && p.mes_correspondiente) {
+          const key = p.mes_correspondiente.substring(0, 7); // YYYY-MM
+          if (key.startsWith(anio + '')) pagoMap[p.folio][key] = entry;
+        }
+      });
 
-    // 3. Separar deudores y al corriente
-    const deudores = alumnos.filter(a => !pagoMap[a.folio]);
-    const pagados  = alumnos.filter(a =>  pagoMap[a.folio]);
-
-    // 4. Agrupar TODOS los alumnos por grupo
+    // 4. Agrupar por grupo
     const porGrupo = {};
     alumnos.forEach(a => {
       const g = _grupos.find(x => x.id === a.grupo_id);
@@ -229,68 +252,70 @@ async function generarAdeudos() {
       porGrupo[gKey].alumnos.push(a);
     });
 
-    _adDatos = { mes, porGrupo, deudores, pagados, alumnos, pagoMap };
+    // Estadísticas globales
+    let totalDeudores = 0, totalAlCorrente = 0;
+    alumnos.forEach(a => {
+      const g = _grupos.find(x => x.id === a.grupo_id);
+      const cols = _colsMod(g?.modalidad, anio);
+      const pm = pagoMap[a.folio] || {};
+      const debeAlgo = cols.some(c => !pm[c.key]);
+      if (debeAlgo) totalDeudores++; else totalAlCorrente++;
+    });
 
-    // 5. Resumen
-    const numGrupos = Object.keys(porGrupo).length;
-    $('ad-stat-grupos').textContent  = numGrupos;
-    $('ad-stat-alumnos').textContent = deudores.length;
-    $('ad-stat-pagados').textContent = pagados.length;
+    _adDatos = { anio, porGrupo, alumnos, pagoMap };
+
+    $('ad-stat-grupos').textContent  = Object.keys(porGrupo).length;
+    $('ad-stat-alumnos').textContent = totalDeudores;
+    $('ad-stat-pagados').textContent = totalAlCorrente;
     document.getElementById('ad-resumen').removeAttribute('style');
     $('ad-resumen').style.display = 'block';
 
-    // 6. Render tabla
-    const _MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-    const mesLabel = _MESES[parseInt(mm) - 1] + ' ' + yy;
+    // 5. Render
+    const tdH = 'padding:7px 10px;font-size:11px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border);text-align:center';
+    const tdHL = 'padding:7px 14px;font-size:11px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border)';
 
     let html = `<div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:12px">
-      Control de colegiatura — <span style="color:var(--gold)">${mesLabel}</span>
-      <span style="font-weight:400;color:var(--text-muted);font-size:12px;margin-left:8px">${deudores.length} alumno(s) con adeudo</span>
+      Control de pagos — <span style="color:var(--gold)">${anio}</span>
+      <span style="font-weight:400;color:var(--text-muted);font-size:12px;margin-left:8px">${totalDeudores} alumno(s) con adeudo en algún mes</span>
     </div>`;
 
     Object.keys(porGrupo).sort().forEach(gNom => {
       const { grupo, alumnos: lista } = porGrupo[gNom];
       const mod = grupo?.modalidad || '';
+      const cols = _colsMod(mod, anio);
       const modBadge = mod ? `<span style="background:var(--navy);color:#fff;font-size:10px;padding:1px 6px;border-radius:10px;margin-left:8px">${mod}</span>` : '';
-      const deben = lista.filter(a => !pagoMap[a.folio]).length;
-      const countBadge = deben > 0
-        ? `<span style="font-size:12px;background:#dc2626;color:#fff;padding:2px 10px;border-radius:10px">${deben} deben</span>`
+      const conDeuda = lista.filter(a => { const pm = pagoMap[a.folio]||{}; return cols.some(c=>!pm[c.key]); }).length;
+      const badge = conDeuda > 0
+        ? `<span style="font-size:12px;background:#dc2626;color:#fff;padding:2px 10px;border-radius:10px">${conDeuda} deben</span>`
         : `<span style="font-size:12px;background:#16a34a;color:#fff;padding:2px 10px;border-radius:10px">Al corriente</span>`;
+
+      const thCols = cols.map(c => `<th style="${tdH};min-width:52px">${c.label}</th>`).join('');
+
+      const rows = lista.map((a, i) => {
+        const pm = pagoMap[a.folio] || {};
+        const debeAlgo = cols.some(c => !pm[c.key]);
+        const celdas = cols.map(c => `<td style="padding:6px 8px;text-align:center;border-bottom:1px solid var(--border)">${_celda(pm[c.key], false)}</td>`).join('');
+        return `<tr style="${debeAlgo ? 'background:#fff9f9' : ''}">
+          <td style="padding:7px 14px;font-size:12px;color:var(--text-muted);border-bottom:1px solid var(--border)">${i+1}</td>
+          <td style="padding:7px 14px;font-size:13px;font-weight:500;border-bottom:1px solid var(--border)">${a.nombre || a.folio}</td>
+          ${celdas}
+        </tr>`;
+      }).join('');
+
       html += `
-        <div class="card" style="margin-bottom:14px">
+        <div class="card" style="margin-bottom:14px;overflow-x:auto">
           <div class="card-body" style="padding:0">
             <div style="background:var(--navy);color:#fff;padding:10px 16px;border-radius:var(--r-lg) var(--r-lg) 0 0;display:flex;justify-content:space-between;align-items:center">
               <span style="font-weight:700;font-size:13px"><i class="fas fa-people-group" style="margin-right:8px;color:var(--gold)"></i>${gNom}${modBadge}</span>
-              ${countBadge}
+              ${badge}
             </div>
-            <table style="width:100%;border-collapse:collapse">
-              <thead>
-                <tr style="background:var(--bg-hover)">
-                  <th style="text-align:left;padding:7px 16px;font-size:11px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border)">#</th>
-                  <th style="text-align:left;padding:7px 16px;font-size:11px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border)">Alumno</th>
-                  <th style="text-align:left;padding:7px 16px;font-size:11px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border)">Recibo</th>
-                  <th style="text-align:left;padding:7px 16px;font-size:11px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border)">Registró</th>
-                  <th style="text-align:center;padding:7px 16px;font-size:11px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border)">Estado</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${lista.map((a, i) => {
-                  const pago = pagoMap[a.folio];
-                  const recibo = _fmtRecibo(pago, mod);
-                  const registró = pago?.recibio || '—';
-                  const estadoBadge = pago
-                    ? `<span style="background:#dcfce7;color:#16a34a;font-size:11px;font-weight:700;padding:2px 10px;border-radius:10px">PAGÓ</span>`
-                    : `<span style="background:#fee2e2;color:#dc2626;font-size:11px;font-weight:700;padding:2px 10px;border-radius:10px">DEBE</span>`;
-                  return `
-                  <tr style="border-bottom:1px solid var(--border)${pago ? '' : ';background:#fff9f9'}">
-                    <td style="padding:8px 16px;font-size:12px;color:var(--text-muted)">${i + 1}</td>
-                    <td style="padding:8px 16px;font-size:13px;font-weight:500">${a.nombre || a.folio}</td>
-                    <td style="padding:8px 16px;font-size:12px;font-family:monospace;font-weight:700;color:var(--navy)">${recibo}</td>
-                    <td style="padding:8px 16px;font-size:12px;color:var(--text-muted)">${registró}</td>
-                    <td style="padding:8px 16px;text-align:center">${estadoBadge}</td>
-                  </tr>`;
-                }).join('')}
-              </tbody>
+            <table style="width:100%;border-collapse:collapse;min-width:500px">
+              <thead><tr style="background:var(--bg-hover)">
+                <th style="${tdHL};width:36px">#</th>
+                <th style="${tdHL}">Alumno</th>
+                ${thCols}
+              </tr></thead>
+              <tbody>${rows}</tbody>
             </table>
           </div>
         </div>`;
@@ -300,86 +325,96 @@ async function generarAdeudos() {
     $('ad-resultado').style.display = 'block';
     $('ad-pdf-btn').style.display = '';
 
-    if (!deudores.length) $('ad-empty').style.display = 'block';
+    if (!totalDeudores) $('ad-empty').style.display = 'block';
 
   } catch(e) {
-    alert('Error al generar adeudos: ' + e.message);
+    alert('Error al generar: ' + e.message);
   }
 }
 
 function imprimirAdeudos() {
   if (!_adDatos || !_adDatos.alumnos) return;
-  const { mes, porGrupo, deudores, pagados, alumnos, pagoMap } = _adDatos;
-  const [yy, mm] = mes.split('-');
-  const _MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-  const mesLabel = _MESES[parseInt(mm) - 1] + ' ' + yy;
+  const { anio, porGrupo, alumnos, pagoMap } = _adDatos;
+
+  // Contar stats
+  let totalDeudores = 0, totalAlCorrente = 0;
+  alumnos.forEach(a => {
+    const g = _grupos.find(x => x.id === a.grupo_id);
+    const cols = _colsMod(g?.modalidad, anio);
+    const pm = pagoMap[a.folio] || {};
+    if (cols.some(c => !pm[c.key])) totalDeudores++; else totalAlCorrente++;
+  });
 
   const css = `
-    body{font-family:Arial,sans-serif;font-size:10px;color:#111;margin:12px 16px}
-    h2{font-size:14px;margin:0 0 2px;color:#1e3a5f}
-    p{margin:0 0 10px;font-size:11px;color:#555}
+    body{font-family:Arial,sans-serif;font-size:9px;color:#111;margin:10px 14px}
+    h2{font-size:13px;margin:0 0 2px;color:#1e3a5f}
+    p{margin:0 0 8px;font-size:10px;color:#555}
     .logo-hdr{display:flex;align-items:center;gap:10px;margin-bottom:10px;border-bottom:2px solid #1e3a5f;padding-bottom:6px}
-    .chips{display:flex;gap:16px;margin-bottom:14px}
-    .chip{border:1px solid #dde3ea;border-radius:8px;padding:6px 12px;text-align:center}
-    .chip-v{font-size:16px;font-weight:700;color:#1e3a5f}
-    .chip-l{font-size:9px;color:#6b7280;text-transform:uppercase;letter-spacing:.5px}
-    .g-hdr{background:#1e3a5f;color:#fff;padding:6px 12px;font-weight:700;font-size:11px;margin-top:12px;border-radius:4px 4px 0 0;display:flex;justify-content:space-between}
+    .chips{display:flex;gap:14px;margin-bottom:12px}
+    .chip{border:1px solid #dde3ea;border-radius:8px;padding:5px 10px;text-align:center}
+    .chip-v{font-size:15px;font-weight:700;color:#1e3a5f}
+    .chip-l{font-size:8px;color:#6b7280;text-transform:uppercase;letter-spacing:.5px}
+    .g-hdr{background:#1e3a5f;color:#fff;padding:5px 10px;font-weight:700;font-size:10px;margin-top:10px;border-radius:4px 4px 0 0;display:flex;justify-content:space-between}
     table{width:100%;border-collapse:collapse;margin-bottom:4px}
-    th{background:#f1f5f9;padding:4px 10px;text-align:left;font-size:9px;color:#64748b;border:1px solid #dde3ea}
-    td{padding:5px 10px;border:1px solid #dde3ea;font-size:10px}
-    .b-debe{background:#fee2e2;color:#dc2626;font-size:9px;font-weight:700;padding:1px 7px;border-radius:8px}
-    .b-pago{background:#dcfce7;color:#16a34a;font-size:9px;font-weight:700;padding:1px 7px;border-radius:8px}
+    th{background:#f1f5f9;padding:3px 8px;text-align:center;font-size:8px;color:#64748b;border:1px solid #dde3ea}
+    th.lft{text-align:left}
+    td{padding:4px 8px;border:1px solid #dde3ea;font-size:9px;text-align:center}
+    td.lft{text-align:left}
+    .ck{background:#dcfce7;color:#16a34a;font-weight:700;font-size:10px;padding:0 5px;border-radius:6px}
+    .xx{background:#fee2e2;color:#dc2626;font-weight:700;font-size:10px;padding:0 5px;border-radius:6px}
     .tr-debe{background:#fff9f9}
-    @media print{@page{size:letter portrait;margin:10mm 8mm}}`;
+    @media print{@page{size:letter landscape;margin:8mm 10mm}}`;
 
   let gruposHtml = '';
   Object.keys(porGrupo).sort().forEach(gNom => {
     const { grupo, alumnos: lista } = porGrupo[gNom];
     const mod = grupo?.modalidad || '';
-    const deben = lista.filter(a => !pagoMap[a.folio]).length;
+    const cols = _colsMod(mod, anio);
+    const conDeuda = lista.filter(a => { const pm=pagoMap[a.folio]||{}; return cols.some(c=>!pm[c.key]); }).length;
+    const thCols = cols.map(c => `<th>${c.label}</th>`).join('');
+    const rows = lista.map((a, i) => {
+      const pm = pagoMap[a.folio] || {};
+      const debeAlgo = cols.some(c => !pm[c.key]);
+      const celdas = cols.map(c => {
+        const p = pm[c.key];
+        return `<td>${p ? `<span class="ck">✓</span>${p._reg ? `<div style="font-size:7px;color:#6b7280">${p._reg.split(' ')[0]}</div>` : ''}` : '<span class="xx">✗</span>'}</td>`;
+      }).join('');
+      return `<tr class="${debeAlgo?'tr-debe':''}">
+        <td style="color:#6b7280">${i+1}</td>
+        <td class="lft" style="font-weight:500">${a.nombre||a.folio}</td>
+        ${celdas}
+      </tr>`;
+    }).join('');
     gruposHtml += `
-      <div class="g-hdr"><span>${gNom}${mod ? ' · ' + mod : ''}</span><span>${deben} deben / ${lista.length} total</span></div>
+      <div class="g-hdr"><span>${gNom}${mod?' · '+mod:''}</span><span>${conDeuda} con adeudo / ${lista.length} total</span></div>
       <table>
-        <thead><tr><th>#</th><th>Alumno</th><th>Recibo</th><th>Registró</th><th>Estado</th></tr></thead>
-        <tbody>${lista.map((a, i) => {
-          const pago = pagoMap[a.folio];
-          const recibo = _fmtRecibo(pago, mod);
-          const reg = pago?.recibio || '—';
-          return `
-          <tr class="${pago ? '' : 'tr-debe'}">
-            <td style="color:#6b7280">${i + 1}</td>
-            <td style="font-weight:500">${a.nombre || a.folio}</td>
-            <td style="font-family:monospace;font-weight:700;color:#1e3a5f">${recibo}</td>
-            <td style="color:#374151">${reg}</td>
-            <td><span class="${pago ? 'b-pago' : 'b-debe'}">${pago ? 'PAGÓ' : 'DEBE'}</span></td>
-          </tr>`;
-        }).join('')}
-        </tbody>
+        <thead><tr><th class="lft" style="width:28px">#</th><th class="lft">Alumno</th>${thCols}</tr></thead>
+        <tbody>${rows}</tbody>
       </table>`;
   });
 
   const body = `
     <div class="logo-hdr">
       <div>
-        <div style="font-size:16px;font-weight:800;color:#1e3a5f">ECCA Prepa León</div>
-        <div style="font-size:10px;color:#6b7280">Sistema de Admisiones</div>
+        <div style="font-size:15px;font-weight:800;color:#1e3a5f">ECCA Prepa León</div>
+        <div style="font-size:9px;color:#6b7280">Sistema de Admisiones</div>
       </div>
     </div>
-    <h2>Control de Colegiatura</h2>
-    <p>Mes: <strong>${mesLabel}</strong> &nbsp;·&nbsp; Generado: ${new Date().toLocaleDateString('es-MX',{day:'2-digit',month:'long',year:'numeric'})}</p>
+    <h2>Control de Pagos ${anio}</h2>
+    <p>Generado: ${new Date().toLocaleDateString('es-MX',{day:'2-digit',month:'long',year:'numeric'})}</p>
     <div class="chips">
       <div class="chip"><div class="chip-v">${alumnos.length}</div><div class="chip-l">Total alumnos</div></div>
-      <div class="chip"><div class="chip-v" style="color:#dc2626">${deudores.length}</div><div class="chip-l">Con adeudo</div></div>
-      <div class="chip"><div class="chip-v" style="color:#16a34a">${pagados.length}</div><div class="chip-l">Al corriente</div></div>
+      <div class="chip"><div class="chip-v" style="color:#dc2626">${totalDeudores}</div><div class="chip-l">Con adeudo</div></div>
+      <div class="chip"><div class="chip-v" style="color:#16a34a">${totalAlCorrente}</div><div class="chip-l">Al corriente</div></div>
     </div>
     ${gruposHtml}`;
 
   const C = '<', S = '>';
-  const w = window.open('', '_blank', 'width=850,height=680');
+  const w = window.open('', '_blank', 'width=1000,height=700');
   w.document.open();
   w.document.write(C + '!DOCTYPE html' + S + C + 'html' + S + C + 'head' + S +
     C + 'meta charset="UTF-8"' + S +
-    C + 'title' + S + 'Control Colegiatura ' + mesLabel + C + '/title' + S +
+    C + 'title' + S + 'Control Pagos ' + anio + C + '/title' + S +
     C + 'style' + S + css + C + '/style' + S +
     C + '/head' + S + C + 'body' + S + body + C + '/body' + S + C + '/html' + S);
   w.document.close();
