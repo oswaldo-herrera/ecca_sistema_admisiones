@@ -613,6 +613,9 @@ function _aplicarPermisos(rol, nombre) {
           return;
         }
         _aplicarPermisos(rol, nombre);
+        // Re-aplicar permisos personalizados: el sistema nuevo puede haber ocultado
+        // ítems antes de que _aplicarPermisos los volviera a mostrar (race condition).
+        aplicarPermisosSistema();
       }
     }
   } catch(e) {
@@ -823,14 +826,11 @@ async function deleteRolPersonalizado(id) {
 }
 
 /* ---- Permisos del sistema: ocultar módulos según rol ---- */
+// Permisos en memoria (se llenan al cargar cada página desde Supabase)
+let _permisosActivos = null; // null = sin restricciones (admin / no cargado aún)
+
 async function aplicarPermisosSistema() {
   try {
-    const cache = sessionStorage.getItem('ecca_permisos_v2');
-    if (cache) {
-      const { permisos, esAdmin } = JSON.parse(cache);
-      if (!esAdmin) _ocultarModulos(permisos);
-      return;
-    }
     const { data: { user } } = await _sb.auth.getUser();
     if (!user) return;
     const { data: perfil } = await _sb.from('perfiles')
@@ -838,9 +838,12 @@ async function aplicarPermisosSistema() {
       .eq('id', user.id).single();
     if (!perfil?.rol_id || !perfil?.roles_personalizados) return;
     const { permisos, es_admin: esAdmin } = perfil.roles_personalizados;
-    const packed = { permisos: permisos || [], esAdmin: esAdmin || false };
-    sessionStorage.setItem('ecca_permisos_v2', JSON.stringify(packed));
-    if (!packed.esAdmin) _ocultarModulos(packed.permisos);
+    if (esAdmin) {
+      _permisosActivos = null; // admin: sin restricciones
+    } else {
+      _permisosActivos = permisos || [];
+      _ocultarModulos(_permisosActivos);
+    }
   } catch(_) {}
 }
 
@@ -853,13 +856,8 @@ function _ocultarModulos(permisos) {
 }
 
 function tienePermiso(key) {
-  try {
-    const cache = sessionStorage.getItem('ecca_permisos_v2');
-    if (!cache) return true;
-    const { permisos, esAdmin } = JSON.parse(cache);
-    if (esAdmin) return true;
-    return Array.isArray(permisos) && permisos.includes(key);
-  } catch(_) { return true; }
+  if (_permisosActivos === null) return true; // admin o aún no cargado
+  return Array.isArray(_permisosActivos) && _permisosActivos.includes(key);
 }
 
 document.addEventListener('DOMContentLoaded', () => { aplicarPermisosSistema(); });
