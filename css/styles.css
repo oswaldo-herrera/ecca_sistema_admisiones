@@ -644,8 +644,10 @@ a.sb-item[href="sin-grupo.html"] { display: none !important; }
 /* Campos del recibo */
 .r-field-full  { margin-bottom: 28px; }
 .r-field-row   { display: grid; grid-template-columns: 1fr 1fr; gap: 20px 32px; margin-bottom: 28px; }
+.r-field-row-3 { grid-template-columns: 1fr 1fr 1fr; }
 .r-lbl  { color: var(--maroon); font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 8px; }
 .r-val  { display: block; border-bottom: 2px solid #e2e8f0; font-size: 20px; font-weight: 600; padding: 4px 0 10px; min-height: 38px; color: var(--text); }
+.r-val-recibio { font-size: 16px; color: var(--navy); border-bottom-color: var(--navy); border-bottom-width: 2px; }
 .r-val-lg  { font-size: 24px; }
 .r-money   { font-size: 30px !important; font-weight: 800; color: var(--gold) !important; }
 
@@ -886,6 +888,7 @@ a.sb-item[href="sin-grupo.html"] { display: none !important; }
   .topbar-hamburger { display: inline-flex; }
   .doc-grid { grid-template-columns: repeat(3, 1fr); }
   .r-field-row { grid-template-columns: 1fr; }
+  .r-field-row-3 { grid-template-columns: 1fr; }
   .r-sigs   { grid-template-columns: 1fr; }
   .stats-row{ grid-template-columns: repeat(2, 1fr); }
   .p-glass  { padding: 34px 24px; }
@@ -942,6 +945,8 @@ a.sb-item[href="sin-grupo.html"] { display: none !important; }
   .r-body { padding: 10px 14px !important; }
   .r-field-full { margin-bottom: 10px !important; }
   .r-field-row  { gap: 8px 16px !important; margin-bottom: 10px !important; }
+  .r-field-row-3 { grid-template-columns: 1fr 1fr 1fr !important; }
+  .r-val-recibio { font-size: 11px !important; }
   .r-lbl { font-size: 7.5px !important; margin-bottom: 4px !important; }
   .r-val { font-size: 12px !important; min-height: 20px !important; padding: 2px 0 5px !important; border-bottom-width: 1px !important; }
   .r-val-lg { font-size: 14px !important; }

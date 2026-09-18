@@ -166,6 +166,12 @@
               </div>
             </div>
 
+            <!-- Detalle -->
+            <div class="r-field-full">
+              <div class="r-lbl"><i class="fas fa-circle-info" style="margin-right:4px"></i>Detalle</div>
+              <div class="r-val r-val-recibio" id="r-recibio"></div>
+            </div>
+
             <!-- Firmas -->
             <div class="r-sigs">
               <div class="sig-blk"><div class="sig-line"></div><div class="sig-lbl">Firma del Alumno</div></div>
@@ -208,6 +214,7 @@ function llenarRecibo(rec, pago) {
   $('r-monto').textContent     = pago.monto         ? fmtMoney(pago.monto) : '';
   $('r-fpago').textContent     = pago.forma_pago    || '';
   $('r-corresponde').textContent = pago.mes_correspondiente ? _fmtMes(pago.mes_correspondiente) : '';
+  $('r-recibio').textContent   = pago.recibio       || '';
 
   // Generar segunda copia (control interno)
   const pair = $('print-pair');
