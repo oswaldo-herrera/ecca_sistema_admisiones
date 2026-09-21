@@ -1,0 +1,495 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ECCA — Cumpleaños</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="css/styles.css">
+<style>
+/* ===== CUMPLEAÑOS ===== */
+.bday-hoy {
+  background: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 100%);
+  border-radius: var(--r-lg);
+  padding: 20px 24px;
+  margin-bottom: 20px;
+  color: #fff;
+}
+.bday-hoy-title {
+  font-size: 13px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 1px; opacity: .75; margin-bottom: 12px;
+}
+.bday-hoy-cards { display: flex; gap: 12px; flex-wrap: wrap; }
+.bday-hoy-card {
+  background: rgba(255,255,255,.15); border-radius: 10px;
+  padding: 12px 18px; display: flex; align-items: center; gap: 12px;
+  min-width: 220px;
+}
+.bday-hoy-cake { font-size: 28px; }
+.bday-hoy-nombre { font-weight: 700; font-size: 14px; line-height: 1.3; }
+.bday-hoy-grupo  { font-size: 12px; opacity: .75; }
+
+.bday-section { margin-bottom: 24px; }
+.bday-section-title {
+  font-size: 12px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 1px; color: var(--text-muted); margin-bottom: 10px;
+  display: flex; align-items: center; gap: 8px;
+}
+.bday-section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+.bday-list { display: flex; flex-direction: column; gap: 6px; }
+.bday-item {
+  display: flex; align-items: center; gap: 14px;
+  background: #fff; border: 1px solid var(--border); border-radius: var(--r-lg);
+  padding: 10px 16px;
+}
+.bday-item.hoy { border-color: #1d4ed8; background: #eff6ff; }
+.bday-item.prox { border-left: 3px solid #1d4ed8; }
+.bday-fecha {
+  width: 48px; text-align: center; flex-shrink: 0;
+  background: var(--navy); color: #fff;
+  border-radius: 8px; padding: 4px 0;
+}
+.bday-fecha-dia  { font-size: 18px; font-weight: 800; line-height: 1; }
+.bday-fecha-mes  { font-size: 9px; text-transform: uppercase; opacity: .8; }
+.bday-info { flex: 1; min-width: 0; }
+.bday-nombre { font-weight: 600; font-size: 13px; }
+.bday-sub    { font-size: 12px; color: var(--text-muted); }
+.bday-edad   {
+  font-size: 12px; font-weight: 700;
+  background: var(--blue-pale, #dbeafe); color: #1d4ed8;
+  padding: 2px 10px; border-radius: 10px; white-space: nowrap;
+}
+.bday-faltan {
+  font-size: 11px; font-weight: 600; color: var(--text-muted);
+  text-align: right; white-space: nowrap;
+}
+.bday-faltan.hoy { color: #1d4ed8; font-size: 13px; }
+
+.mes-tab {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 14px; border-radius: 20px; font-size: 12px; font-weight: 600;
+  cursor: pointer; border: 1px solid var(--border); background: #fff;
+  color: var(--text-muted); transition: background .15s, color .15s;
+}
+.mes-tab.active, .mes-tab:hover { background: var(--navy); color: #fff; border-color: var(--navy); }
+.mes-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
+
+.stat-bday { display: flex; gap: 12px; margin-bottom: 20px; }
+.stat-bday-card {
+  flex: 1; background: #fff; border: 1px solid var(--border);
+  border-radius: var(--r-lg); padding: 14px 18px; text-align: center;
+}
+.stat-bday-v { font-size: 26px; font-weight: 800; color: var(--navy); }
+.stat-bday-l { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px; }
+
+.empty-bday { text-align: center; padding: 28px; color: var(--text-muted); font-size: 13px; }
+</style>
+</head>
+<body data-modulo="cumpleanos">
+<div class="layout">
+
+  <!-- ===== SIDEBAR ===== -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-brand">
+      <div class="sb-logo" style="background:#fff;padding:3px">
+        <img src="images/ecca_logo.png" alt="Logo ECCA" style="width:100%;height:100%;object-fit:contain;display:block">
+      </div>
+      <div>
+        <div class="sb-brand-name">ECCA Prepa León</div>
+        <div class="sb-brand-sub">Sistema de Admisiones</div>
+      </div>
+    </div>
+    <nav class="sb-nav">
+      <div class="sb-group-label">Principal</div>
+      <a href="index.html" class="sb-item" data-modulo="inicio"><i class="fas fa-house"></i><span>Inicio</span></a>
+      <a href="formulario.html" class="sb-item" data-modulo="nueva-inscripcion"><i class="fas fa-user-plus"></i><span>Nueva Inscripción</span></a>
+      <div class="sb-group-label">Gestión</div>
+      <a href="base-datos.html" class="sb-item" data-modulo="base-datos"><i class="fas fa-table-list"></i><span>Base de Datos</span><span class="sb-badge">0</span></a>
+      <a href="grupos.html" class="sb-item" data-modulo="grupos"><i class="fas fa-people-group"></i><span>Grupos</span></a>
+      <a href="deportes.html" class="sb-item" data-modulo="deportes"><i class="fas fa-futbol"></i><span>Deportes</span></a>
+      <a href="horarios.html" class="sb-item" data-modulo="horarios"><i class="fas fa-calendar-week"></i><span>Horarios</span></a>
+      <a href="calificaciones.html" class="sb-item" data-modulo="calificaciones"><i class="fas fa-star-half-stroke"></i><span>Calificaciones</span></a>
+      <a href="documentos.html" class="sb-item" data-modulo="documentos"><i class="fas fa-folder-open"></i><span>Documentos</span></a>
+      <a href="pagos.html" class="sb-item" data-modulo="pagos"><i class="fas fa-circle-dollar-to-slot"></i><span>Pagos</span></a>
+      <a href="adeudos.html" class="sb-item" data-modulo="adeudos"><i class="fas fa-triangle-exclamation"></i><span>Adeudos</span></a>
+      <a href="recibo.html" class="sb-item" data-modulo="recibo"><i class="fas fa-file-invoice"></i><span>Recibo</span></a>
+      <a href="credencial.html" class="sb-item" data-modulo="credencial"><i class="fas fa-id-card"></i><span>Credencial</span></a>
+      <a href="cumpleanos.html" class="sb-item active" data-modulo="cumpleanos"><i class="fas fa-cake-candles"></i><span>Cumpleaños</span></a>
+      <div class="sb-group-label">Administración</div>
+      <a href="bitacora.html" class="sb-item" data-modulo="bitacora"><i class="fas fa-clipboard-list"></i><span>Bitácora</span></a>
+      <a href="usuarios.html" class="sb-item" data-modulo="usuarios"><i class="fas fa-users-gear"></i><span>Usuarios</span></a>
+    </nav>
+    <div class="sb-footer">
+      <i class="fas fa-location-dot"></i> 5 de Febrero 634, San Juan de Dios, 37000 León de los Aldama, Gto.<br>
+      Tel. 479 153 4007
+    </div>
+  </aside>
+  <div class="sidebar-overlay"></div>
+
+  <!-- ===== MAIN ===== -->
+  <div class="main-content">
+
+    <header class="topbar">
+      <button class="topbar-hamburger" aria-label="Menú"><i class="fas fa-bars"></i></button>
+      <nav class="topbar-breadcrumb">
+        <a href="index.html"><i class="fas fa-house"></i></a>
+        <span class="sep">›</span>
+        <span class="current">Cumpleaños</span>
+      </nav>
+      <div class="topbar-right">
+        <button class="btn btn-secondary btn-sm" onclick="exportarCSV()">
+          <i class="fas fa-file-csv"></i> CSV
+        </button>
+        <button class="btn btn-secondary btn-sm" onclick="exportarExcel()" id="btn-excel">
+          <i class="fas fa-file-excel" style="color:#16a34a"></i> Excel
+        </button>
+        <button class="btn btn-primary btn-sm" onclick="window.print()">
+          <i class="fas fa-print"></i> Imprimir
+        </button>
+      </div>
+    </header>
+
+    <div class="page-header">
+      <div>
+        <div class="page-title">Cumpleaños</div>
+        <div class="page-sub">Alumnos ordenados por fecha de cumpleaños</div>
+      </div>
+      <div class="page-actions">
+        <div class="field" style="flex-direction:row;align-items:center;gap:8px">
+          <label class="field-label" style="margin:0;white-space:nowrap">Filtrar grupo:</label>
+          <select class="field-input" id="cb-grupo" style="width:180px" onchange="renderVista()">
+            <option value="">Todos los grupos</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="page-body">
+
+      <!-- Stats -->
+      <div class="stat-bday" id="cb-stats" style="display:none">
+        <div class="stat-bday-card">
+          <div class="stat-bday-v" id="cb-stat-total">—</div>
+          <div class="stat-bday-l">Con fecha registrada</div>
+        </div>
+        <div class="stat-bday-card">
+          <div class="stat-bday-v" style="color:#1d4ed8" id="cb-stat-hoy">—</div>
+          <div class="stat-bday-l">Cumplen hoy 🎂</div>
+        </div>
+        <div class="stat-bday-card">
+          <div class="stat-bday-v" style="color:#16a34a" id="cb-stat-semana">—</div>
+          <div class="stat-bday-l">Esta semana</div>
+        </div>
+        <div class="stat-bday-card">
+          <div class="stat-bday-v" style="color:#d97706" id="cb-stat-mes">—</div>
+          <div class="stat-bday-l">Este mes</div>
+        </div>
+      </div>
+
+      <!-- Spinner -->
+      <div id="cb-loading" style="text-align:center;padding:60px;color:var(--text-muted)">
+        <i class="fas fa-spinner fa-spin" style="font-size:32px;margin-bottom:12px;display:block"></i>
+        Cargando alumnos…
+      </div>
+
+      <!-- Sin fecha -->
+      <div id="cb-sin-fecha" style="display:none" class="card" style="margin-bottom:16px">
+        <div class="card-body" style="text-align:center;padding:16px;color:var(--text-muted);font-size:13px">
+          <i class="fas fa-info-circle" style="margin-right:6px"></i>
+          <span id="cb-sin-fecha-txt"></span>
+        </div>
+      </div>
+
+      <!-- Hoy -->
+      <div id="cb-hoy-wrap"></div>
+
+      <!-- Tabs de meses -->
+      <div id="cb-tabs-wrap" style="display:none">
+        <div class="mes-tabs" id="cb-mes-tabs"></div>
+        <div id="cb-lista-wrap"></div>
+      </div>
+
+    </div><!-- /page-body -->
+  </div><!-- /main-content -->
+</div><!-- /layout -->
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script src="js/app.js"></script>
+<script>
+const MESES_L = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
+const MESES_C = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
+
+let _todos     = []   // { nombre, fecha_nac, grupo }
+let _mesSel    = new Date().getMonth() // índice 0-11
+
+function diasHastaProximo(mes, dia) {
+  const hoy   = new Date()
+  const anio  = hoy.getFullYear()
+  let prox = new Date(anio, mes, dia)
+  if (prox < hoy) prox = new Date(anio + 1, mes, dia)
+  const diff = Math.round((prox - hoy) / 86400000)
+  return diff
+}
+
+function edad(fechaStr) {
+  if (!fechaStr) return null
+  const nac = new Date(fechaStr + 'T12:00:00')
+  const hoy = new Date()
+  let e = hoy.getFullYear() - nac.getFullYear()
+  if (hoy.getMonth() < nac.getMonth() || (hoy.getMonth() === nac.getMonth() && hoy.getDate() < nac.getDate())) e--
+  return e
+}
+
+function edadProxima(fechaStr) {
+  if (!fechaStr) return null
+  const nac = new Date(fechaStr + 'T12:00:00')
+  const hoy = new Date()
+  let e = hoy.getFullYear() - nac.getFullYear()
+  if (hoy.getMonth() > nac.getMonth() || (hoy.getMonth() === nac.getMonth() && hoy.getDate() >= nac.getDate())) e++
+  const eActual = edad(fechaStr)
+  const faltan = diasHastaProximo(nac.getMonth(), nac.getDate())
+  return faltan === 0 ? eActual : e
+}
+
+function renderItem(a, opts = {}) {
+  const d   = new Date(a.fecha_nac + 'T12:00:00')
+  const mes = d.getMonth(), dia = d.getDate()
+  const faltan = diasHastaProximo(mes, dia)
+  const esHoy  = faltan === 0
+  const edProx = edadProxima(a.fecha_nac)
+  const faltanTxt = esHoy ? '🎂 ¡Hoy!' : faltan === 1 ? 'Mañana' : `En ${faltan} días`
+  return `
+    <div class="bday-item${esHoy ? ' hoy' : opts.prox ? ' prox' : ''}">
+      <div class="bday-fecha" style="${esHoy ? 'background:#1d4ed8' : ''}">
+        <div class="bday-fecha-dia">${String(dia).padStart(2,'0')}</div>
+        <div class="bday-fecha-mes">${MESES_C[mes]}</div>
+      </div>
+      <div class="bday-info">
+        <div class="bday-nombre">${a.nombre}</div>
+        <div class="bday-sub">${a.grupo || '—'}</div>
+      </div>
+      <span class="bday-edad">${edProx} años</span>
+      <div class="bday-faltan${esHoy ? ' hoy' : ''}">${faltanTxt}</div>
+    </div>`
+}
+
+function grupoFiltro() { return document.getElementById('cb-grupo').value }
+
+function filtrados() {
+  const gf = grupoFiltro()
+  return _todos.filter(a => !gf || a.grupo === gf)
+}
+
+function renderVista() {
+  const lista = filtrados()
+  const hoy   = new Date()
+
+  // Stats
+  const deHoy    = lista.filter(a => { const d = new Date(a.fecha_nac+'T12:00:00'); return d.getMonth()===hoy.getMonth()&&d.getDate()===hoy.getDate() })
+  const deSemana = lista.filter(a => { const f=diasHastaProximo(new Date(a.fecha_nac+'T12:00:00').getMonth(),new Date(a.fecha_nac+'T12:00:00').getDate()); return f>=0&&f<=6 })
+  const deMes    = lista.filter(a => new Date(a.fecha_nac+'T12:00:00').getMonth()===hoy.getMonth())
+
+  $('cb-stat-total').textContent  = lista.length
+  $('cb-stat-hoy').textContent    = deHoy.length
+  $('cb-stat-semana').textContent = deSemana.length
+  $('cb-stat-mes').textContent    = deMes.length
+  $('cb-stats').style.display     = 'flex'
+
+  // Banner HOY
+  const hoyWrap = $('cb-hoy-wrap')
+  if (deHoy.length) {
+    hoyWrap.innerHTML = `
+      <div class="bday-hoy">
+        <div class="bday-hoy-title"><i class="fas fa-cake-candles" style="margin-right:6px"></i>¡Cumplen años hoy!</div>
+        <div class="bday-hoy-cards">
+          ${deHoy.map(a => `
+            <div class="bday-hoy-card">
+              <div class="bday-hoy-cake">🎂</div>
+              <div>
+                <div class="bday-hoy-nombre">${a.nombre}</div>
+                <div class="bday-hoy-grupo">${a.grupo} · ${edadProxima(a.fecha_nac)} años</div>
+              </div>
+            </div>`).join('')}
+        </div>
+      </div>`
+  } else {
+    hoyWrap.innerHTML = ''
+  }
+
+  // Tabs de meses
+  const tabsWrap = $('cb-tabs-wrap')
+  tabsWrap.style.display = ''
+  const tabsEl = $('cb-mes-tabs')
+  tabsEl.innerHTML = MESES_L.map((m, i) => {
+    const cnt = lista.filter(a => new Date(a.fecha_nac+'T12:00:00').getMonth() === i).length
+    return cnt > 0
+      ? `<div class="mes-tab${i===_mesSel?' active':''}" onclick="selMes(${i})">${m} <span style="background:rgba(255,255,255,.25);border-radius:8px;padding:0 5px;font-size:10px">${cnt}</span></div>`
+      : ''
+  }).join('')
+
+  renderMes(lista)
+}
+
+function selMes(i) {
+  _mesSel = i
+  document.querySelectorAll('.mes-tab').forEach((el, j) => {
+    el.classList.toggle('active', false)
+  })
+  document.querySelectorAll('.mes-tab')[
+    MESES_L.slice(0, i).reduce((cnt, _, k) => cnt + (filtrados().filter(a => new Date(a.fecha_nac+'T12:00:00').getMonth()===k).length>0?1:0), 0)
+  ]?.classList.add('active')
+  renderMes(filtrados())
+}
+
+function renderMes(lista) {
+  const delMes = lista
+    .filter(a => new Date(a.fecha_nac+'T12:00:00').getMonth() === _mesSel)
+    .sort((a, b) => new Date(a.fecha_nac+'T12:00:00').getDate() - new Date(b.fecha_nac+'T12:00:00').getDate())
+
+  const hoy = new Date()
+  const wrap = $('cb-lista-wrap')
+  if (!delMes.length) {
+    wrap.innerHTML = `<div class="card"><div class="empty-bday"><i class="fas fa-cake-candles" style="font-size:32px;display:block;margin-bottom:8px"></i>Sin alumnos con cumpleaños en ${MESES_L[_mesSel]}</div></div>`
+    return
+  }
+
+  // Separar: próximos (aún no han pasado este año) y pasados
+  const proximos = delMes.filter(a => {
+    const d = new Date(a.fecha_nac+'T12:00:00')
+    return diasHastaProximo(d.getMonth(), d.getDate()) <= 365
+  })
+
+  wrap.innerHTML = `
+    <div class="card">
+      <div class="card-header">
+        <span><i class="fas fa-cake-candles" style="margin-right:8px;color:#1d4ed8"></i>${MESES_L[_mesSel]} — ${delMes.length} alumno(s)</span>
+      </div>
+      <div class="card-body" style="padding:12px 16px">
+        <div class="bday-list">
+          ${delMes.map(a => renderItem(a, { prox: diasHastaProximo(new Date(a.fecha_nac+'T12:00:00').getMonth(), new Date(a.fecha_nac+'T12:00:00').getDate()) <= 7 })).join('')}
+        </div>
+      </div>
+    </div>`
+}
+
+function _filasOrdenadas() {
+  const hoy = new Date()
+  return filtrados()
+    .map(a => {
+      const nac = new Date(a.fecha_nac + 'T12:00:00')
+      const mes = nac.getMonth(), dia = nac.getDate()
+      let edadAct = hoy.getFullYear() - nac.getFullYear()
+      if (hoy.getMonth() < mes || (hoy.getMonth() === mes && hoy.getDate() < dia)) edadAct--
+      let prox = new Date(hoy.getFullYear(), mes, dia)
+      if (prox < hoy) prox = new Date(hoy.getFullYear() + 1, mes, dia)
+      const faltan = Math.round((prox - hoy) / 86400000)
+      return {
+        _sort: mes * 100 + dia,
+        Folio: a.folio || '',
+        Nombre: a.nombre,
+        'Fecha Nacimiento': a.fecha_nac,
+        'Día/Mes': String(dia).padStart(2,'0') + '/' + String(mes+1).padStart(2,'0'),
+        Mes: MESES_L[mes],
+        'Edad Actual': edadAct,
+        'Próximo Cumpleaños': prox.toLocaleDateString('es-MX'),
+        'Días que faltan': faltan,
+        Grupo: a.grupo,
+      }
+    })
+    .sort((a, b) => a._sort - b._sort)
+    .map(({ _sort, ...r }) => r)
+}
+
+function exportarExcel() {
+  if (!_todos.length) { alert('Primero carga los datos.'); return }
+  const btn = document.getElementById('btn-excel')
+  btn.disabled = true
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generando…'
+  try {
+    const filas   = _filasOrdenadas()
+    const wb      = XLSX.utils.book_new()
+    const ws      = XLSX.utils.json_to_sheet(filas)
+    ws['!cols']   = [{ wch:10 },{ wch:36 },{ wch:16 },{ wch:8 },{ wch:14 },{ wch:6 },{ wch:18 },{ wch:18 },{ wch:8 }]
+    XLSX.utils.book_append_sheet(wb, ws, 'Cumpleaños')
+    // Hoja solo del mes actual
+    const mesActual = new Date().getMonth()
+    const deMes = filas.filter(f => f.Mes === MESES_L[mesActual])
+    if (deMes.length) {
+      const ws2 = XLSX.utils.json_to_sheet(deMes)
+      ws2['!cols'] = ws['!cols']
+      XLSX.utils.book_append_sheet(wb, ws2, MESES_L[mesActual])
+    }
+    XLSX.writeFile(wb, 'cumpleanos_' + new Date().toISOString().slice(0,10) + '.xlsx')
+  } catch(e) { alert('Error al generar Excel: ' + e.message) }
+  finally {
+    btn.disabled = false
+    btn.innerHTML = '<i class="fas fa-file-excel" style="color:#16a34a"></i> Excel'
+  }
+}
+
+function exportarCSV() {
+  if (!_todos.length) return
+  const filas = _filasOrdenadas()
+  const cab   = Object.keys(filas[0]).join(',')
+  const rows  = filas.map(f => Object.values(f).map(v => `"${String(v).replace(/"/g,'""')}"`).join(','))
+  const blob  = new Blob(['﻿' + cab + '\n' + rows.join('\n')], { type: 'text/csv;charset=utf-8' })
+  const url   = URL.createObjectURL(blob)
+  const a     = document.createElement('a')
+  a.href = url; a.download = 'cumpleanos_alumnos.csv'; a.click()
+  URL.revokeObjectURL(url)
+}
+
+// ===== INIT =====
+;(async function () {
+  try {
+    // Cargar inscripciones con grupo
+    const { data: inscrData, error: inscrErr } = await _sb
+      .from('inscripciones')
+      .select('nombre, fecha_nac, grupo_id')
+      .not('fecha_nac', 'is', null)
+
+    if (inscrErr) throw inscrErr
+
+    // Cargar grupos
+    const { data: gruposData } = await _sb.from('grupos').select('id, nombre')
+    const gruposMap = {}
+    ;(gruposData || []).forEach(g => { gruposMap[g.id] = g.nombre })
+
+    // Cargar todos (incluyendo sin fecha para el aviso)
+    const { data: todosData } = await _sb.from('inscripciones').select('folio', { count: 'exact' })
+    const totalAlumnos = (todosData || []).length
+    const sinFecha     = totalAlumnos - (inscrData || []).length
+
+    // Poblar select de grupos
+    const gruposUnicos = [...new Set((inscrData || []).map(a => gruposMap[a.grupo_id]).filter(Boolean))].sort()
+    const sel = $('cb-grupo')
+    gruposUnicos.forEach(g => { const o = document.createElement('option'); o.value = g; o.textContent = g; sel.appendChild(o) })
+
+    _todos = (inscrData || [])
+      .filter(a => a.fecha_nac)
+      .map(a => ({ nombre: a.nombre, fecha_nac: a.fecha_nac, grupo: gruposMap[a.grupo_id] || '—' }))
+
+    $('cb-loading').style.display = 'none'
+
+    if (sinFecha > 0) {
+      $('cb-sin-fecha').style.display = 'block'
+      $('cb-sin-fecha-txt').textContent = `${sinFecha} alumno(s) no tienen fecha de nacimiento registrada y no aparecen aquí.`
+    }
+
+    if (!_todos.length) {
+      $('cb-hoy-wrap').innerHTML = '<div class="card"><div class="empty-bday"><i class="fas fa-cake-candles" style="font-size:40px;display:block;margin-bottom:12px"></i><p>No hay fechas de nacimiento registradas.</p></div></div>'
+      return
+    }
+
+    renderVista()
+
+  } catch(e) {
+    $('cb-loading').innerHTML = `<div style="color:#dc2626"><i class="fas fa-circle-exclamation" style="font-size:28px;display:block;margin-bottom:8px"></i>Error al cargar datos: ${e.message}</div>`
+  }
+})()
+</script>
+</body>
+</html>

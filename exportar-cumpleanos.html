@@ -1,0 +1,175 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Exportar Cumpleaños — ECCA</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:var(--bg,#f0f4ff)">
+
+<div style="background:#fff;border-radius:12px;box-shadow:0 4px 24px rgba(30,58,138,.12);padding:48px 48px;max-width:480px;width:100%;text-align:center">
+
+  <div style="width:72px;height:72px;background:#dbeafe;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 20px">
+    <i class="fas fa-cake-candles" style="font-size:32px;color:#1d4ed8"></i>
+  </div>
+
+  <h2 style="font-size:20px;font-weight:800;color:#1e3a8a;margin-bottom:6px">Exportar Cumpleaños</h2>
+  <p style="color:#64748b;font-size:13px;margin-bottom:32px">Descarga la lista de alumnos con su fecha de nacimiento y grupo en formato Excel (.xlsx)</p>
+
+  <div id="estado" style="margin-bottom:24px;font-size:13px;color:#64748b;min-height:20px"></div>
+
+  <button id="btn-descargar" onclick="descargar()"
+    style="width:100%;padding:14px;background:#1d4ed8;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px">
+    <i class="fas fa-file-excel"></i> Descargar Excel
+  </button>
+
+  <div style="margin-top:16px;display:flex;gap:10px">
+    <button onclick="descargar('csv')"
+      style="flex:1;padding:10px;background:#f1f5f9;color:#475569;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">
+      <i class="fas fa-file-csv"></i> CSV
+    </button>
+    <button onclick="window.location.href='cumpleanos.html'"
+      style="flex:1;padding:10px;background:#f1f5f9;color:#475569;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">
+      <i class="fas fa-calendar"></i> Ver calendario
+    </button>
+  </div>
+
+  <p style="margin-top:24px;font-size:11px;color:#94a3b8">
+    <a href="index.html" style="color:#1d4ed8">← Volver al inicio</a>
+  </p>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script src="js/app.js"></script>
+<script>
+const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
+                'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
+
+function estado(msg, color) {
+  const el = document.getElementById('estado')
+  el.textContent = msg
+  el.style.color = color || '#64748b'
+}
+
+async function descargar(tipo = 'xlsx') {
+  const btn = document.getElementById('btn-descargar')
+  btn.disabled = true
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Consultando Supabase…'
+  estado('Conectando con la base de datos…')
+
+  try {
+    // 1. Traer inscripciones con fecha de nacimiento
+    const { data: inscripciones, error } = await _sb
+      .from('inscripciones')
+      .select('folio, nombre, fecha_nac, grupo_id')
+      .not('fecha_nac', 'is', null)
+      .order('fecha_nac')
+
+    if (error) throw error
+
+    // 2. Traer grupos
+    const { data: grupos } = await _sb.from('grupos').select('id, nombre, modalidad')
+    const gruposMap = {}
+    ;(grupos || []).forEach(g => { gruposMap[g.id] = g })
+
+    estado(`${inscripciones.length} alumnos encontrados. Generando archivo…`, '#16a34a')
+
+    // 3. Construir filas ordenadas por mes/día
+    const hoy     = new Date()
+    const anioAct = hoy.getFullYear()
+
+    const filas = inscripciones
+      .map(a => {
+        const nac   = new Date(a.fecha_nac + 'T12:00:00')
+        const mes   = nac.getMonth()
+        const dia   = nac.getDate()
+        const grupo = gruposMap[a.grupo_id]
+
+        // Edad actual
+        let edadActual = anioAct - nac.getFullYear()
+        if (hoy.getMonth() < mes || (hoy.getMonth() === mes && hoy.getDate() < dia)) edadActual--
+
+        // Próximo cumpleaños
+        let proxFecha = new Date(anioAct, mes, dia)
+        if (proxFecha < hoy) proxFecha = new Date(anioAct + 1, mes, dia)
+        const faltan = Math.round((proxFecha - hoy) / 86400000)
+
+        return {
+          _sortKey: mes * 100 + dia,
+          Folio:              a.folio,
+          Nombre:             a.nombre,
+          'Fecha Nacimiento': a.fecha_nac,
+          'Día/Mes':          String(dia).padStart(2,'0') + '/' + String(mes + 1).padStart(2,'0'),
+          Mes:                MESES[mes],
+          'Edad Actual':      edadActual,
+          'Cumple Próximo':   proxFecha.toLocaleDateString('es-MX'),
+          'Días para cumpleaños': faltan,
+          Grupo:              grupo?.nombre || '—',
+          Modalidad:          grupo?.modalidad || '—',
+        }
+      })
+      .sort((a, b) => a._sortKey - b._sortKey)
+      .map(({ _sortKey, ...rest }) => rest)
+
+    if (tipo === 'csv') {
+      descargarCSV(filas)
+    } else {
+      descargarXLSX(filas)
+    }
+
+    estado(`✓ Archivo descargado con ${filas.length} alumnos`, '#16a34a')
+
+  } catch(e) {
+    estado('Error: ' + e.message, '#dc2626')
+  } finally {
+    btn.disabled = false
+    btn.innerHTML = '<i class="fas fa-file-excel"></i> Descargar Excel'
+  }
+}
+
+function descargarXLSX(filas) {
+  const wb  = XLSX.utils.book_new()
+  const ws  = XLSX.utils.json_to_sheet(filas)
+
+  // Anchos de columna
+  ws['!cols'] = [
+    { wch: 10 }, { wch: 36 }, { wch: 16 }, { wch: 8 },
+    { wch: 14 }, { wch: 6  }, { wch: 16 }, { wch: 20 },
+    { wch: 18 }, { wch: 12 },
+  ]
+
+  XLSX.utils.book_append_sheet(wb, ws, 'Cumpleaños')
+
+  // Segunda hoja — solo los de este mes
+  const mesActual = new Date().getMonth()
+  const deMes     = filas.filter(f => f.Mes === MESES[mesActual])
+  if (deMes.length) {
+    const ws2 = XLSX.utils.json_to_sheet(deMes)
+    ws2['!cols'] = ws['!cols']
+    XLSX.utils.book_append_sheet(wb, ws2, 'Este mes')
+  }
+
+  XLSX.writeFile(wb, `cumpleanos_alumnos_${new Date().toISOString().slice(0,10)}.xlsx`)
+}
+
+function descargarCSV(filas) {
+  const encabezados = Object.keys(filas[0])
+  const csv = [
+    encabezados.join(','),
+    ...filas.map(f => encabezados.map(k => `"${String(f[k]).replace(/"/g,'""')}"`).join(','))
+  ].join('\n')
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' })
+  const url  = URL.createObjectURL(blob)
+  const a    = document.createElement('a')
+  a.href = url
+  a.download = `cumpleanos_alumnos_${new Date().toISOString().slice(0,10)}.csv`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+</script>
+</body>
+</html>

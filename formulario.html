@@ -37,6 +37,7 @@
       <a href="adeudos.html" class="sb-item" data-modulo="adeudos"><i class="fas fa-triangle-exclamation"></i><span>Adeudos</span></a>
       <a href="recibo.html" class="sb-item" data-modulo="recibo"><i class="fas fa-file-invoice"></i><span>Recibo</span></a>
       <a href="credencial.html" class="sb-item" data-modulo="credencial"><i class="fas fa-id-card"></i><span>Credencial</span></a>
+      <a href="cumpleanos.html" class="sb-item" data-modulo="cumpleanos"><i class="fas fa-cake-candles"></i><span>Cumpleaños</span></a>
       <div class="sb-group-label">Administración</div>
       <a href="bitacora.html" class="sb-item" data-modulo="bitacora"><i class="fas fa-clipboard-list"></i><span>Bitácora</span></a>
       <a href="usuarios.html" class="sb-item" data-modulo="usuarios"><i class="fas fa-users-gear"></i><span>Usuarios</span></a>
@@ -253,8 +254,8 @@
                 </select>
               </div>
               <div class="field full">
-                <label class="field-label">Referido por <span style="font-weight:400;color:var(--text-light)">(opcional — para comisión)</span></label>
-                <input class="field-input" id="f-referido" type="text" placeholder="Nombre de quien lo refirió" data-mayus>
+                <label class="field-label">Promotor <span class="req">*</span></label>
+                <input class="field-input" id="f-referido" type="text" placeholder="Nombre del promotor" data-mayus>
               </div>
             </div>
           </div>
@@ -306,7 +307,7 @@
       </div>
 
       <!-- PAGO DE INSCRIPCIÓN -->
-      <div class="card" id="card-insc-pago">
+      <div class="card" id="card-insc-pago" style="display:none">
         <div class="card-header">
           <div class="ch-icon ch-gold"><i class="fas fa-circle-dollar-to-slot"></i></div>
           <div>
@@ -567,7 +568,8 @@ function setForm(d) {
 async function guardarRegistro() {
   if (!currentFolio) { toast('Pulse "+ Nuevo Registro" primero.', 'warn'); return; }
   const data = getForm();
-  if (!data.nombre) { toast('El nombre del alumno es obligatorio.', 'err'); $('f-nombre').focus(); return; }
+  if (!data.nombre)    { toast('El nombre del alumno es obligatorio.', 'err'); $('f-nombre').focus(); return; }
+  if (!data.referido)  { toast('El campo Promotor es obligatorio.', 'err'); $('f-referido').focus(); return; }
   setBusy(true);
   try {
     await saveRecord(data);
