@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ECCA — Boletas</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="css/styles.css">
+<style>
+/* ── Filtros ── */
+.bol-filters { display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end; margin-bottom:24px;
+               background:var(--bg-card); border:1px solid var(--border); border-radius:var(--r);
+               padding:16px 18px; }
+.bol-filters .field { display:flex; flex-direction:column; gap:4px; }
+.bol-filters label { font-size:11px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:.4px; }
+.bol-filters select { height:36px; border:1px solid var(--border); border-radius:var(--r-sm);
+                      padding:0 10px; font-size:13px; background:var(--bg-card); color:var(--text);
+                      min-width:200px; }
+.bol-filters select:focus { outline:none; border-color:var(--gold); }
+
+/* ── Stats ── */
+.bol-stats { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:20px; }
+.bol-stat  { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--r-sm);
+             padding:10px 18px; font-size:12px; color:var(--text-muted); }
+.bol-stat strong { font-size:20px; font-weight:700; color:var(--text); display:block; line-height:1.1; }
+
+/* ── Contenedor boletas pantalla ── */
+#boletas-wrap { display:flex; flex-direction:column; gap:32px; }
+
+/* ── BOLETA ── */
+.boleta {
+  background:#fff;
+  border:2px solid #1e2a4a;
+  border-radius:8px;
+  width:100%;
+  max-width:720px;
+  margin:0 auto;
+  font-family:'Segoe UI', Arial, sans-serif;
+  font-size:12px;
+  color:#1a1a1a;
+  box-shadow:0 2px 12px rgba(0,0,0,.08);
+  overflow:hidden;
+}
+
+/* Encabezado boleta */
+.bol-head {
+  background:#1e2a4a;
+  color:#fff;
+  display:flex;
+  align-items:center;
+  gap:14px;
+  padding:12px 18px;
+}
+.bol-head-logo {
+  width:54px; height:54px; flex-shrink:0;
+  background:#fff; border-radius:6px; overflow:hidden;
+  display:flex; align-items:center; justify-content:center;
+}
+.bol-head-logo img { width:100%; height:100%; object-fit:contain; }
+.bol-head-title { flex:1; }
+.bol-head-title h1 { font-size:15px; font-weight:700; margin:0 0 2px; letter-spacing:.3px; }
+.bol-head-title p  { font-size:10px; opacity:.75; margin:0; }
+.bol-head-badge {
+  background:#c9a227; color:#1a1a1a;
+  font-weight:700; font-size:10px; letter-spacing:.6px; text-transform:uppercase;
+  padding:4px 10px; border-radius:4px; white-space:nowrap;
+}
+
+/* Info alumno */
+.bol-info {
+  display:grid; grid-template-columns:1fr 1fr;
+  gap:0; border-bottom:2px solid #1e2a4a;
+}
+.bol-info-item {
+  padding:8px 18px; border-right:1px solid #dde;
+  border-bottom:1px solid #dde;
+}
+.bol-info-item:nth-child(even) { border-right:none; }
+.bol-info-item label { font-size:9px; font-weight:700; color:#888; text-transform:uppercase; letter-spacing:.5px; display:block; margin-bottom:1px; }
+.bol-info-item span  { font-size:12px; font-weight:600; color:#1a1a1a; }
+
+/* Tabla materias */
+.bol-table { width:100%; border-collapse:collapse; }
+.bol-table thead th {
+  background:#1e2a4a; color:#fff; padding:7px 12px;
+  font-size:10px; letter-spacing:.4px; text-transform:uppercase; text-align:left;
+}
+.bol-table thead th:last-child, .bol-table thead th:nth-child(2) { text-align:center; }
+.bol-table tbody td { padding:7px 12px; border-bottom:1px solid #eef; font-size:12px; }
+.bol-table tbody td:nth-child(2) { text-align:center; font-weight:700; font-size:13px; }
+.bol-table tbody td:last-child  { text-align:center; }
+.bol-table tbody tr:last-child td { border-bottom:none; }
+.bol-table tbody tr:nth-child(even) td { background:#f9f9fc; }
+.badge-ap  { display:inline-block; padding:2px 8px; border-radius:10px; font-size:9px; font-weight:700;
+             background:#dcfce7; color:#15803d; }
+.badge-rep { display:inline-block; padding:2px 8px; border-radius:10px; font-size:9px; font-weight:700;
+             background:#fee2e2; color:#b91c1c; }
+.badge-sc  { display:inline-block; padding:2px 8px; border-radius:10px; font-size:9px; font-weight:600;
+             background:#f3f4f6; color:#6b7280; }
+
+/* Pie boleta */
+.bol-foot {
+  background:#f9f9fc; border-top:2px solid #1e2a4a;
+  display:grid; grid-template-columns:1fr 1fr 1fr;
+  gap:0;
+}
+.bol-foot-cell {
+  padding:10px 14px; border-right:1px solid #dde; text-align:center;
+}
+.bol-foot-cell:last-child { border-right:none; }
+.bol-foot-cell label { font-size:9px; font-weight:700; color:#888; text-transform:uppercase; letter-spacing:.5px; display:block; margin-bottom:2px; }
+.bol-foot-cell .bol-val { font-size:20px; font-weight:800; }
+.bol-foot-cell .bol-val.ap  { color:#15803d; }
+.bol-foot-cell .bol-val.rep { color:#b91c1c; }
+.bol-foot-cell .bol-val.nd  { color:#9ca3af; font-size:14px; }
+
+/* Firmas */
+.bol-firmas {
+  display:grid; grid-template-columns:1fr 1fr 1fr;
+  gap:0; border-top:1px solid #dde; padding:18px 14px 10px;
+}
+.bol-firma-item { text-align:center; padding:0 10px; }
+.bol-firma-line { border-top:1px solid #555; margin:0 10px 4px; }
+.bol-firma-label { font-size:9px; color:#888; font-weight:600; text-transform:uppercase; letter-spacing:.4px; }
+
+/* ── PRINT ── */
+@media print {
+  .sidebar, .topbar, .page-header, .bol-filters, .bol-stats, .bol-actions, .sidebar-overlay { display:none !important; }
+  .main-content { padding:0 !important; margin:0 !important; }
+  .layout { display:block !important; }
+  #boletas-wrap { gap:0; }
+  .boleta { box-shadow:none; border-radius:0; max-width:100%; page-break-after:always; border:1.5px solid #1e2a4a; margin:0; }
+  .boleta:last-child { page-break-after:avoid; }
+  .bol-empty-screen { display:none !important; }
+}
+</style>
+</head>
+<body data-modulo="calificaciones">
+<div class="layout">
+
+  <!-- ===== SIDEBAR ===== -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-brand">
+      <div class="sb-logo" style="background:#fff;padding:3px">
+        <img src="images/ecca_logo.png" alt="Logo ECCA" style="width:100%;height:100%;object-fit:contain;display:block">
+      </div>
+      <div>
+        <div class="sb-brand-name">ECCA Prepa León</div>
+        <div class="sb-brand-sub">Sistema de Admisiones</div>
+      </div>
+    </div>
+    <nav class="sb-nav">
+      <div class="sb-group-label">Principal</div>
+      <a href="index.html" class="sb-item" data-modulo="inicio"><i class="fas fa-house"></i><span>Inicio</span></a>
+      <a href="formulario.html" class="sb-item" data-modulo="nueva-inscripcion"><i class="fas fa-user-plus"></i><span>Nueva Inscripción</span></a>
+      <div class="sb-group-label">Gestión</div>
+      <a href="base-datos.html" class="sb-item" data-modulo="base-datos"><i class="fas fa-table-list"></i><span>Base de Datos</span><span class="sb-badge" id="sb-badge">0</span></a>
+      <a href="grupos.html" class="sb-item" data-modulo="grupos"><i class="fas fa-people-group"></i><span>Grupos</span></a>
+      <a href="deportes.html" class="sb-item" data-modulo="deportes"><i class="fas fa-futbol"></i><span>Deportes</span></a>
+      <a href="horarios.html" class="sb-item" data-modulo="horarios"><i class="fas fa-calendar-week"></i><span>Horarios</span></a>
+      <a href="calificaciones.html" class="sb-item" data-modulo="calificaciones"><i class="fas fa-star-half-stroke"></i><span>Calificaciones</span></a>
+      <a href="documentos.html" class="sb-item" data-modulo="documentos"><i class="fas fa-folder-open"></i><span>Documentos</span></a>
+      <a href="pagos.html" class="sb-item" data-modulo="pagos"><i class="fas fa-circle-dollar-to-slot"></i><span>Pagos</span></a>
+      <a href="adeudos.html" class="sb-item" data-modulo="adeudos"><i class="fas fa-triangle-exclamation"></i><span>Adeudos</span></a>
+      <a href="recibo.html" class="sb-item" data-modulo="recibo"><i class="fas fa-file-invoice"></i><span>Recibo</span></a>
+      <a href="credencial.html" class="sb-item" data-modulo="credencial"><i class="fas fa-id-card"></i><span>Credencial</span></a>
+      <a href="cumpleanos.html" class="sb-item" data-modulo="cumpleanos"><i class="fas fa-cake-candles"></i><span>Cumpleaños</span></a>
+      <div class="sb-group-label">Administración</div>
+      <a href="bitacora.html" class="sb-item" data-modulo="bitacora"><i class="fas fa-clipboard-list"></i><span>Bitácora</span></a>
+      <a href="usuarios.html" class="sb-item" data-modulo="usuarios"><i class="fas fa-users-gear"></i><span>Usuarios</span></a>
+    </nav>
+    <div class="sb-footer">
+      <i class="fas fa-location-dot"></i> 5 de Febrero 634, San Juan de Dios, 37000 León de los Aldama, Gto.<br>
+      Tel. 479 153 4007
+    </div>
+  </aside>
+  <div class="sidebar-overlay"></div>
+
+  <!-- ===== MAIN ===== -->
+  <div class="main-content">
+
+    <header class="topbar">
+      <button class="topbar-hamburger" aria-label="Menú"><i class="fas fa-bars"></i></button>
+      <nav class="topbar-breadcrumb">
+        <a href="index.html"><i class="fas fa-house"></i></a>
+        <span class="sep">›</span>
+        <a href="calificaciones.html">Calificaciones</a>
+        <span class="sep">›</span>
+        <span class="current">Boletas</span>
+      </nav>
+      <div class="topbar-right" id="bol-actions" style="display:none">
+        <button class="btn btn-secondary btn-sm" onclick="window.print()">
+          <i class="fas fa-print"></i> Imprimir Todo
+        </button>
+      </div>
+    </header>
+
+    <div class="page-header">
+      <div>
+        <h1 class="page-title"><i class="fas fa-file-lines" style="color:var(--gold)"></i> Boletas de Calificaciones</h1>
+        <div class="page-sub">Genera e imprime las boletas por grupo y período</div>
+      </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="bol-filters">
+      <div class="field">
+        <label>Grupo</label>
+        <select id="bol-grupo">
+          <option value="">— Seleccione grupo —</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Período</label>
+        <select id="bol-periodo">
+          <option value="1er Parcial">1er Parcial</option>
+          <option value="2do Parcial">2do Parcial</option>
+          <option value="3er Parcial">3er Parcial</option>
+          <option value="Final">Final</option>
+          <option value="Extraordinario">Extraordinario</option>
+        </select>
+      </div>
+      <div class="field" style="justify-content:flex-end">
+        <button class="btn btn-primary btn-sm" onclick="generarBoletas()">
+          <i class="fas fa-file-lines"></i> Generar Boletas
+        </button>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="bol-stats" id="bol-stats" style="display:none">
+      <div class="bol-stat"><label>Alumnos</label><strong id="st-alumnos">0</strong></div>
+      <div class="bol-stat"><label>Aprobados</label><strong id="st-aprobados" style="color:#15803d">0</strong></div>
+      <div class="bol-stat"><label>Reprobados</label><strong id="st-reprobados" style="color:#b91c1c">0</strong></div>
+      <div class="bol-stat"><label>Promedio Grupo</label><strong id="st-prom">—</strong></div>
+    </div>
+
+    <!-- Boletas -->
+    <div id="boletas-wrap">
+      <div class="bol-empty-screen" style="text-align:center;padding:60px 20px;color:var(--text-muted)">
+        <i class="fas fa-file-lines" style="font-size:48px;display:block;margin-bottom:14px;opacity:.2"></i>
+        <p style="font-size:14px">Seleccione un grupo y período, luego presione "Generar Boletas".</p>
+      </div>
+    </div>
+
+  </div><!-- /main-content -->
+</div><!-- /layout -->
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script src="js/app.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const gv = id => ($( id)?.value || '').trim();
+const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+let _grupos = [], _materias = [];
+
+async function init() {
+  [_grupos, _materias] = await Promise.all([getGrupos(), getMaterias()]);
+  const sel = $('bol-grupo');
+  _grupos.forEach(g => {
+    const o = document.createElement('option');
+    o.value = g.id; o.textContent = g.nombre;
+    sel.appendChild(o);
+  });
+}
+
+async function generarBoletas() {
+  const grupoId = parseInt(gv('bol-grupo'));
+  const periodo = gv('bol-periodo');
+  if (!grupoId) { toast('Seleccione un grupo.', 'warn'); return; }
+
+  const wrap = $('boletas-wrap');
+  wrap.innerHTML = `<div style="text-align:center;padding:40px;color:var(--text-muted)">
+    <i class="fas fa-spinner fa-spin" style="font-size:28px"></i><p style="margin-top:12px">Generando boletas...</p></div>`;
+  $('bol-stats').style.display = 'none';
+  $('bol-actions').style.display = 'none';
+
+  try {
+    const grupo = _grupos.find(g => g.id === grupoId);
+    const ciclo = grupo ? [grupo.modalidad, grupo.ciclo].filter(Boolean).join(' · ') : '';
+
+    const [alumnos, cals] = await Promise.all([
+      getAlumnosByGrupo(grupoId).then(arr =>
+        arr.sort((a, b) => (a.nombre || '').localeCompare(b.nombre || '', 'es', { sensitivity: 'base' }))),
+      _sb.from('calificaciones').select('folio, materia_id, calificacion')
+        .eq('grupo_id', grupoId).eq('periodo', periodo)
+        .then(({ data }) => data || [])
+    ]);
+
+    if (!alumnos.length) {
+      wrap.innerHTML = `<div style="text-align:center;padding:60px;color:var(--text-muted)">
+        <i class="fas fa-user-slash" style="font-size:36px;opacity:.3;display:block;margin-bottom:12px"></i>
+        <p>No hay alumnos en este grupo.</p></div>`;
+      return;
+    }
+
+    // Materias que tienen al menos una calificación en este grupo/periodo
+    const matIdsConCal = [...new Set(cals.map(c => c.materia_id))];
+    const materiasActivas = _materias.filter(m => !m.inactiva && matIdsConCal.includes(m.id))
+      .sort((a, b) => (a.nombre || '').localeCompare(b.nombre || '', 'es'));
+
+    const calMap = {};
+    cals.forEach(c => {
+      if (!calMap[c.folio]) calMap[c.folio] = {};
+      calMap[c.folio][c.materia_id] = c.calificacion;
+    });
+
+    let totalProms = 0, promCnt = 0, totalAp = 0, totalRep = 0;
+
+    wrap.innerHTML = alumnos.map(a => {
+      const ac = calMap[a.folio] || {};
+      let suma = 0, cnt = 0;
+      materiasActivas.forEach(m => {
+        const v = ac[m.id];
+        if (v !== null && v !== undefined) { suma += parseFloat(v); cnt++; }
+      });
+      const prom = cnt ? (suma / cnt).toFixed(1) : null;
+      const aprobado = prom !== null ? parseFloat(prom) >= 6 : null;
+      if (prom !== null) { totalProms += parseFloat(prom); promCnt++; }
+      if (aprobado === true)  totalAp++;
+      if (aprobado === false) totalRep++;
+
+      const filas = materiasActivas.map((m, idx) => {
+        const v = ac[m.id];
+        const val = (v !== null && v !== undefined) ? parseFloat(v) : null;
+        const est = val === null
+          ? `<span class="badge-sc">Sin calificar</span>`
+          : val >= 6
+            ? `<span class="badge-ap">Aprobado</span>`
+            : `<span class="badge-rep">Reprobado</span>`;
+        const color = val !== null && val < 6 ? 'color:#b91c1c' : '';
+        return `<tr>
+          <td style="color:#888;text-align:center;width:28px">${idx + 1}</td>
+          <td>${esc(m.nombre)}</td>
+          <td style="text-align:center;font-weight:700;${color}">${val !== null ? val.toFixed(1) : '—'}</td>
+          <td>${est}</td>
+        </tr>`;
+      }).join('');
+
+      const promColor = prom === null ? 'nd' : parseFloat(prom) >= 6 ? 'ap' : 'rep';
+      const promLabel = prom === null ? '—' : prom;
+      const estGeneral = aprobado === null ? '—' : aprobado ? 'APROBADO' : 'REPROBADO';
+      const estColor   = aprobado === null ? 'nd' : aprobado ? 'ap' : 'rep';
+      const matCount   = materiasActivas.length;
+
+      return `
+      <div class="boleta">
+        <div class="bol-head">
+          <div class="bol-head-logo">
+            <img src="images/ecca_logo.png" alt="ECCA">
+          </div>
+          <div class="bol-head-title">
+            <h1>ECCA Prepa León</h1>
+            <p>5 de Febrero 634, San Juan de Dios, 37000 León de los Aldama, Gto. · Tel. 479 153 4007</p>
+          </div>
+          <div class="bol-head-badge">Boleta de Calificaciones</div>
+        </div>
+
+        <div class="bol-info">
+          <div class="bol-info-item"><label>Nombre del Alumno</label><span>${esc(a.nombre || '(sin nombre)')}</span></div>
+          <div class="bol-info-item"><label>Folio</label><span>${esc(a.folio)}</span></div>
+          <div class="bol-info-item"><label>Grupo</label><span>${esc(grupo?.nombre || '')}</span></div>
+          <div class="bol-info-item"><label>Período evaluado</label><span>${esc(periodo)}</span></div>
+          <div class="bol-info-item"><label>Modalidad / Ciclo</label><span>${esc(ciclo)}</span></div>
+          <div class="bol-info-item"><label>Fecha de emisión</label><span>${new Date().toLocaleDateString('es-MX',{day:'2-digit',month:'long',year:'numeric'})}</span></div>
+        </div>
+
+        <table class="bol-table">
+          <thead>
+            <tr>
+              <th style="width:28px;text-align:center">#</th>
+              <th>Materia</th>
+              <th style="width:110px">Calificación</th>
+              <th style="width:110px">Estado</th>
+            </tr>
+          </thead>
+          <tbody>${filas}</tbody>
+        </table>
+
+        <div class="bol-foot">
+          <div class="bol-foot-cell">
+            <label>Total de Materias</label>
+            <div class="bol-val nd">${matCount}</div>
+          </div>
+          <div class="bol-foot-cell">
+            <label>Promedio General</label>
+            <div class="bol-val ${promColor}">${promLabel}</div>
+          </div>
+          <div class="bol-foot-cell">
+            <label>Resultado</label>
+            <div class="bol-val ${estColor}" style="font-size:13px">${estGeneral}</div>
+          </div>
+        </div>
+
+        <div class="bol-firmas">
+          <div class="bol-firma-item">
+            <div class="bol-firma-line"></div>
+            <div class="bol-firma-label">Firma del Alumno</div>
+          </div>
+          <div class="bol-firma-item">
+            <div class="bol-firma-line"></div>
+            <div class="bol-firma-label">Firma del Tutor</div>
+          </div>
+          <div class="bol-firma-item">
+            <div class="bol-firma-line"></div>
+            <div class="bol-firma-label">Director(a)</div>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+
+    // Stats
+    $('st-alumnos').textContent   = alumnos.length;
+    $('st-aprobados').textContent = totalAp;
+    $('st-reprobados').textContent= totalRep;
+    $('st-prom').textContent      = promCnt ? (totalProms / promCnt).toFixed(1) : '—';
+    $('bol-stats').style.display  = 'flex';
+    $('bol-actions').style.display= '';
+
+  } catch(e) {
+    wrap.innerHTML = `<div style="text-align:center;padding:40px;color:#b91c1c">Error: ${esc(e.message)}</div>`;
+  }
+}
+
+(window._permisosListos || Promise.resolve()).then(() => init());
+</script>
+</body>
+</html>
