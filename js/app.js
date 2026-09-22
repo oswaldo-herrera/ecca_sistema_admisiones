@@ -842,19 +842,23 @@ window._permisosListos = new Promise(resolve => { _resolvePermisos = resolve; })
 async function aplicarPermisosSistema() {
   try {
     const { data: { user } } = await _sb.auth.getUser();
+    console.log('[permisos] user:', user?.id || 'null');
     if (!user) { _resolvePermisos(); return; }
 
     const { data: perfil, error: eP } = await _sb.from('perfiles')
       .select('rol_id').eq('id', user.id).single();
-    if (eP) { console.error('[permisos] error perfil:', eP); _resolvePermisos(); return; }
+    console.log('[permisos] perfil rol_id:', perfil?.rol_id, 'error:', eP?.message);
+    if (eP) { _resolvePermisos(); return; }
     if (!perfil?.rol_id) { _resolvePermisos(); return; }
 
     const { data: rol, error: eR } = await _sb.from('roles_personalizados')
       .select('permisos, es_admin').eq('id', perfil.rol_id).single();
-    if (eR) { console.error('[permisos] error rol:', eR); _resolvePermisos(); return; }
-    if (!rol) { _resolvePermisos(); return; }
+    console.log('[permisos] rol:', JSON.stringify(rol), 'error:', eR?.message);
+    if (eR || !rol) { _resolvePermisos(); return; }
 
     const { permisos, es_admin: esAdmin } = rol;
+    const esSabatino = Array.isArray(permisos) && permisos.includes('solo_sabatino');
+    console.log('[permisos] esAdmin:', esAdmin, 'esSabatino:', esSabatino);
     if (esAdmin) {
       _permisosActivos = null;
       window._soloSabatino = false;
@@ -862,12 +866,13 @@ async function aplicarPermisosSistema() {
       document.querySelectorAll('.sb-item[href="usuarios.html"]').forEach(el => el.style.display = '');
     } else {
       _permisosActivos = permisos || [];
-      window._soloSabatino = _permisosActivos.includes('solo_sabatino');
-      sessionStorage.setItem('ecca_solo_sabatino', window._soloSabatino ? 'true' : 'false');
+      window._soloSabatino = esSabatino;
+      sessionStorage.setItem('ecca_solo_sabatino', esSabatino ? 'true' : 'false');
       _ocultarModulos(_permisosActivos.filter(p => p !== 'solo_sabatino'));
     }
   } catch(err) { console.error('[permisos] excepción:', err); }
-  _resolvePermisos(); // siempre resolver, aunque haya error
+  console.log('[permisos] _soloSabatino final:', window._soloSabatino);
+  _resolvePermisos();
 }
 
 function _ocultarModulos(permisos) {

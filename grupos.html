@@ -242,7 +242,9 @@ async function cargarGrupos() {
   </div>`;
   try {
     const [grupos, alumnos] = await Promise.all([getGrupos(), getRecords()]);
+    console.log('[grupos] _soloSabatino:', window._soloSabatino, 'total grupos:', grupos.length);
     _grupos = window._soloSabatino ? grupos.filter(g => (g.sabatino === true || (g.nombre || '').toLowerCase().includes('sabat'))) : grupos;
+    console.log('[grupos] grupos filtrados:', _grupos.length);
     const counts = {};
     alumnos.forEach(a => {
       if (!a.grupoId) return;
