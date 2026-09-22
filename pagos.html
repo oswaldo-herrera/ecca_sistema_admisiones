@@ -1750,6 +1750,12 @@ function descargarReciboCargo(cargoId) {
 
 /* ---- Init ---- */
 cambiarTab('alumno');
+(window._permisosListos || Promise.resolve()).then(() => {
+  if (window._soloSabatino) {
+    const btn = document.getElementById('tab-corte');
+    if (btn) btn.style.display = 'none';
+  }
+});
 
 (async function initDeepLink() {
   const folio = new URLSearchParams(window.location.search).get('folio');
