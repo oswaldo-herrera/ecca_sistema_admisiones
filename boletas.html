@@ -250,21 +250,22 @@
 <script src="js/config.js"></script>
 <script src="js/app.js"></script>
 <script>
-const $ = id => document.getElementById(id);
-const gv = id => ($( id)?.value || '').trim();
-const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-
 let _grupos = [], _materias = [];
 
-async function init() {
-  [_grupos, _materias] = await Promise.all([getGrupos(), getMaterias()]);
-  const sel = $('bol-grupo');
-  _grupos.forEach(g => {
-    const o = document.createElement('option');
-    o.value = g.id; o.textContent = g.nombre;
-    sel.appendChild(o);
-  });
-}
+(async function init() {
+  try {
+    [_grupos, _materias] = await Promise.all([getGrupos(), getMaterias()]);
+    const sel = document.getElementById('bol-grupo');
+    _grupos.forEach(g => {
+      const o = document.createElement('option');
+      o.value = g.id; o.textContent = g.nombre;
+      sel.appendChild(o);
+    });
+  } catch(e) {
+    console.error('[boletas] error init:', e);
+    toast('Error al cargar grupos: ' + e.message, 'err');
+  }
+})();
 
 async function generarBoletas() {
   const grupoId = parseInt(gv('bol-grupo'));
@@ -424,7 +425,6 @@ async function generarBoletas() {
   }
 }
 
-(window._permisosListos || Promise.resolve()).then(() => init());
 </script>
 </body>
 </html>
