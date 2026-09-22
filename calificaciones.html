@@ -297,9 +297,12 @@
             <option value="Extraordinario">Extraordinario</option>
           </select>
         </div>
-        <div class="field" style="justify-content:flex-end">
+        <div class="field" style="justify-content:flex-end;gap:8px;display:flex">
           <button class="btn btn-primary btn-sm" onclick="cargarVistaGrupo()">
             <i class="fas fa-table"></i> Ver Cuadro
+          </button>
+          <button class="btn btn-secondary btn-sm" onclick="exportarPorAlumnoExcel()">
+            <i class="fas fa-file-excel"></i> Excel Por Alumno
           </button>
         </div>
       </div>
@@ -394,6 +397,7 @@ async function cargarCaptura() {
   try {
     _capGrupoId = grupoId;
     _capAlumnos = await getCalificacionesByCaptura(grupoId, materiaId, periodo);
+    _capAlumnos.sort((a, b) => (a.nombre || '').localeCompare(b.nombre || '', 'es', { sensitivity: 'base' }));
 
     if (!_capAlumnos.length) {
       cont.innerHTML = `<div class="cal-empty"><i class="fas fa-user-slash"></i><p>No hay alumnos asignados a este grupo.</p></div>`;
@@ -785,6 +789,72 @@ async function cargarVistaGrupo() {
 /* ────────────────────────────────────────────
    EXPORTAR EXCEL (vista grupo)
 ──────────────────────────────────────────── */
+async function exportarPorAlumnoExcel() {
+  const grupoId = parseInt(gv('gv-grupo'));
+  const periodo = gv('gv-periodo');
+  if (!grupoId) { toast('Seleccione un grupo.', 'warn'); return; }
+  const grupo = _grupos.find(g => g.id === grupoId);
+  try {
+    const [alumnos, cals, materias] = await Promise.all([
+      getRecords().then(r => r.filter(a => String(a.grupoId) === String(grupoId))
+        .sort((a, b) => (a.nombre || '').localeCompare(b.nombre || '', 'es', { sensitivity: 'base' }))),
+      _sb.from('calificaciones').select('*').eq('grupo_id', grupoId).eq('periodo', periodo)
+        .then(({ data }) => data || []),
+      _materias.filter(m => !m.inactiva)
+    ]);
+
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet('Calificaciones por Alumno');
+
+    // Estilo encabezado
+    ws.getColumn(1).width = 36;
+    ws.getColumn(2).width = 16;
+    ws.getColumn(3).width = 12;
+
+    ws.addRow([`Grupo: ${grupo?.nombre || ''} — Período: ${periodo}`]);
+    ws.getRow(1).font = { bold: true, size: 13 };
+    ws.addRow([]);
+
+    alumnos.forEach(a => {
+      const alumCals = cals.filter(c => c.folio === a.folio);
+      const calMap = {};
+      alumCals.forEach(c => { calMap[c.materia_id] = c.calificacion; });
+
+      const headerRow = ws.addRow([`${a.folio} — ${a.nombre || '(sin nombre)'}`]);
+      headerRow.font = { bold: true };
+      headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE8E0C8' } };
+
+      ws.addRow(['Materia', 'Calificación', 'Estado']);
+      const subH = ws.lastRow;
+      subH.font = { bold: true, size: 10 };
+      subH.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E2A4A' } };
+      subH.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+
+      let suma = 0, cnt = 0;
+      materias.forEach(m => {
+        const val = calMap[m.id] !== undefined ? calMap[m.id] : null;
+        const estado = val === null ? 'Sin calificación' : parseFloat(val) >= 6 ? 'Aprobado' : 'Reprobado';
+        const row = ws.addRow([m.nombre, val !== null ? parseFloat(val) : '—', estado]);
+        if (val !== null) { suma += parseFloat(val); cnt++; }
+        if (val !== null && parseFloat(val) < 6) {
+          row.getCell(3).font = { color: { argb: 'FFB91C1C' } };
+        }
+      });
+
+      const promRow = ws.addRow(['Promedio', cnt ? (suma / cnt).toFixed(1) : '—', '']);
+      promRow.font = { bold: true };
+      ws.addRow([]);
+    });
+
+    const buf = await wb.xlsx.writeBuffer();
+    const url = URL.createObjectURL(new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
+    const a = document.createElement('a'); a.href = url;
+    a.download = `Calificaciones-PorAlumno-${(grupo?.nombre||'').replace(/\s+/g,'-')}-${periodo}.xlsx`;
+    a.click(); URL.revokeObjectURL(url);
+    toast('Excel por alumno generado.', 'ok');
+  } catch(e) { toast('Error: ' + e.message, 'err'); }
+}
+
 async function exportarGrupoExcel() {
   if (!_gvGrupoId || !_gvMaterias.length) { toast('Primero cargue el cuadro del grupo.', 'warn'); return; }
   const grupo   = _grupos.find(g => g.id === _gvGrupoId);
@@ -814,6 +884,14 @@ async function exportarGrupoExcel() {
     toast('Archivo Excel generado.', 'ok');
   } catch(e) { toast('Error al exportar: ' + e.message, 'err'); }
 }
+
+/* ---- Init ---- */
+(window._permisosListos || Promise.resolve()).then(() => {
+  if (typeof tienePermiso === 'function' && tienePermiso('cal-solo-captura')) {
+    document.getElementById('tab-btn-alumno').style.display = 'none';
+    document.getElementById('tab-btn-grupo').style.display = 'none';
+  }
+});
 </script>
 </body>
 </html>
