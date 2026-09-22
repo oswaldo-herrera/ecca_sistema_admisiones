@@ -838,15 +838,12 @@ let _permisosActivos = null; // null = sin restricciones (admin / no cargado aú
 
 async function aplicarPermisosSistema() {
   try {
-    // Si el rol legacy tiene acceso completo (admin/director) no aplicar restricciones
-    const legacyRol = sessionStorage.getItem('ecca_rol');
-    if (legacyRol && _PERMISOS[legacyRol] === null) return;
-
     const { data: { user } } = await _sb.auth.getUser();
     if (!user) return;
     const { data: perfil } = await _sb.from('perfiles')
       .select('rol_id, roles_personalizados(permisos, es_admin)')
       .eq('id', user.id).single();
+    // Sin rol personalizado: el sistema legacy ya maneja los permisos
     if (!perfil?.rol_id || !perfil?.roles_personalizados) return;
     const { permisos, es_admin: esAdmin } = perfil.roles_personalizados;
     if (esAdmin) {
