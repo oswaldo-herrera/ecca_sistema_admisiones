@@ -242,7 +242,7 @@ async function cargarGrupos() {
   </div>`;
   try {
     const [grupos, alumnos] = await Promise.all([getGrupos(), getRecords()]);
-    _grupos = grupos;
+    _grupos = window._soloSabatino ? grupos.filter(g => (g.modalidad || '').toLowerCase().includes('sabat')) : grupos;
     const counts = {};
     alumnos.forEach(a => {
       if (!a.grupoId) return;
