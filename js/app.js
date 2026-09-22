@@ -834,6 +834,7 @@ async function deleteRolPersonalizado(id) {
 
 /* ---- Permisos del sistema: ocultar módulos según rol ---- */
 let _permisosActivos = null;
+window._esAdmin = true; // true por defecto; se ajusta al cargar permisos
 
 // Promesa que las páginas pueden awaitar para saber cuándo los permisos están listos
 let _resolvePermisos;
@@ -861,11 +862,13 @@ async function aplicarPermisosSistema() {
     console.log('[permisos] esAdmin:', esAdmin, 'esSabatino:', esSabatino);
     if (esAdmin) {
       _permisosActivos = null;
+      window._esAdmin = true;
       window._soloSabatino = false;
       sessionStorage.setItem('ecca_solo_sabatino', 'false');
       document.querySelectorAll('.sb-item[href="usuarios.html"]').forEach(el => el.style.display = '');
     } else {
       _permisosActivos = permisos || [];
+      window._esAdmin = false;
       window._soloSabatino = esSabatino;
       sessionStorage.setItem('ecca_solo_sabatino', esSabatino ? 'true' : 'false');
       _ocultarModulos(_permisosActivos.filter(p => p !== 'solo_sabatino'));

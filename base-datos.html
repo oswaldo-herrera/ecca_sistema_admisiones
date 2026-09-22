@@ -90,7 +90,7 @@
           <div class="stat-icon si-green"><i class="fas fa-calendar-check"></i></div>
           <div><div class="stat-val" id="st-mes">0</div><div class="stat-lbl">Este Mes</div></div>
         </div>
-        <div class="stat-card">
+        <div class="stat-card" id="card-recaudado">
           <div class="stat-icon si-gold"><i class="fas fa-circle-dollar-to-slot"></i></div>
           <div><div class="stat-val" id="st-monto">$0</div><div class="stat-lbl">Total Recaudado</div></div>
         </div>
@@ -389,7 +389,13 @@ async function loadData() {
   }
 }
 
-(window._permisosListos || Promise.resolve()).then(() => loadData());
+(window._permisosListos || Promise.resolve()).then(() => {
+  loadData();
+  if (!window._esAdmin) {
+    const card = document.getElementById('card-recaudado');
+    if (card) card.style.display = 'none';
+  }
+});
 </script>
 </body>
 </html>
