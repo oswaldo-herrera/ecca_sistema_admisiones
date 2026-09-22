@@ -833,38 +833,34 @@ async function deleteRolPersonalizado(id) {
 }
 
 /* ---- Permisos del sistema: ocultar módulos según rol ---- */
-// Permisos en memoria (se llenan al cargar cada página desde Supabase)
-let _permisosActivos = null; // null = sin restricciones (admin / no cargado aún)
+let _permisosActivos = null;
+
+// Promesa que las páginas pueden awaitar para saber cuándo los permisos están listos
+let _resolvePermisos;
+window._permisosListos = new Promise(resolve => { _resolvePermisos = resolve; });
 
 async function aplicarPermisosSistema() {
   try {
     const { data: { user } } = await _sb.auth.getUser();
-    if (!user) return;
+    if (!user) { _resolvePermisos(); return; }
     const { data: perfil } = await _sb.from('perfiles')
       .select('rol_id, roles_personalizados(permisos, es_admin)')
       .eq('id', user.id).single();
-    // Sin rol personalizado: el sistema legacy ya maneja los permisos
-    if (!perfil?.rol_id || !perfil?.roles_personalizados) return;
+    if (!perfil?.rol_id || !perfil?.roles_personalizados) { _resolvePermisos(); return; }
     const { permisos, es_admin: esAdmin } = perfil.roles_personalizados;
     if (esAdmin) {
-      _permisosActivos = null; // rol marcado como admin: sin restricciones
-      sessionStorage.setItem('ecca_solo_sabatino', 'false');
+      _permisosActivos = null;
       window._soloSabatino = false;
+      sessionStorage.setItem('ecca_solo_sabatino', 'false');
       document.querySelectorAll('.sb-item[href="usuarios.html"]').forEach(el => el.style.display = '');
     } else {
       _permisosActivos = permisos || [];
-      const nuevoSab = _permisosActivos.includes('solo_sabatino');
-      sessionStorage.setItem('ecca_solo_sabatino', nuevoSab ? 'true' : 'false');
-      // Si el flag cambió en esta carga (primera sesión), recargar para que el filtro aplique
-      if (nuevoSab && !window._soloSabatino) {
-        window._soloSabatino = true;
-        window.location.reload();
-        return;
-      }
-      window._soloSabatino = nuevoSab;
+      window._soloSabatino = _permisosActivos.includes('solo_sabatino');
+      sessionStorage.setItem('ecca_solo_sabatino', window._soloSabatino ? 'true' : 'false');
       _ocultarModulos(_permisosActivos.filter(p => p !== 'solo_sabatino'));
     }
   } catch(_) {}
+  _resolvePermisos(); // siempre resolver, aunque haya error
 }
 
 function _ocultarModulos(permisos) {

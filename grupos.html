@@ -825,7 +825,7 @@ async function agregarAlumnoAGrupo(folio) {
 }
 
 /* ---- Init ---- */
-cargarGrupos();
+(window._permisosListos || Promise.resolve()).then(() => cargarGrupos());
 </script>
 </body>
 </html>

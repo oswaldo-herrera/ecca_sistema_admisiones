@@ -150,9 +150,9 @@ async function cargarGrupos() {
 let _grupos = [];
 let _adDatos = []; // datos del último reporte para PDF
 
-(async function init() {
+(window._permisosListos || Promise.resolve()).then(async () => {
   _grupos = await cargarGrupos();
-})();
+});
 
 function _prefMod(modalidad) {
   if (!modalidad) return '';
