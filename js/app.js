@@ -494,6 +494,7 @@ async function signIn(email, password) {
 async function signOut() {
   sessionStorage.removeItem('ecca_rol');
   sessionStorage.removeItem('ecca_nombre');
+  sessionStorage.removeItem('ecca_solo_sabatino');
   await _sb.auth.signOut();
   window.location.href = 'login.html';
 }
@@ -521,6 +522,8 @@ const _ROL_LABEL = {
 };
 
 window._userRol = null;
+// Leer desde sessionStorage de forma síncrona para que esté disponible antes de que carguen los datos
+window._soloSabatino = sessionStorage.getItem('ecca_solo_sabatino') === 'true';
 
 /* Aplica permisos y muestra el sidebar — puede llamarse con datos del caché o de Supabase */
 function _aplicarPermisos(rol, nombre) {
@@ -849,11 +852,13 @@ async function aplicarPermisosSistema() {
     if (esAdmin) {
       _permisosActivos = null; // rol marcado como admin: sin restricciones
       window._soloSabatino = false;
+      sessionStorage.setItem('ecca_solo_sabatino', 'false');
       // Forzar visible el link de Usuarios para roles con es_admin=true
       document.querySelectorAll('.sb-item[href="usuarios.html"]').forEach(el => el.style.display = '');
     } else {
       _permisosActivos = permisos || [];
       window._soloSabatino = _permisosActivos.includes('solo_sabatino');
+      sessionStorage.setItem('ecca_solo_sabatino', window._soloSabatino ? 'true' : 'false');
       _ocultarModulos(_permisosActivos.filter(p => p !== 'solo_sabatino'));
     }
   } catch(_) {}
