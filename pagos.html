@@ -552,6 +552,7 @@ let _ctGrupos = [];
 async function iniciarCorte() {
   if (_ctGrupos.length) return;
   _ctGrupos = _grupos.length ? _grupos : await getGrupos();
+  if (window._soloSabatino) _ctGrupos = _ctGrupos.filter(g => (g.modalidad || '').toLowerCase().includes('sabat'));
   const sel = $('ct-grupo');
   _ctGrupos.forEach(g => {
     const o = document.createElement('option');
@@ -635,10 +636,9 @@ async function generarCorte() {
         .order('nombre');
       foliosAlumnos = data || [];
     } else {
-      const { data } = await _sb.from('inscripciones')
-        .select('folio, nombre, grupo_id')
-        .not('nombre', 'is', null)
-        .order('nombre');
+      let q = _sb.from('inscripciones').select('folio, nombre, grupo_id').not('nombre', 'is', null).order('nombre');
+      if (window._soloSabatino) q = q.in('grupo_id', _ctGrupos.map(g => g.id));
+      const { data } = await q;
       foliosAlumnos = data || [];
     }
 
@@ -915,7 +915,9 @@ async function generarCorteDiario() {
       folios = Object.keys(alumnosMap);
       if (!folios.length) { $('ct-empty').style.display = 'block'; return; }
     } else {
-      const { data } = await _sb.from('inscripciones').select('folio, nombre, grupo_id');
+      let q2 = _sb.from('inscripciones').select('folio, nombre, grupo_id');
+      if (window._soloSabatino) q2 = q2.in('grupo_id', _ctGrupos.map(g => g.id));
+      const { data } = await q2;
       (data || []).forEach(a => {
         alumnosMap[a.folio] = a.nombre;
         const g = _ctGrupos.find(x => x.id === a.grupo_id);
@@ -1351,7 +1353,13 @@ async function buscarAlumnoPago() {
   const q = ($('pa-q').value || '').toLowerCase();
   const cont = $('pa-list');
   if (!q) { cont.style.display = 'none'; return; }
-  if (!_paSearch.length) _paSearch = await getRecords();
+  if (!_paSearch.length) {
+    _paSearch = await getRecords();
+    if (window._soloSabatino) {
+      const sabGrupos = (await getGrupos()).filter(g => (g.modalidad || '').toLowerCase().includes('sabat')).map(g => g.id);
+      _paSearch = _paSearch.filter(r => sabGrupos.includes(parseInt(r.grupoId)));
+    }
+  }
   const res = _paSearch.filter(r =>
     (r.folio || '').toLowerCase().includes(q) ||
     (r.nombre || '').toLowerCase().includes(q) ||
@@ -1628,6 +1636,7 @@ async function eliminarCargo(id) {
 async function cargarGruposSelect() {
   if (_grupos.length) return;
   _grupos = await getGrupos();
+  if (window._soloSabatino) _grupos = _grupos.filter(g => (g.modalidad || '').toLowerCase().includes('sabat'));
   $('pg-grupo').innerHTML = '<option value="">— Seleccionar grupo —</option>' +
     _grupos.map(g => `<option value="${g.id}">${esc(g.nombre)}</option>`).join('');
 }

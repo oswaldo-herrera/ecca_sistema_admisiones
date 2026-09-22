@@ -848,9 +848,13 @@ async function aplicarPermisosSistema() {
     const { permisos, es_admin: esAdmin } = perfil.roles_personalizados;
     if (esAdmin) {
       _permisosActivos = null; // rol marcado como admin: sin restricciones
+      window._soloSabatino = false;
+      // Forzar visible el link de Usuarios para roles con es_admin=true
+      document.querySelectorAll('.sb-item[href="usuarios.html"]').forEach(el => el.style.display = '');
     } else {
       _permisosActivos = permisos || [];
-      _ocultarModulos(_permisosActivos);
+      window._soloSabatino = _permisosActivos.includes('solo_sabatino');
+      _ocultarModulos(_permisosActivos.filter(p => p !== 'solo_sabatino'));
     }
   } catch(_) {}
 }

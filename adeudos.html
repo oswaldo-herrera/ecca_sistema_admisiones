@@ -136,7 +136,7 @@ async function cargarGrupos() {
   try {
     const { data } = await _sb.from('grupos').select('id, nombre, modalidad, cerrado').order('nombre');
     const sel = $('ad-grupo');
-    const abiertos = (data || []).filter(g => !g.cerrado);
+    const abiertos = (data || []).filter(g => !g.cerrado && (!window._soloSabatino || (g.modalidad || '').toLowerCase().includes('sabat')));
     abiertos.forEach(g => {
       const opt = document.createElement('option');
       opt.value = g.id;
