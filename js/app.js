@@ -843,11 +843,18 @@ async function aplicarPermisosSistema() {
   try {
     const { data: { user } } = await _sb.auth.getUser();
     if (!user) { _resolvePermisos(); return; }
-    const { data: perfil } = await _sb.from('perfiles')
-      .select('rol_id, roles_personalizados(permisos, es_admin)')
-      .eq('id', user.id).single();
-    if (!perfil?.rol_id || !perfil?.roles_personalizados) { _resolvePermisos(); return; }
-    const { permisos, es_admin: esAdmin } = perfil.roles_personalizados;
+
+    const { data: perfil, error: eP } = await _sb.from('perfiles')
+      .select('rol_id').eq('id', user.id).single();
+    if (eP) { console.error('[permisos] error perfil:', eP); _resolvePermisos(); return; }
+    if (!perfil?.rol_id) { _resolvePermisos(); return; }
+
+    const { data: rol, error: eR } = await _sb.from('roles_personalizados')
+      .select('permisos, es_admin').eq('id', perfil.rol_id).single();
+    if (eR) { console.error('[permisos] error rol:', eR); _resolvePermisos(); return; }
+    if (!rol) { _resolvePermisos(); return; }
+
+    const { permisos, es_admin: esAdmin } = rol;
     if (esAdmin) {
       _permisosActivos = null;
       window._soloSabatino = false;
@@ -859,7 +866,7 @@ async function aplicarPermisosSistema() {
       sessionStorage.setItem('ecca_solo_sabatino', window._soloSabatino ? 'true' : 'false');
       _ocultarModulos(_permisosActivos.filter(p => p !== 'solo_sabatino'));
     }
-  } catch(_) {}
+  } catch(err) { console.error('[permisos] excepción:', err); }
   _resolvePermisos(); // siempre resolver, aunque haya error
 }
 
