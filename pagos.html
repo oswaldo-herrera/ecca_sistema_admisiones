@@ -552,7 +552,7 @@ let _ctGrupos = [];
 async function iniciarCorte() {
   if (_ctGrupos.length) return;
   _ctGrupos = _grupos.length ? _grupos : await getGrupos();
-  if (window._soloSabatino) _ctGrupos = _ctGrupos.filter(g => ((g.modalidad || '').toLowerCase().includes('sabat') || (g.nombre || '').toLowerCase().includes('sabat')));
+  if (window._soloSabatino) _ctGrupos = _ctGrupos.filter(g => (g.sabatino === true || (g.nombre || '').toLowerCase().includes('sabat')));
   const sel = $('ct-grupo');
   _ctGrupos.forEach(g => {
     const o = document.createElement('option');
@@ -1356,7 +1356,7 @@ async function buscarAlumnoPago() {
   if (!_paSearch.length) {
     _paSearch = await getRecords();
     if (window._soloSabatino) {
-      const sabGrupos = (await getGrupos()).filter(g => ((g.modalidad || '').toLowerCase().includes('sabat') || (g.nombre || '').toLowerCase().includes('sabat'))).map(g => g.id);
+      const sabGrupos = (await getGrupos()).filter(g => (g.sabatino === true || (g.nombre || '').toLowerCase().includes('sabat'))).map(g => g.id);
       _paSearch = _paSearch.filter(r => sabGrupos.includes(parseInt(r.grupoId)));
     }
   }
@@ -1636,7 +1636,7 @@ async function eliminarCargo(id) {
 async function cargarGruposSelect() {
   if (_grupos.length) return;
   _grupos = await getGrupos();
-  if (window._soloSabatino) _grupos = _grupos.filter(g => ((g.modalidad || '').toLowerCase().includes('sabat') || (g.nombre || '').toLowerCase().includes('sabat')));
+  if (window._soloSabatino) _grupos = _grupos.filter(g => (g.sabatino === true || (g.nombre || '').toLowerCase().includes('sabat')));
   $('pg-grupo').innerHTML = '<option value="">— Seleccionar grupo —</option>' +
     _grupos.map(g => `<option value="${g.id}">${esc(g.nombre)}</option>`).join('');
 }

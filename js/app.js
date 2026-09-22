@@ -851,14 +851,20 @@ async function aplicarPermisosSistema() {
     const { permisos, es_admin: esAdmin } = perfil.roles_personalizados;
     if (esAdmin) {
       _permisosActivos = null; // rol marcado como admin: sin restricciones
-      window._soloSabatino = false;
       sessionStorage.setItem('ecca_solo_sabatino', 'false');
-      // Forzar visible el link de Usuarios para roles con es_admin=true
+      window._soloSabatino = false;
       document.querySelectorAll('.sb-item[href="usuarios.html"]').forEach(el => el.style.display = '');
     } else {
       _permisosActivos = permisos || [];
-      window._soloSabatino = _permisosActivos.includes('solo_sabatino');
-      sessionStorage.setItem('ecca_solo_sabatino', window._soloSabatino ? 'true' : 'false');
+      const nuevoSab = _permisosActivos.includes('solo_sabatino');
+      sessionStorage.setItem('ecca_solo_sabatino', nuevoSab ? 'true' : 'false');
+      // Si el flag cambió en esta carga (primera sesión), recargar para que el filtro aplique
+      if (nuevoSab && !window._soloSabatino) {
+        window._soloSabatino = true;
+        window.location.reload();
+        return;
+      }
+      window._soloSabatino = nuevoSab;
       _ocultarModulos(_permisosActivos.filter(p => p !== 'solo_sabatino'));
     }
   } catch(_) {}
