@@ -864,7 +864,15 @@ function _ocultarModulos(permisos) {
     if (!permisos.includes(el.dataset.modulo)) el.style.display = 'none';
   });
   const mod = document.body.dataset.modulo;
-  if (mod && !permisos.includes(mod)) window.location.replace('index.html');
+  if (mod && !permisos.includes(mod)) {
+    // Redirigir a la primera página del rol que sí está permitida
+    const items = document.querySelectorAll('.sb-item[href][data-modulo]');
+    let destino = 'pagos.html';
+    for (const el of items) {
+      if (permisos.includes(el.dataset.modulo)) { destino = el.getAttribute('href'); break; }
+    }
+    window.location.replace(destino);
+  }
 }
 
 function tienePermiso(key) {
