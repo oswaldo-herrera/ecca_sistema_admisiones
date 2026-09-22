@@ -346,10 +346,11 @@ async function savePago(p) {
       const { data: { user } } = await _sb.auth.getUser();
       if (user?.id) payload.registrado_por_id = user.id;
     } catch (_) {}
-    // Generar siguiente numero_recibo
+    // Generar siguiente numero_recibo por concepto (cada concepto tiene su propio consecutivo)
     try {
       const { data: lastRec } = await _sb.from('pagos')
         .select('numero_recibo')
+        .eq('concepto', payload.concepto)
         .not('numero_recibo', 'is', null)
         .order('numero_recibo', { ascending: false })
         .limit(1);
