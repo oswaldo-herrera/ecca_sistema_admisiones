@@ -369,7 +369,7 @@ async function loadData() {
     const [recs, grupos, cargos, pagos] = await Promise.all([getRecords(), getGrupos(), getAllCargos(), getAllPagos()]);
     _grupos  = grupos;
     if (window._soloSabatino) {
-      const sabIds = grupos.filter(g => (g.modalidad || '').toLowerCase().includes('sabat')).map(g => String(g.id));
+      const sabIds = grupos.filter(g => ((g.modalidad || '').toLowerCase().includes('sabat') || (g.nombre || '').toLowerCase().includes('sabat'))).map(g => String(g.id));
       _records = recs.filter(r => sabIds.includes(String(r.grupoId)));
     } else {
       _records = recs;
