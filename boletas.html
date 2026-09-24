@@ -213,6 +213,7 @@
       <div class="field">
         <label>Período</label>
         <select id="bol-periodo">
+          <option value="General">General (Todos los Parciales)</option>
           <option value="1er Parcial">1er Parcial</option>
           <option value="2do Parcial">2do Parcial</option>
           <option value="3er Parcial">3er Parcial</option>
@@ -281,14 +282,21 @@ async function generarBoletas() {
   try {
     const grupo = _grupos.find(g => g.id === grupoId);
     const ciclo = grupo ? [grupo.modalidad, grupo.ciclo].filter(Boolean).join(' · ') : '';
+    const esGeneral = periodo === 'General';
+    const PERIODOS_GENERAL = ['1er Parcial', '2do Parcial', '3er Parcial', 'Final'];
 
-    const [alumnos, cals] = await Promise.all([
+    // Cargar alumnos, calificaciones y materias del grupo en paralelo
+    const calQuery = esGeneral
+      ? _sb.from('calificaciones').select('folio, materia_id, calificacion, periodo').eq('grupo_id', grupoId)
+      : _sb.from('calificaciones').select('folio, materia_id, calificacion').eq('grupo_id', grupoId).eq('periodo', periodo);
+
+    const [alumnos, { data: calsRaw }, materiasGrupo] = await Promise.all([
       getAlumnosByGrupo(grupoId).then(arr =>
         arr.sort((a, b) => (a.nombre || '').localeCompare(b.nombre || '', 'es', { sensitivity: 'base' }))),
-      _sb.from('calificaciones').select('folio, materia_id, calificacion')
-        .eq('grupo_id', grupoId).eq('periodo', periodo)
-        .then(({ data }) => data || [])
+      calQuery,
+      getGrupoMaterias(grupoId)
     ]);
+    const cals = calsRaw || [];
 
     if (!alumnos.length) {
       wrap.innerHTML = `<div style="text-align:center;padding:60px;color:var(--text-muted)">
@@ -297,20 +305,25 @@ async function generarBoletas() {
       return;
     }
 
-    // Materias que tienen al menos una calificación en este grupo/periodo
-    const matIdsConCal = [...new Set(cals.map(c => c.materia_id))];
-    const materiasActivas = _materias.filter(m => !m.inactiva && matIdsConCal.includes(m.id))
-      .sort((a, b) => (a.nombre || '').localeCompare(b.nombre || '', 'es'));
-
-    const calMap = {};
-    cals.forEach(c => {
-      if (!calMap[c.folio]) calMap[c.folio] = {};
-      calMap[c.folio][c.materia_id] = c.calificacion;
-    });
+    // Materias: usar las asignadas al grupo; si no hay, usar las que tienen calificación
+    let materiasActivas;
+    if (materiasGrupo.length) {
+      materiasActivas = materiasGrupo.filter(m => !m.inactiva);
+    } else {
+      const matIdsConCal = [...new Set(cals.map(c => c.materia_id))];
+      materiasActivas = _materias.filter(m => !m.inactiva && matIdsConCal.includes(m.id))
+        .sort((a, b) => (a.nombre || '').localeCompare(b.nombre || '', 'es'));
+    }
 
     let totalProms = 0, promCnt = 0, totalAp = 0, totalRep = 0;
 
-    wrap.innerHTML = alumnos.map(a => {
+    // ---- Boleta por período único ----
+    function buildBoletaSimple(a) {
+      const calMap = {};
+      cals.forEach(c => {
+        if (!calMap[c.folio]) calMap[c.folio] = {};
+        calMap[c.folio][c.materia_id] = c.calificacion;
+      });
       const ac = calMap[a.folio] || {};
       let suma = 0, cnt = 0;
       materiasActivas.forEach(m => {
@@ -320,7 +333,7 @@ async function generarBoletas() {
       const prom = cnt ? (suma / cnt).toFixed(1) : null;
       const aprobado = prom !== null ? parseFloat(prom) >= 6 : null;
       if (prom !== null) { totalProms += parseFloat(prom); promCnt++; }
-      if (aprobado === true)  totalAp++;
+      if (aprobado === true) totalAp++;
       if (aprobado === false) totalRep++;
 
       const filas = materiasActivas.map((m, idx) => {
@@ -328,9 +341,7 @@ async function generarBoletas() {
         const val = (v !== null && v !== undefined) ? parseFloat(v) : null;
         const est = val === null
           ? `<span class="badge-sc">Sin calificar</span>`
-          : val >= 6
-            ? `<span class="badge-ap">Aprobado</span>`
-            : `<span class="badge-rep">Reprobado</span>`;
+          : val >= 6 ? `<span class="badge-ap">Aprobado</span>` : `<span class="badge-rep">Reprobado</span>`;
         const color = val !== null && val < 6 ? 'color:#b91c1c' : '';
         return `<tr>
           <td style="color:#888;text-align:center;width:28px">${idx + 1}</td>
@@ -341,78 +352,86 @@ async function generarBoletas() {
       }).join('');
 
       const promColor = prom === null ? 'nd' : parseFloat(prom) >= 6 ? 'ap' : 'rep';
-      const promLabel = prom === null ? '—' : prom;
       const estGeneral = aprobado === null ? '—' : aprobado ? 'APROBADO' : 'REPROBADO';
       const estColor   = aprobado === null ? 'nd' : aprobado ? 'ap' : 'rep';
-      const matCount   = materiasActivas.length;
 
       return `
       <div class="boleta">
-        <div class="bol-head">
-          <div class="bol-head-logo">
-            <img src="images/ecca_logo.png" alt="ECCA">
-          </div>
-          <div class="bol-head-title">
-            <h1>ECCA Prepa León</h1>
-            <p>5 de Febrero 634, San Juan de Dios, 37000 León de los Aldama, Gto. · Tel. 479 153 4007</p>
-          </div>
-          <div class="bol-head-badge">Boleta de Calificaciones</div>
-        </div>
-
-        <div class="bol-info">
-          <div class="bol-info-item"><label>Nombre del Alumno</label><span>${esc(a.nombre || '(sin nombre)')}</span></div>
-          <div class="bol-info-item"><label>Folio</label><span>${esc(a.folio)}</span></div>
-          <div class="bol-info-item"><label>Grupo</label><span>${esc(grupo?.nombre || '')}</span></div>
-          <div class="bol-info-item"><label>Período evaluado</label><span>${esc(periodo)}</span></div>
-          <div class="bol-info-item"><label>Modalidad / Ciclo</label><span>${esc(ciclo)}</span></div>
-          <div class="bol-info-item"><label>Fecha de emisión</label><span>${new Date().toLocaleDateString('es-MX',{day:'2-digit',month:'long',year:'numeric'})}</span></div>
-        </div>
-
+        ${boletaHeader(grupo, a, ciclo, periodo)}
         <table class="bol-table">
-          <thead>
-            <tr>
-              <th style="width:28px;text-align:center">#</th>
-              <th>Materia</th>
-              <th style="width:110px">Calificación</th>
-              <th style="width:110px">Estado</th>
-            </tr>
-          </thead>
+          <thead><tr>
+            <th style="width:28px;text-align:center">#</th><th>Materia</th>
+            <th style="width:110px">Calificación</th><th style="width:110px">Estado</th>
+          </tr></thead>
           <tbody>${filas}</tbody>
         </table>
-
-        <div class="bol-foot">
-          <div class="bol-foot-cell">
-            <label>Total de Materias</label>
-            <div class="bol-val nd">${matCount}</div>
-          </div>
-          <div class="bol-foot-cell">
-            <label>Promedio General</label>
-            <div class="bol-val ${promColor}">${promLabel}</div>
-          </div>
-          <div class="bol-foot-cell">
-            <label>Resultado</label>
-            <div class="bol-val ${estColor}" style="font-size:13px">${estGeneral}</div>
-          </div>
-        </div>
-
-        <div class="bol-firmas">
-          <div class="bol-firma-item">
-            <div class="bol-firma-line"></div>
-            <div class="bol-firma-label">Firma del Alumno</div>
-          </div>
-          <div class="bol-firma-item">
-            <div class="bol-firma-line"></div>
-            <div class="bol-firma-label">Firma del Tutor</div>
-          </div>
-          <div class="bol-firma-item">
-            <div class="bol-firma-line"></div>
-            <div class="bol-firma-label">Director(a)</div>
-          </div>
-        </div>
+        ${boletaFooter(materiasActivas.length, prom, promColor, estGeneral, estColor)}
+        ${boletaFirmas()}
       </div>`;
-    }).join('');
+    }
 
-    // Stats
+    // ---- Boleta General (todos los parciales) ----
+    function buildBoletaGeneral(a) {
+      // calMap[folio][materia_id][periodo] = calificacion
+      const calMap = {};
+      cals.forEach(c => {
+        if (!calMap[c.folio]) calMap[c.folio] = {};
+        if (!calMap[c.folio][c.materia_id]) calMap[c.folio][c.materia_id] = {};
+        calMap[c.folio][c.materia_id][c.periodo] = c.calificacion;
+      });
+      const ac = calMap[a.folio] || {};
+
+      let sumaProm = 0, cntProm = 0;
+      const filas = materiasActivas.map((m, idx) => {
+        const mCals = ac[m.id] || {};
+        let sumaM = 0, cntM = 0;
+        const cols = PERIODOS_GENERAL.map(p => {
+          const v = mCals[p];
+          const val = (v !== null && v !== undefined) ? parseFloat(v) : null;
+          if (val !== null) { sumaM += val; cntM++; }
+          const color = val !== null && val < 6 ? 'color:#b91c1c;' : '';
+          return `<td style="text-align:center;font-weight:600;${color}">${val !== null ? val.toFixed(1) : '—'}</td>`;
+        }).join('');
+        const promM = cntM ? (sumaM / cntM) : null;
+        if (promM !== null) { sumaProm += promM; cntProm++; }
+        const promColor = promM === null ? 'color:#aaa' : promM >= 6 ? 'color:#15803d' : 'color:#b91c1c';
+        return `<tr>
+          <td style="color:#888;text-align:center;width:28px">${idx + 1}</td>
+          <td>${esc(m.nombre)}</td>
+          ${cols}
+          <td style="text-align:center;font-weight:700;${promColor}">${promM !== null ? promM.toFixed(1) : '—'}</td>
+        </tr>`;
+      }).join('');
+
+      const prom = cntProm ? (sumaProm / cntProm).toFixed(1) : null;
+      const aprobado = prom !== null ? parseFloat(prom) >= 6 : null;
+      if (prom !== null) { totalProms += parseFloat(prom); promCnt++; }
+      if (aprobado === true) totalAp++;
+      if (aprobado === false) totalRep++;
+
+      const promColor = prom === null ? 'nd' : parseFloat(prom) >= 6 ? 'ap' : 'rep';
+      const estGeneral = aprobado === null ? '—' : aprobado ? 'APROBADO' : 'REPROBADO';
+      const estColor   = aprobado === null ? 'nd' : aprobado ? 'ap' : 'rep';
+
+      return `
+      <div class="boleta">
+        ${boletaHeader(grupo, a, ciclo, 'General (Todos los Parciales)')}
+        <table class="bol-table" style="font-size:11px">
+          <thead><tr>
+            <th style="width:24px;text-align:center">#</th>
+            <th>Materia</th>
+            ${PERIODOS_GENERAL.map(p => `<th style="width:72px;text-align:center">${p}</th>`).join('')}
+            <th style="width:68px;text-align:center">Promedio</th>
+          </tr></thead>
+          <tbody>${filas}</tbody>
+        </table>
+        ${boletaFooter(materiasActivas.length, prom, promColor, estGeneral, estColor)}
+        ${boletaFirmas()}
+      </div>`;
+    }
+
+    wrap.innerHTML = alumnos.map(a => esGeneral ? buildBoletaGeneral(a) : buildBoletaSimple(a)).join('');
+
     $('st-alumnos').textContent   = alumnos.length;
     $('st-aprobados').textContent = totalAp;
     $('st-reprobados').textContent= totalRep;
@@ -423,6 +442,44 @@ async function generarBoletas() {
   } catch(e) {
     wrap.innerHTML = `<div style="text-align:center;padding:40px;color:#b91c1c">Error: ${esc(e.message)}</div>`;
   }
+}
+
+function boletaHeader(grupo, a, ciclo, periodo) {
+  return `
+    <div class="bol-head">
+      <div class="bol-head-logo"><img src="images/ecca_logo.png" alt="ECCA"></div>
+      <div class="bol-head-title">
+        <h1>ECCA Prepa León</h1>
+        <p>5 de Febrero 634, San Juan de Dios, 37000 León de los Aldama, Gto. · Tel. 479 153 4007</p>
+      </div>
+      <div class="bol-head-badge">Boleta de Calificaciones</div>
+    </div>
+    <div class="bol-info">
+      <div class="bol-info-item"><label>Nombre del Alumno</label><span>${esc(a.nombre || '(sin nombre)')}</span></div>
+      <div class="bol-info-item"><label>Folio</label><span>${esc(a.folio)}</span></div>
+      <div class="bol-info-item"><label>Grupo</label><span>${esc(grupo?.nombre || '')}</span></div>
+      <div class="bol-info-item"><label>Período evaluado</label><span>${esc(periodo)}</span></div>
+      <div class="bol-info-item"><label>Modalidad / Ciclo</label><span>${esc(ciclo)}</span></div>
+      <div class="bol-info-item"><label>Fecha de emisión</label><span>${new Date().toLocaleDateString('es-MX',{day:'2-digit',month:'long',year:'numeric'})}</span></div>
+    </div>`;
+}
+
+function boletaFooter(matCount, prom, promColor, estGeneral, estColor) {
+  return `
+    <div class="bol-foot">
+      <div class="bol-foot-cell"><label>Total de Materias</label><div class="bol-val nd">${matCount}</div></div>
+      <div class="bol-foot-cell"><label>Promedio General</label><div class="bol-val ${promColor}">${prom ?? '—'}</div></div>
+      <div class="bol-foot-cell"><label>Resultado</label><div class="bol-val ${estColor}" style="font-size:13px">${estGeneral}</div></div>
+    </div>`;
+}
+
+function boletaFirmas() {
+  return `
+    <div class="bol-firmas">
+      <div class="bol-firma-item"><div class="bol-firma-line"></div><div class="bol-firma-label">Firma del Alumno</div></div>
+      <div class="bol-firma-item"><div class="bol-firma-line"></div><div class="bol-firma-label">Firma del Tutor</div></div>
+      <div class="bol-firma-item"><div class="bol-firma-line"></div><div class="bol-firma-label">Director(a)</div></div>
+    </div>`;
 }
 
 </script>

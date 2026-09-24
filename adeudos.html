@@ -218,7 +218,7 @@ async function generarAdeudos() {
     const { data: pagosData } = await _sb.from('pagos')
       .select('folio, concepto, mes_correspondiente, fecha_pago, estado, numero_recibo, registrado_por_id')
       .in('folio', folios)
-      .in('concepto', ['Colegiatura', 'Inscripción']);
+      .in('concepto', ['Colegiatura', 'Colegiatura Semestral', 'Colegiatura Cuatrimestral', 'Colegiatura Sabatino', 'Inscripción']);
 
     // 2b. Lookup de nombres de usuarios que registraron pagos
     const idsRegistrantes = [...new Set((pagosData || []).map(p => p.registrado_por_id).filter(Boolean))];
@@ -239,7 +239,7 @@ async function generarAdeudos() {
         const entry = { ...p, _reg: _nombresReg[p.registrado_por_id] || '' };
         if (p.concepto === 'Inscripción') {
           pagoMap[p.folio]['inscripcion'] = entry;
-        } else if (p.concepto === 'Colegiatura' && p.mes_correspondiente) {
+        } else if (['Colegiatura','Colegiatura Semestral','Colegiatura Cuatrimestral','Colegiatura Sabatino'].includes(p.concepto) && p.mes_correspondiente) {
           const key = p.mes_correspondiente.substring(0, 7); // YYYY-MM
           if (key.startsWith(anio + '')) pagoMap[p.folio][key] = entry;
         }

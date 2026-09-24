@@ -712,6 +712,25 @@ async function deleteMateria(id) {
   if (error) throw error;
 }
 
+/* ---- Grupo-Materias ---- */
+async function getGrupoMaterias(grupoId) {
+  const { data, error } = await _sb.from('grupo_materias')
+    .select('materia_id, materias(id, nombre, grado)')
+    .eq('grupo_id', grupoId)
+    .order('materia_id');
+  if (error) throw error;
+  return (data || []).map(r => r.materias).filter(Boolean)
+    .sort((a, b) => (a.nombre || '').localeCompare(b.nombre || '', 'es'));
+}
+async function saveGrupoMaterias(grupoId, materiaIds) {
+  const { error: eD } = await _sb.from('grupo_materias').delete().eq('grupo_id', grupoId);
+  if (eD) throw eD;
+  if (!materiaIds.length) return;
+  const { error } = await _sb.from('grupo_materias')
+    .insert(materiaIds.map(id => ({ grupo_id: parseInt(grupoId), materia_id: parseInt(id) })));
+  if (error) throw error;
+}
+
 /* ---- Horarios ---- */
 async function getHorarios() {
   const { data, error } = await _sb.from('horarios').select('*').order('dia').order('hora_inicio');

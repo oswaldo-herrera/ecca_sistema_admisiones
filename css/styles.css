@@ -344,6 +344,7 @@ button { cursor: pointer; }
 .btn-sm-tbl:hover { filter: brightness(1.1); }
 .bst-gold   { background: var(--gold-pale); color: #92640a; border: 1px solid var(--gold-border); }
 .bst-navy   { background: #eff6ff; color: var(--navy); border: 1px solid #c7d7f4; }
+.bst-teal   { background: #f0fdfa; color: #0f766e; border: 1px solid #99f6e4; }
 .bst-red    { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
 
 /* =============================================

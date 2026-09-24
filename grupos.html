@@ -302,6 +302,7 @@ function renderGrupos(counts) {
       </div>
       <div class="grupo-card-ftr">
         ${tienePermiso('grupos-gestionar') ? `<button class="btn-sm-tbl bst-gold" onclick="abrirDetalleGrupo(${g.id})"><i class="fas fa-users"></i> Gestionar</button>` : ''}
+        ${tienePermiso('grupos-editar')    ? `<button class="btn-sm-tbl bst-teal" onclick="abrirMaterias(${g.id})"><i class="fas fa-book"></i> Materias</button>` : ''}
         ${tienePermiso('grupos-editar')    ? `<button class="btn-sm-tbl bst-navy" onclick="abrirEditarGrupo(${g.id})"><i class="fas fa-pen"></i> Editar</button>` : ''}
         ${tienePermiso('grupos-editar')    ? `<button class="btn-sm-tbl ${cerrado ? 'bst-gold' : 'bst-red'}" onclick="toggleCerrarGrupo(${g.id},${cerrado})"><i class="fas fa-${cerrado ? 'lock-open' : 'lock'}"></i> ${cerrado ? 'Reabrir' : 'Cerrar'}</button>` : ''}
         ${tienePermiso('grupos-eliminar')  ? `<button class="btn-sm-tbl bst-red"  onclick="eliminarGrupo(${g.id})"><i class="fas fa-trash"></i></button>` : ''}
@@ -827,9 +828,77 @@ async function agregarAlumnoAGrupo(folio) {
   }
 }
 
+/* ---- Materias del grupo ---- */
+let _materiasGrupoId = null;
+let _todasMaterias   = [];
+
+async function abrirMaterias(grupoId) {
+  _materiasGrupoId = grupoId;
+  const g = _grupos.find(x => x.id === grupoId);
+  document.getElementById('gm-titulo').textContent = 'Materias — ' + (g ? g.nombre : '');
+  const cont = document.getElementById('gm-lista');
+  cont.innerHTML = `<div style="text-align:center;padding:24px"><i class="fas fa-spinner fa-spin" style="color:var(--gold)"></i></div>`;
+  openModal('modal-grupo-materias');
+  try {
+    const [todas, asignadas] = await Promise.all([getMaterias(), getGrupoMaterias(grupoId)]);
+    _todasMaterias = todas;
+    const asigSet = new Set(asignadas.map(m => m.id));
+    if (!todas.length) {
+      cont.innerHTML = `<div style="text-align:center;padding:24px;color:var(--text-light)">No hay materias registradas.</div>`;
+      return;
+    }
+    cont.innerHTML = todas.map(m => `
+      <label style="display:flex;align-items:center;gap:10px;padding:8px 4px;border-bottom:1px solid var(--border-light);cursor:pointer">
+        <input type="checkbox" value="${m.id}" ${asigSet.has(m.id) ? 'checked' : ''}
+          style="width:16px;height:16px;accent-color:var(--gold);cursor:pointer">
+        <span style="flex:1;font-size:13px">${esc(m.nombre)}</span>
+        ${m.grado ? `<span style="font-size:11px;color:var(--text-muted)">${esc(m.grado)}</span>` : ''}
+      </label>`).join('');
+  } catch(e) {
+    cont.innerHTML = `<div style="text-align:center;padding:24px;color:#ef4444">Error: ${e.message}</div>`;
+  }
+}
+
+async function guardarMateriaGrupo() {
+  const checked = [...document.querySelectorAll('#gm-lista input[type=checkbox]:checked')].map(cb => parseInt(cb.value));
+  try {
+    await saveGrupoMaterias(_materiasGrupoId, checked);
+    closeModal('modal-grupo-materias');
+    toast(`${checked.length} materia(s) asignadas al grupo.`, 'ok');
+  } catch(e) {
+    toast('Error al guardar: ' + e.message, 'err');
+  }
+}
+
+function seleccionarTodasMaterias(marcar) {
+  document.querySelectorAll('#gm-lista input[type=checkbox]').forEach(cb => cb.checked = marcar);
+}
+
 /* ---- Init ---- */
 (window._permisosListos || Promise.resolve()).then(() => cargarGrupos());
 </script>
+
+<!-- ===== MODAL MATERIAS DEL GRUPO ===== -->
+<div class="modal-ov" id="modal-grupo-materias">
+  <div class="modal-box" style="max-width:480px">
+    <div class="modal-header">
+      <h3 id="gm-titulo">Materias del Grupo</h3>
+      <button class="modal-close" onclick="closeModal('modal-grupo-materias')">&#10005;</button>
+    </div>
+    <div class="modal-body" style="padding:14px 18px 0">
+      <div style="display:flex;gap:8px;margin-bottom:10px">
+        <button class="btn btn-secondary btn-sm" onclick="seleccionarTodasMaterias(true)"><i class="fas fa-check-double"></i> Todas</button>
+        <button class="btn btn-secondary btn-sm" onclick="seleccionarTodasMaterias(false)"><i class="fas fa-xmark"></i> Ninguna</button>
+      </div>
+      <div id="gm-lista" style="max-height:340px;overflow-y:auto"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary btn-sm" onclick="closeModal('modal-grupo-materias')">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="guardarMateriaGrupo()"><i class="fas fa-save"></i> Guardar</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
 

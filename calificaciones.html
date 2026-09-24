@@ -888,7 +888,7 @@ async function exportarGrupoExcel() {
 
 /* ---- Init ---- */
 (window._permisosListos || Promise.resolve()).then(() => {
-  if (typeof tienePermiso === 'function' && tienePermiso('cal-solo-captura')) {
+  if (!window._esAdmin && typeof tienePermiso === 'function' && tienePermiso('cal-solo-captura')) {
     document.getElementById('tab-btn-alumno').style.display = 'none';
     document.getElementById('tab-btn-grupo').style.display = 'none';
   }

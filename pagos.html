@@ -156,7 +156,9 @@
             </div>
             <div id="pg-acciones" style="display:none;gap:8px;flex-wrap:wrap;margin-top:8px">
               <button class="btn btn-primary btn-sm" onclick="abrirGenerarCargo('Inscripción')"><i class="fas fa-file-invoice-dollar"></i> Generar Cargo de Inscripción</button>
-              <button class="btn btn-primary btn-sm" onclick="abrirGenerarCargo('Colegiatura')"><i class="fas fa-calendar-days"></i> Generar Colegiatura del Mes</button>
+              <button class="btn btn-primary btn-sm" onclick="abrirGenerarCargo('Colegiatura Semestral')"><i class="fas fa-calendar-days"></i> Colegiatura Semestral</button>
+              <button class="btn btn-primary btn-sm" onclick="abrirGenerarCargo('Colegiatura Cuatrimestral')"><i class="fas fa-calendar-days"></i> Colegiatura Cuatrimestral</button>
+              <button class="btn btn-primary btn-sm" onclick="abrirGenerarCargo('Colegiatura Sabatino')"><i class="fas fa-calendar-days"></i> Colegiatura Sabatino</button>
             </div>
           </div>
         </div>
@@ -207,8 +209,8 @@
                 <select class="field-select" id="ct-concepto">
                   <option value="">Todos los conceptos</option>
                   <option>Inscripción</option><option>Reinscripción</option>
-                  <option>Colegiatura</option><option>Examen</option>
-                  <option>Certificado</option><option>Constancia</option>
+                  <option>Colegiatura Semestral</option><option>Colegiatura Cuatrimestral</option><option>Colegiatura Sabatino</option>
+                  <option>Examen</option><option>Certificado</option><option>Constancia</option>
                   <option>Credencial</option><option>Uniforme</option><option>Otro</option>
                 </select>
               </div>
@@ -242,8 +244,8 @@
                 <select class="field-select" id="cd-concepto">
                   <option value="">Todos los conceptos</option>
                   <option>Inscripción</option><option>Reinscripción</option>
-                  <option>Colegiatura</option><option>Examen</option>
-                  <option>Certificado</option><option>Constancia</option>
+                  <option>Colegiatura Semestral</option><option>Colegiatura Cuatrimestral</option><option>Colegiatura Sabatino</option>
+                  <option>Examen</option><option>Certificado</option><option>Constancia</option>
                   <option>Credencial</option><option>Uniforme</option><option>Otro</option>
                 </select>
               </div>
@@ -386,7 +388,9 @@
           <option value="">— Seleccionar —</option>
           <option>Inscripción</option>
           <option>Reinscripción</option>
-          <option>Colegiatura</option>
+          <option>Colegiatura Semestral</option>
+          <option>Colegiatura Cuatrimestral</option>
+          <option>Colegiatura Sabatino</option>
           <option>Examen</option>
           <option>Certificado</option>
           <option>Certificado Parcial</option>
@@ -452,7 +456,9 @@
           <option value="">— Seleccionar —</option>
           <option>Inscripción</option>
           <option>Reinscripción</option>
-          <option>Colegiatura</option>
+          <option>Colegiatura Semestral</option>
+          <option>Colegiatura Cuatrimestral</option>
+          <option>Colegiatura Sabatino</option>
           <option>Examen</option>
           <option>Certificado</option>
           <option>Certificado Parcial</option>
@@ -964,15 +970,6 @@ function _renderCorteDiario(desde, hasta, grupoId, concepto) {
     ' · ' + fmtDate(desde) + (desde !== hasta ? ' — ' + fmtDate(hasta) : '');
   $('cd-resumen-lbl').textContent = lbl;
 
-  // Agrupar por día
-  const porDia = {};
-  _cdPagosRaw.forEach(p => {
-    const d = p.fecha_pago;
-    if (!porDia[d]) porDia[d] = [];
-    porDia[d].push(p);
-  });
-  const dias = Object.keys(porDia).sort();
-
   // Stats globales
   const totalGral  = _cdPagosRaw.reduce((s, p) => s + parseFloat(p.monto || 0), 0);
   const alumnosSet = new Set(_cdPagosRaw.map(p => p.folio));
@@ -980,55 +977,54 @@ function _renderCorteDiario(desde, hasta, grupoId, concepto) {
 
   $('cd-stats').innerHTML = `
     <div class="stat-card">
-      <div class="stat-icon si-blue"><i class="fas fa-calendar-day"></i></div>
-      <div><div class="stat-val">${dias.length}</div><div class="stat-lbl">Día(s)</div></div>
+      <div class="stat-icon si-blue"><i class="fas fa-receipt"></i></div>
+      <div><div class="stat-val">${totalTxn}</div><div class="stat-lbl">Transacciones</div></div>
     </div>
     <div class="stat-card">
       <div class="stat-icon si-gold"><i class="fas fa-users"></i></div>
       <div><div class="stat-val">${alumnosSet.size}</div><div class="stat-lbl">Alumnos</div></div>
     </div>
     <div class="stat-card">
-      <div class="stat-icon si-navy"><i class="fas fa-receipt"></i></div>
-      <div><div class="stat-val">${totalTxn}</div><div class="stat-lbl">Transacciones</div></div>
-    </div>
-    <div class="stat-card">
       <div class="stat-icon si-purple"><i class="fas fa-circle-dollar-to-slot"></i></div>
       <div><div class="stat-val">${fmtMoney(totalGral)}</div><div class="stat-lbl">Total recaudado</div></div>
     </div>`;
 
-  // Un bloque por día
-  $('cd-dias').innerHTML = dias.map(dia => {
-    const filas = porDia[dia];
-    const totalDia = filas.reduce((s, p) => s + parseFloat(p.monto || 0), 0);
+  // Secciones de colegiaturas + otros
+  const SECCIONES_COLE = [
+    { key: 'Colegiatura Semestral',     label: 'Colegiatura Semestral',     icon: 'fa-calendar-days',  color: '#1e3a5f' },
+    { key: 'Colegiatura Cuatrimestral', label: 'Colegiatura Cuatrimestral', icon: 'fa-calendar-days',  color: '#1e3a5f' },
+    { key: 'Colegiatura Sabatino',      label: 'Colegiatura Sabatino',      icon: 'fa-calendar-days',  color: '#1e3a5f' },
+  ];
+  const KEYS_COLE = new Set(SECCIONES_COLE.map(s => s.key));
 
-    // Agrupar por alumno dentro del día
-    const porAlumno = {};
-    filas.forEach(p => {
-      if (!porAlumno[p.folio]) porAlumno[p.folio] = { nombre: p._nombre, pagos: [] };
-      porAlumno[p.folio].pagos.push(p);
-    });
+  // Agrupar pagos
+  const porSeccion = {};
+  SECCIONES_COLE.forEach(s => { porSeccion[s.key] = []; });
+  porSeccion['__otros__'] = [];
 
+  _cdPagosRaw.forEach(p => {
+    const c = p.concepto || '';
+    if (KEYS_COLE.has(c)) porSeccion[c].push(p);
+    else porSeccion['__otros__'].push(p);
+  });
+
+  function tablaSeccion(filas) {
+    if (!filas.length) return `<p style="padding:12px 16px;font-size:12px;color:var(--text-muted)">Sin pagos en este período.</p>`;
+    const total = filas.reduce((s, p) => s + parseFloat(p.monto || 0), 0);
     return `
-    <div style="border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;margin-bottom:12px" class="cd-dia-bloque" data-fecha="${dia}">
-      <div style="background:var(--navy);color:#fff;padding:10px 16px;display:flex;justify-content:space-between;align-items:center">
-        <span style="font-weight:700;font-size:13px"><i class="fas fa-calendar-day"></i> ${fmtDate(dia)}</span>
-        <span style="font-weight:700;font-size:14px">${fmtMoney(totalDia)}</span>
-      </div>
       <div style="overflow-x:auto">
         <table class="dtbl" style="margin:0;border:none">
-          <thead>
-            <tr>
-              <th>Folio</th><th>Alumno</th><th>Grupo</th><th>Concepto</th><th>Forma de pago</th><th>Recibió</th>
-              <th style="text-align:right">Monto</th>
-            </tr>
-          </thead>
+          <thead><tr>
+            <th>Fecha</th><th>Folio</th><th>Alumno</th><th>Grupo</th><th>Forma de pago</th><th>Recibió</th>
+            <th style="text-align:right">Monto</th>
+          </tr></thead>
           <tbody>
-            ${filas.map(p => `
+            ${filas.sort((a,b) => (a.fecha_pago||'').localeCompare(b.fecha_pago||'')).map(p => `
               <tr>
+                <td style="font-size:11px;white-space:nowrap">${fmtDate(p.fecha_pago)}</td>
                 <td style="font-size:11px;font-family:monospace;color:var(--navy);font-weight:700;white-space:nowrap">${esc(_folioReciboPago(p))}</td>
                 <td style="font-size:12px">${esc(p._nombre)}</td>
                 <td style="font-size:12px;color:var(--text-muted)">${esc(p._grupo || '—')}</td>
-                <td style="font-size:12px">${esc(p.concepto || '—')}</td>
                 <td style="font-size:12px">${esc(p.forma_pago || '—')}</td>
                 <td style="font-size:12px">${esc(p.recibio || '—')}</td>
                 <td style="text-align:right;font-weight:600;color:#16a34a">${fmtMoney(parseFloat(p.monto||0))}</td>
@@ -1036,15 +1032,60 @@ function _renderCorteDiario(desde, hasta, grupoId, concepto) {
           </tbody>
           <tfoot>
             <tr style="background:var(--bg-hover);font-weight:700">
-              <td colspan="6">Total del día</td>
-              <td style="text-align:right">${fmtMoney(totalDia)}</td>
+              <td colspan="6">Subtotal</td>
+              <td style="text-align:right">${fmtMoney(total)}</td>
             </tr>
           </tfoot>
         </table>
+      </div>`;
+  }
+
+  const seccionesHTML = SECCIONES_COLE.map(s => {
+    const filas = porSeccion[s.key];
+    const subtotal = filas.reduce((sm, p) => sm + parseFloat(p.monto || 0), 0);
+    return `
+    <div style="border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;margin-bottom:12px">
+      <div style="background:${s.color};color:#fff;padding:10px 16px;display:flex;justify-content:space-between;align-items:center">
+        <span style="font-weight:700;font-size:13px"><i class="fas ${s.icon}"></i> ${s.label}</span>
+        <span style="font-weight:700;font-size:14px">${fmtMoney(subtotal)} <span style="font-size:11px;opacity:.8">(${filas.length} pago${filas.length !== 1 ? 's' : ''})</span></span>
       </div>
+      ${tablaSeccion(filas)}
     </div>`;
-  }).join('') + `
-    <div style="text-align:right;padding:12px 4px;font-size:14px;font-weight:700;color:var(--navy)">
+  }).join('');
+
+  // Otros pagos
+  const otrosFilas = porSeccion['__otros__'];
+  // Agrupar "otros" por concepto para sub-secciones
+  const otrosPorConcepto = {};
+  otrosFilas.forEach(p => {
+    const c = p.concepto || 'Sin concepto';
+    if (!otrosPorConcepto[c]) otrosPorConcepto[c] = [];
+    otrosPorConcepto[c].push(p);
+  });
+  const otrosSubHTML = Object.keys(otrosPorConcepto).sort().map(c => {
+    const sub = otrosPorConcepto[c];
+    const subTotal = sub.reduce((s, p) => s + parseFloat(p.monto || 0), 0);
+    return `
+      <div style="margin:0 16px 10px;border:1px solid var(--border-light);border-radius:6px;overflow:hidden">
+        <div style="background:var(--bg-hover);padding:7px 12px;display:flex;justify-content:space-between;font-size:12px;font-weight:700;color:var(--text)">
+          <span>${esc(c)}</span><span>${fmtMoney(subTotal)}</span>
+        </div>
+        ${tablaSeccion(sub)}
+      </div>`;
+  }).join('');
+
+  const totalOtros = otrosFilas.reduce((s, p) => s + parseFloat(p.monto || 0), 0);
+  const otrosBloqueHTML = `
+    <div style="border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;margin-bottom:12px">
+      <div style="background:#374151;color:#fff;padding:10px 16px;display:flex;justify-content:space-between;align-items:center">
+        <span style="font-weight:700;font-size:13px"><i class="fas fa-tags"></i> Otros Pagos</span>
+        <span style="font-weight:700;font-size:14px">${fmtMoney(totalOtros)} <span style="font-size:11px;opacity:.8">(${otrosFilas.length} pago${otrosFilas.length !== 1 ? 's' : ''})</span></span>
+      </div>
+      ${otrosFilas.length ? `<div style="padding:10px 0">${otrosSubHTML}</div>` : `<p style="padding:12px 16px;font-size:12px;color:var(--text-muted)">Sin pagos en este período.</p>`}
+    </div>`;
+
+  $('cd-dias').innerHTML = seccionesHTML + otrosBloqueHTML + `
+    <div style="text-align:right;padding:12px 4px;font-size:14px;font-weight:700;color:var(--navy);border-top:2px solid var(--border);margin-top:4px">
       TOTAL GENERAL: ${fmtMoney(totalGral)}
     </div>`;
 }
@@ -1194,39 +1235,74 @@ function imprimirCorteDiario() {
     return `<div class="stat"><div class="stat-v">${v}</div><div class="stat-l">${l}</div></div>`;
   }).join('') + '</div>';
 
-  // Construir tabla unificada por día
+  // Construir tablas agrupadas por concepto
   const totalGral = _cdPagosRaw.reduce((s, p) => s + parseFloat(p.monto || 0), 0);
 
-  const porDia = {};
+  const SECS_COLE = [
+    { key: 'Colegiatura Semestral',     label: 'Colegiatura Semestral'     },
+    { key: 'Colegiatura Cuatrimestral', label: 'Colegiatura Cuatrimestral' },
+    { key: 'Colegiatura Sabatino',      label: 'Colegiatura Sabatino'      },
+  ];
+  const KEYS_COLE_PDF = new Set(SECS_COLE.map(s => s.key));
+
+  const _porConceptoPDF = {};
+  SECS_COLE.forEach(s => { _porConceptoPDF[s.key] = []; });
+  _porConceptoPDF['__otros__'] = {};
+
   _cdPagosRaw.forEach(p => {
-    if (!porDia[p.fecha_pago]) porDia[p.fecha_pago] = [];
-    porDia[p.fecha_pago].push(p);
+    const c = p.concepto || 'Sin concepto';
+    if (KEYS_COLE_PDF.has(c)) _porConceptoPDF[c].push(p);
+    else {
+      if (!_porConceptoPDF['__otros__'][c]) _porConceptoPDF['__otros__'][c] = [];
+      _porConceptoPDF['__otros__'][c].push(p);
+    }
   });
 
-  const diasHtml = Object.keys(porDia).sort().map(dia => {
-    const filas = porDia[dia];
-    const totalDia = filas.reduce((s, p) => s + parseFloat(p.monto || 0), 0);
+  function _tablaFilasPDF(filas) {
+    return filas.sort((a,b)=>(a.fecha_pago||'').localeCompare(b.fecha_pago||'')).map(p => `<tr>
+      <td style="white-space:nowrap;font-size:10px;color:#555">${fmtDate(p.fecha_pago)}</td>
+      <td style="font-family:monospace;font-weight:700;white-space:nowrap">${esc(_folioReciboPago(p))}</td>
+      <td>${esc(p._nombre)}</td>
+      <td style="color:#555">${esc(p._grupo||'—')}</td>
+      <td>${esc(p.forma_pago||'—')}</td>
+      <td>${esc(p.recibio||'—')}</td>
+      <td style="text-align:right;font-weight:600">${fmtMoney(parseFloat(p.monto||0))}</td>
+    </tr>`).join('');
+  }
+
+  function _bloqueConceptoPDF(titulo, filas, color) {
+    if (!filas.length) return '';
+    const sub = filas.reduce((s, p) => s + parseFloat(p.monto || 0), 0);
     return `
-      <div class="dia-hdr">
-        <span>${fmtDate(dia)}</span>
-        <span>${fmtMoney(totalDia)}</span>
+      <div class="dia-hdr" style="background:${color}">
+        <span>${titulo}</span>
+        <span>${fmtMoney(sub)} <span style="font-size:10px;opacity:.8">(${filas.length} pago${filas.length!==1?'s':''})</span></span>
       </div>
       <table>
-        <thead><tr><th>Folio</th><th>Alumno</th><th>Grupo</th><th>Concepto</th><th>Forma de pago</th><th>Recibió</th><th style="text-align:right">Monto</th></tr></thead>
-        <tbody>
-          ${filas.map(p => `<tr>
-            <td style="font-family:monospace;font-weight:700;white-space:nowrap">${esc(_folioReciboPago(p))}</td>
-            <td>${esc(p._nombre)}</td>
-            <td style="color:#555">${esc(p._grupo||'—')}</td>
-            <td>${esc(p.concepto||'—')}</td>
-            <td>${esc(p.forma_pago||'—')}</td>
-            <td>${esc(p.recibio||'—')}</td>
-            <td style="text-align:right;font-weight:600">${fmtMoney(parseFloat(p.monto||0))}</td>
-          </tr>`).join('')}
-        </tbody>
-        <tfoot><tr><td colspan="6">Total del día</td><td style="text-align:right">${fmtMoney(totalDia)}</td></tr></tfoot>
+        <thead><tr><th>Fecha</th><th>Folio</th><th>Alumno</th><th>Grupo</th><th>Forma de pago</th><th>Recibió</th><th style="text-align:right">Monto</th></tr></thead>
+        <tbody>${_tablaFilasPDF(filas)}</tbody>
+        <tfoot><tr><td colspan="6">Subtotal ${titulo}</td><td style="text-align:right">${fmtMoney(sub)}</td></tr></tfoot>
       </table>`;
-  }).join('');
+  }
+
+  const colegiaturasHtml = SECS_COLE.map(s =>
+    _bloqueConceptoPDF(s.label, _porConceptoPDF[s.key], '#1e3a5f')
+  ).join('');
+
+  const otrosMap = _porConceptoPDF['__otros__'];
+  const otrosHtml = Object.keys(otrosMap).sort().map(c =>
+    _bloqueConceptoPDF(c, otrosMap[c], '#374151')
+  ).join('');
+
+  const totalOtrosPDF = Object.values(otrosMap).flat().reduce((s,p)=>s+parseFloat(p.monto||0),0);
+  const totalOtrosCnt = Object.values(otrosMap).flat().length;
+  const otrosTituloHtml = totalOtrosCnt ? `
+    <div class="dia-hdr" style="background:#4b5563;font-size:13px">
+      <span>Otros Pagos</span>
+      <span>${fmtMoney(totalOtrosPDF)} <span style="font-size:10px;opacity:.8">(${totalOtrosCnt} pago${totalOtrosCnt!==1?'s':''})</span></span>
+    </div>${otrosHtml}` : '';
+
+  const diasHtml = colegiaturasHtml + otrosTituloHtml;
 
   // Resumen por forma de pago
   const porForma = {};
