@@ -129,9 +129,14 @@
               <h1>ECCA PREPARATORIA DE LEÓN</h1>
               <p>INCORPORADO A LA SECRETARÍA DE EDUCACIÓN DE GUANAJUATO</p>
             </div>
-            <div class="r-fbox">
-              <span class="rfl">FOLIO</span>
-              <span class="rfn" id="r-folio">—</span>
+            <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">
+              <div class="r-fbox">
+                <span class="rfl">FOLIO</span>
+                <span class="rfn" id="r-folio">—</span>
+              </div>
+              <div style="font-size:10px;font-weight:700;color:#c8a93a;text-transform:uppercase;letter-spacing:.5px;text-align:right">
+                Fecha<br><span id="r-fecha-pago" style="font-size:12px;color:#fff;font-weight:800;letter-spacing:0">—</span>
+              </div>
             </div>
           </div>
           <div class="r-title-bar">RECIBO DE PAGO</div>
@@ -217,6 +222,10 @@ function llenarRecibo(rec, pago) {
   $('r-fpago').textContent     = pago.forma_pago    || '';
   $('r-corresponde').textContent = pago.mes_correspondiente ? _fmtMes(pago.mes_correspondiente) : '';
   $('r-recibio').textContent   = pago.recibio       || '';
+  if (pago.fecha_pago) {
+    const fd = new Date(pago.fecha_pago + 'T12:00:00');
+    $('r-fecha-pago').textContent = fd.toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' });
+  }
 
   // Generar segunda copia (control interno)
   const pair = $('print-pair');
