@@ -1270,23 +1270,26 @@ function imprimirCorteDiario() {
     </tr>`).join('');
   }
 
-  function _bloqueConceptoPDF(titulo, filas, color) {
-    if (!filas.length) return '';
+  function _bloqueConceptoPDF(titulo, filas, color, siempre) {
+    if (!siempre && !filas.length) return '';
     const sub = filas.reduce((s, p) => s + parseFloat(p.monto || 0), 0);
+    const cuerpo = filas.length
+      ? `<table>
+          <thead><tr><th>Fecha</th><th>Folio</th><th>Alumno</th><th>Grupo</th><th>Forma de pago</th><th>Recibió</th><th style="text-align:right">Monto</th></tr></thead>
+          <tbody>${_tablaFilasPDF(filas)}</tbody>
+          <tfoot><tr><td colspan="6">Subtotal ${titulo}</td><td style="text-align:right">${fmtMoney(sub)}</td></tr></tfoot>
+        </table>`
+      : `<p style="margin:8px 12px;font-size:11px;color:#6b7280">Sin pagos en este período.</p>`;
     return `
       <div class="dia-hdr" style="background:${color}">
         <span>${titulo}</span>
         <span>${fmtMoney(sub)} <span style="font-size:10px;opacity:.8">(${filas.length} pago${filas.length!==1?'s':''})</span></span>
       </div>
-      <table>
-        <thead><tr><th>Fecha</th><th>Folio</th><th>Alumno</th><th>Grupo</th><th>Forma de pago</th><th>Recibió</th><th style="text-align:right">Monto</th></tr></thead>
-        <tbody>${_tablaFilasPDF(filas)}</tbody>
-        <tfoot><tr><td colspan="6">Subtotal ${titulo}</td><td style="text-align:right">${fmtMoney(sub)}</td></tr></tfoot>
-      </table>`;
+      ${cuerpo}`;
   }
 
   const colegiaturasHtml = SECS_COLE.map(s =>
-    _bloqueConceptoPDF(s.label, _porConceptoPDF[s.key], '#1e3a5f')
+    _bloqueConceptoPDF(s.label, _porConceptoPDF[s.key], '#1e3a5f', true)
   ).join('');
 
   const otrosMap = _porConceptoPDF['__otros__'];
