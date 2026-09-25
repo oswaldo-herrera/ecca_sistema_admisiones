@@ -62,6 +62,9 @@
         <span class="current">Grupos</span>
       </nav>
       <div class="topbar-right">
+        <button class="btn btn-secondary btn-sm" onclick="abrirExportarSEP()">
+          <i class="fas fa-file-excel"></i> Exportar SEP
+        </button>
         <button class="btn btn-primary btn-sm" onclick="abrirNuevoGrupo()">
           <i class="fas fa-plus"></i> Nuevo Grupo
         </button>
@@ -874,6 +877,139 @@ function seleccionarTodasMaterias(marcar) {
   document.querySelectorAll('#gm-lista input[type=checkbox]').forEach(cb => cb.checked = marcar);
 }
 
+/* ---- Exportar Formato SEP ---- */
+function abrirExportarSEP() {
+  const cont = document.getElementById('sep-grupos-lista');
+  cont.innerHTML = _grupos.map(g => `
+    <label style="display:flex;align-items:center;gap:10px;padding:7px 4px;border-bottom:1px solid var(--border-light);cursor:pointer">
+      <input type="checkbox" value="${g.id}" style="width:15px;height:15px;accent-color:var(--gold)">
+      <span style="flex:1;font-size:13px">${esc(g.nombre)}</span>
+      <span style="font-size:11px;color:var(--text-muted)">${esc(g.modalidad || '')} ${esc(g.ciclo || '')}</span>
+    </label>`).join('');
+  openModal('modal-sep-export');
+}
+
+async function generarExcelSEP() {
+  const checked = [...document.querySelectorAll('#sep-grupos-lista input:checked')].map(cb => parseInt(cb.value));
+  if (!checked.length) { toast('Seleccione al menos un grupo.', 'warn'); return; }
+
+  const btn = document.getElementById('sep-btn-gen');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generando...';
+
+  try {
+    // Cargar todos los alumnos y filtrar por grupos seleccionados
+    const todos = await getRecords();
+    const alumnos = todos.filter(a => checked.includes(parseInt(a.grupoId)))
+      .sort((a, b) => (a.nombre || '').localeCompare(b.nombre || '', 'es'));
+
+    if (!alumnos.length) { toast('No hay alumnos en los grupos seleccionados.', 'warn'); btn.disabled=false; btn.innerHTML='<i class="fas fa-file-excel"></i> Generar Excel'; return; }
+
+    // Mapa grupo id → objeto grupo
+    const grupoMap = {};
+    _grupos.forEach(g => { grupoMap[g.id] = g; });
+
+    // Dividir nombre completo: "APELLIDO1 APELLIDO2 NOMBRE(S)"
+    function splitNombre(full) {
+      const p = (full || '').trim().split(/\s+/);
+      return { ap1: p[0] || '', ap2: p[1] || '', nom: p.slice(2).join(' ') };
+    }
+
+    const HEADERS = [
+      'CURP','Primer apellido','Segundo apellido','Nombre','Teléfono','Correo electrónico',
+      'Nombre de vialidad','Número exterior','Número interior','Clave colonia',
+      'Código Postal','Localidad','Colonia','Entre calle','Y calle',
+      'Clave de tipo discapacidad','Clave subtipo de discapacidad',
+      'Primer apellido tutor','Segundo apellido tutor','Nombre tutor',
+      'Teléfono tutor','Correo electrónico tutor',
+      'CCT','Clave carrera 911','Clave institución SEP','Clave carrera SEP',
+      'Clave modalidad','Ciclo escolar','Clave duración','Clave periodo',
+      'Duración carrera','Grado de avance','Grupo','Fecha de inscripción'
+    ];
+
+    function fmtFecha(str) {
+      if (!str) return '';
+      const d = new Date(str);
+      if (isNaN(d)) return str;
+      return d.toLocaleDateString('es-MX', { day:'2-digit', month:'2-digit', year:'numeric' });
+    }
+
+    const workbook = new ExcelJS.Workbook();
+    const ws = workbook.addWorksheet('Inscripciones SEP');
+
+    // Encabezado con estilo
+    const hdrRow = ws.addRow(HEADERS);
+    hdrRow.eachCell(cell => {
+      cell.font      = { bold: true, color: { argb: 'FFFFFFFF' }, size: 10 };
+      cell.fill      = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4472C4' } };
+      cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+      cell.border    = { top:{style:'thin'}, bottom:{style:'thin'}, left:{style:'thin'}, right:{style:'thin'} };
+    });
+    ws.getRow(1).height = 30;
+
+    // Filas de datos
+    alumnos.forEach((a, i) => {
+      const n  = splitNombre(a.nombre);
+      const t  = splitNombre(a.pNombre);
+      const g  = grupoMap[parseInt(a.grupoId)];
+
+      const row = ws.addRow([
+        a.curp || '',           // CURP
+        n.ap1,                  // Primer apellido
+        n.ap2,                  // Segundo apellido
+        n.nom,                  // Nombre
+        a.tel || '',            // Teléfono
+        a.correo || '',         // Correo
+        '', '', '', '',         // vialidad, n.ext, n.int, clave colonia
+        '', '', '', '', '',     // CP, localidad, colonia, entre calle, y calle
+        '', '',                 // discapacidad
+        t.ap1,                  // Primer apellido tutor
+        t.ap2,                  // Segundo apellido tutor
+        t.nom,                  // Nombre tutor
+        a.pTel || '',           // Tel tutor
+        a.pCorreo || '',        // Correo tutor
+        '', '', '', '',         // CCT, clave carrera 911, inst SEP, carrera SEP
+        a.modalidad || '',      // Clave modalidad
+        g ? (g.ciclo || '') : '',  // Ciclo escolar
+        '', '',                 // clave duración, clave periodo
+        '', '',                 // duración carrera, grado de avance
+        g ? (g.nombre || '') : '', // Grupo
+        fmtFecha(a.registrado), // Fecha inscripción
+      ]);
+
+      const fill = i % 2 === 0
+        ? { type:'pattern', pattern:'solid', fgColor:{ argb:'FFFFFFFF' } }
+        : { type:'pattern', pattern:'solid', fgColor:{ argb:'FFF2F7FC' } };
+      row.eachCell(cell => {
+        cell.fill = fill;
+        cell.font = { size: 10 };
+        cell.border = { top:{style:'thin',color:{argb:'FFD0D7E0'}}, bottom:{style:'thin',color:{argb:'FFD0D7E0'}}, left:{style:'thin',color:{argb:'FFD0D7E0'}}, right:{style:'thin',color:{argb:'FFD0D7E0'}} };
+        cell.alignment = { vertical: 'middle' };
+      });
+    });
+
+    // Anchos de columna
+    const widths = [20,16,16,20,14,26,20,10,10,12,10,14,18,14,14,12,12,16,16,20,14,26,12,14,14,14,14,14,12,12,12,12,14,14];
+    widths.forEach((w, i) => { ws.getColumn(i + 1).width = w; });
+
+    ws.views = [{ state: 'frozen', ySplit: 1 }];
+
+    const buf = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url  = URL.createObjectURL(blob);
+    Object.assign(document.createElement('a'), { href: url, download: 'inscripciones_SEP.xlsx' }).click();
+    URL.revokeObjectURL(url);
+
+    closeModal('modal-sep-export');
+    toast(`Excel generado con ${alumnos.length} alumno(s).`, 'ok');
+  } catch(e) {
+    toast('Error: ' + e.message, 'err');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-file-excel"></i> Generar Excel';
+  }
+}
+
 /* ---- Init ---- */
 (window._permisosListos || Promise.resolve()).then(() => cargarGrupos());
 </script>
@@ -895,6 +1031,33 @@ function seleccionarTodasMaterias(marcar) {
     <div class="modal-footer">
       <button class="btn btn-secondary btn-sm" onclick="closeModal('modal-grupo-materias')">Cancelar</button>
       <button class="btn btn-primary btn-sm" onclick="guardarMateriaGrupo()"><i class="fas fa-save"></i> Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL EXPORTAR SEP ===== -->
+<div class="modal-ov" id="modal-sep-export">
+  <div class="modal-box" style="max-width:500px">
+    <div class="modal-header">
+      <h3><i class="fas fa-file-excel" style="color:#16a34a"></i> Exportar Formato SEP</h3>
+      <button class="modal-close" onclick="closeModal('modal-sep-export')">&#10005;</button>
+    </div>
+    <div class="modal-body" style="padding:14px 18px 0">
+      <p style="font-size:12px;color:var(--text-muted);margin-bottom:10px">
+        Selecciona los grupos a exportar. Se generará un Excel con los datos de inscripción en el formato de la SEP.<br>
+        <span style="color:#b45309"><i class="fas fa-triangle-exclamation"></i> Los campos de dirección, claves SEP (CCT, clave institución, etc.) quedarán en blanco para que los llenes manualmente.</span>
+      </p>
+      <div style="display:flex;gap:8px;margin-bottom:10px">
+        <button class="btn btn-secondary btn-sm" onclick="document.querySelectorAll('#sep-grupos-lista input').forEach(cb=>cb.checked=true)"><i class="fas fa-check-double"></i> Todos</button>
+        <button class="btn btn-secondary btn-sm" onclick="document.querySelectorAll('#sep-grupos-lista input').forEach(cb=>cb.checked=false)"><i class="fas fa-xmark"></i> Ninguno</button>
+      </div>
+      <div id="sep-grupos-lista" style="max-height:320px;overflow-y:auto;border:1px solid var(--border);border-radius:6px;padding:4px 8px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary btn-sm" onclick="closeModal('modal-sep-export')">Cancelar</button>
+      <button class="btn btn-primary btn-sm" id="sep-btn-gen" onclick="generarExcelSEP()">
+        <i class="fas fa-file-excel"></i> Generar Excel
+      </button>
     </div>
   </div>
 </div>
