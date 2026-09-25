@@ -529,51 +529,164 @@ function descargarPDFDeporte() {
   doc.save(`ECCA-${nombreGrupo.replace(/\s+/g, '-')}.pdf`);
 }
 
-/* ---- Descargar Lista de Asistencia PDF ---- */
-function descargarAsistenciaDeporte() {
+/* ---- Descargar Lista de Asistencia (Excel institucional) ---- */
+async function descargarAsistenciaDeporte() {
   const g = _grupos.find(x => x.id === _detalleId);
-  const nombreGrupo = g ? g.nombre : 'Grupo';
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'letter' });
-  const hoy = new Date().toLocaleDateString('es-MX', { day:'2-digit', month:'long', year:'numeric' });
+  if (!_detalleAlumnosD.length) { toast('No hay alumnos para exportar.', 'warn'); return; }
+  const nombreGrupo = g ? g.nombre : 'Grupo Deportivo';
 
-  // Encabezado
-  doc.setFillColor(15, 40, 80);
-  doc.rect(0, 0, 216, 28, 'F');
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(14); doc.setFont(undefined, 'bold');
-  doc.text('ECCA Preparatoria de León', 12, 11);
-  doc.setFontSize(11); doc.setFont(undefined, 'normal');
-  doc.text(`Lista de Asistencia — ${nombreGrupo}`, 12, 19);
-  doc.setFontSize(9);
-  doc.text(`Fecha: ${hoy}   |   Total: ${_detalleAlumnosD.length} alumno(s)`, 12, 25);
+  try {
+    const workbook = new ExcelJS.Workbook();
+    const ws = workbook.addWorksheet(nombreGrupo.substring(0, 31));
 
-  doc.autoTable({
-    startY: 32,
-    head: [['#', 'Nombre', 'Folio', 'Grupo Acad.', 'Firma / ✓']],
-    body: _detalleAlumnosD.map((a, i) => [
-      i + 1,
-      a.nombre || '(sin nombre)',
-      a.folio  || '—',
-      (a.grupoId && _gruposMap[a.grupoId]) ? _gruposMap[a.grupoId] : '—',
-      ''
-    ]),
-    styles: { fontSize: 9, cellPadding: 3 },
-    headStyles: { fillColor: [15, 40, 80], textColor: 255, fontStyle: 'bold' },
-    alternateRowStyles: { fillColor: [245, 247, 250] },
-    columnStyles: {
-      0: { halign: 'center', cellWidth: 10 },
-      2: { cellWidth: 26 },
-      3: { cellWidth: 32 },
-      4: { cellWidth: 30, halign: 'center' }
-    },
-    didDrawPage: (d) => {
-      doc.setFontSize(8); doc.setTextColor(120);
-      doc.text(`Página ${d.pageNumber}`, 200, 272, { align: 'right' });
+    // ── Logo ──────────────────────────────────────────────────────
+    let logoId = null;
+    try {
+      const resp = await fetch('images/ecca_logo.png');
+      const blob = await resp.blob();
+      const b64  = await new Promise((res, rej) => {
+        const rd = new FileReader();
+        rd.onloadend = () => res(rd.result.split(',')[1]);
+        rd.onerror   = rej;
+        rd.readAsDataURL(blob);
+      });
+      logoId = workbook.addImage({ base64: b64, extension: 'png' });
+    } catch(e) { /* sin logo */ }
+
+    // ── Columnas: A=No./Logo, B=Nombre, C=Folio, D=Grupo Acad., E-AI=Días 1-31
+    ws.columns = [
+      { width: 18 },   // A: No. + logo
+      { width: 34 },   // B: Nombre
+      { width: 14 },   // C: Folio
+      { width: 20 },   // D: Grupo Académico
+      ...Array.from({ length: 31 }, () => ({ width: 3.2 })), // E-AI: Días 1-31
+    ];
+
+    // ── Paleta ─────────────────────────────────────────────────────
+    const NAVY = { type:'pattern', pattern:'solid', fgColor:{ argb:'FF0A0A2E' } };
+    const BDR  = {
+      top:    { style:'thin', color:{ argb:'FF999999' } },
+      bottom: { style:'thin', color:{ argb:'FF999999' } },
+      left:   { style:'thin', color:{ argb:'FF999999' } },
+      right:  { style:'thin', color:{ argb:'FF999999' } },
+    };
+    const LINE = { bottom: { style:'medium', color:{ argb:'FF000000' } } };
+    const NCOLS = 4 + 31; // A..AI
+
+    // ── R1-R4: Encabezado institucional ────────────────────────────
+    const hdrData = [
+      { row: 1, height: 28, text: 'ECCA',                              sz: 18 },
+      { row: 2, height: 26, text: 'LISTA DE ASISTENCIA — GRUPOS DEPORTIVOS', sz: 12 },
+      { row: 3, height: 24, text: 'ECCA PREPARATORIA DE LEÓN',         sz: 11 },
+      { row: 4, height: 22, text: nombreGrupo.toUpperCase(),            sz: 11 },
+    ];
+    hdrData.forEach(({ row, height, text, sz }) => {
+      ws.getRow(row).height = height;
+      ws.mergeCells(row, 2, row, NCOLS);
+      const c = ws.getCell(row, 2);
+      c.value = text;
+      c.font  = { name:'Arial', size:sz, bold:true, color:{ argb:'FF0A0A2E' } };
+      c.alignment = { horizontal:'center', vertical:'middle' };
+    });
+    if (logoId !== null) ws.addImage(logoId, 'A1:A4');
+
+    // ── R5: ENTRENADOR ─────────────────────────────────────────────
+    ws.getRow(5).height = 18;
+    const m5 = ws.getCell('A5');
+    m5.value = 'ENTRENADOR:';
+    m5.font  = { name:'Arial', size:10, bold:true };
+    m5.alignment = { vertical:'bottom' };
+    ws.mergeCells(5, 2, 5, NCOLS);
+    ws.getCell('B5').border = LINE;
+
+    // ── R6: GRUPO ──────────────────────────────────────────────────
+    ws.getRow(6).height = 18;
+    const m6 = ws.getCell('A6');
+    m6.value = 'GRUPO: ' + nombreGrupo;
+    m6.font  = { name:'Arial', size:10, bold:true };
+    m6.alignment = { vertical:'bottom' };
+    ws.mergeCells(6, 2, 6, NCOLS);
+
+    // ── R7: MES ────────────────────────────────────────────────────
+    ws.getRow(7).height = 18;
+    const m7 = ws.getCell('A7');
+    m7.value = 'MES:';
+    m7.font  = { name:'Arial', size:10, bold:true };
+    m7.alignment = { vertical:'bottom' };
+    ws.mergeCells(7, 2, 7, NCOLS);
+    ws.getCell('B7').border = LINE;
+
+    // ── R8: Encabezados de columna ─────────────────────────────────
+    ws.getRow(8).height = 32;
+    const encabezados = [
+      { col: 1, val: 'No.' },
+      { col: 2, val: 'NOMBRE DEL ALUMNO\n(ORDEN ALFABÉTICO)' },
+      { col: 3, val: 'FOLIO' },
+      { col: 4, val: 'GRUPO\nACADÉMICO' },
+    ];
+    encabezados.forEach(({ col, val }) => {
+      const cell = ws.getCell(8, col);
+      cell.value = val;
+      cell.font  = { name:'Arial', size:8, bold:true };
+      cell.alignment = { horizontal:'center', vertical:'middle', wrapText:true };
+      cell.border = BDR;
+      cell.fill = NAVY;
+      cell.font = { name:'Arial', size:8, bold:true, color:{ argb:'FFFFFFFF' } };
+    });
+    for (let d = 1; d <= 31; d++) {
+      const cell = ws.getCell(8, d + 4);
+      cell.value = d;
+      cell.font  = { name:'Arial', size:8, bold:true, color:{ argb:'FFFFFFFF' } };
+      cell.fill  = NAVY;
+      cell.alignment = { horizontal:'center', vertical:'middle' };
+      cell.border = BDR;
     }
-  });
 
-  doc.save(`Asistencia-${nombreGrupo.replace(/\s+/g, '-')}.pdf`);
+    // ── R9+: Alumnos (orden alfabético) ────────────────────────────
+    const lista = [..._detalleAlumnosD].sort((a, b) =>
+      (a.nombre || '').localeCompare(b.nombre || '', 'es'));
+
+    lista.forEach((a, i) => {
+      const r = i + 9;
+      ws.getRow(r).height = 16;
+      const rowFill = i % 2 === 0
+        ? { type:'pattern', pattern:'solid', fgColor:{ argb:'FFFFFFFF' } }
+        : { type:'pattern', pattern:'solid', fgColor:{ argb:'FFF0F4FA' } };
+
+      [[1, i+1, 'center'], [2, (a.nombre||'').toUpperCase(), 'left'],
+       [3, a.folio||'—', 'center'],
+       [4, (a.grupoId && _gruposMap[a.grupoId]) ? _gruposMap[a.grupoId] : '—', 'center']
+      ].forEach(([col, val, align]) => {
+        const cell = ws.getCell(r, col);
+        cell.value = val;
+        cell.font  = { name:'Arial', size:9, bold: col === 1 };
+        cell.alignment = { horizontal: align, vertical:'middle' };
+        cell.border = BDR;
+        cell.fill  = rowFill;
+      });
+
+      for (let d = 1; d <= 31; d++) {
+        const cell = ws.getCell(r, d + 4);
+        cell.border = BDR;
+        cell.fill   = rowFill;
+      }
+    });
+
+    // ── Descargar ──────────────────────────────────────────────────
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob   = new Blob([buffer], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url    = URL.createObjectURL(blob);
+    Object.assign(document.createElement('a'), {
+      href: url,
+      download: 'ECCA_Asistencia_' + nombreGrupo.replace(/[^a-z0-9]+/gi, '_') + '.xlsx'
+    }).click();
+    URL.revokeObjectURL(url);
+    toast('Lista de asistencia exportada.', 'ok');
+
+  } catch(e) {
+    console.error('descargarAsistenciaDeporte:', e);
+    toast('Error al generar la lista: ' + e.message, 'err');
+  }
 }
 
 /* ---- Descargar Excel ---- */
