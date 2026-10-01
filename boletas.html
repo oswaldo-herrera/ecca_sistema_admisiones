@@ -123,15 +123,39 @@
 .bol-firma-line { border-top:1px solid #555; margin:0 10px 4px; }
 .bol-firma-label { font-size:9px; color:#888; font-weight:600; text-transform:uppercase; letter-spacing:.4px; }
 
+/* ── Buscador ── */
+.bol-search-bar { display:none; align-items:center; gap:10px; margin-bottom:16px;
+  background:var(--bg-card); border:1px solid var(--border); border-radius:var(--r);
+  padding:10px 14px; }
+.bol-search-bar.visible { display:flex; }
+.bol-search-bar input { flex:1; height:34px; border:1px solid var(--border); border-radius:var(--r-sm);
+  padding:0 12px; font-size:13px; background:var(--bg-card); color:var(--text); }
+.bol-search-bar input:focus { outline:none; border-color:var(--gold); }
+.bol-search-count { font-size:12px; color:var(--text-muted); white-space:nowrap; }
+
+/* ── Contenedor de boleta individual ── */
+.boleta-container { display:flex; flex-direction:column; gap:0; }
+.boleta-toolbar { display:flex; align-items:center; justify-content:space-between;
+  background:var(--bg-card); border:1px solid var(--border); border-radius:var(--r) var(--r) 0 0;
+  border-bottom:none; padding:8px 14px; }
+.boleta-toolbar-name { font-size:12px; font-weight:600; color:var(--text-muted);
+  display:flex; align-items:center; gap:7px; }
+.boleta-toolbar .boleta { border-radius:0 0 var(--r) var(--r); }
+
 /* ── PRINT ── */
 @media print {
-  .sidebar, .topbar, .page-header, .bol-filters, .bol-stats, .bol-actions, .sidebar-overlay { display:none !important; }
+  .sidebar, .topbar, .page-header, .bol-filters, .bol-stats, .bol-actions, .bol-search-bar,
+  .sidebar-overlay, .boleta-toolbar { display:none !important; }
   .main-content { padding:0 !important; margin:0 !important; }
   .layout { display:block !important; }
   #boletas-wrap { gap:0; }
-  .boleta { box-shadow:none; border-radius:0; max-width:100%; page-break-after:always; border:1.5px solid #1e2a4a; margin:0; }
+  .boleta { box-shadow:none; border-radius:0 !important; max-width:100%; page-break-after:always; border:1.5px solid #1e2a4a; margin:0; }
   .boleta:last-child { page-break-after:avoid; }
   .bol-empty-screen { display:none !important; }
+  /* Impresión individual */
+  body.print-single .boleta-container { display:none !important; }
+  body.print-single .boleta-container.print-target { display:block !important; }
+  body.print-single .boleta-container.print-target .boleta { border-radius:0; page-break-after:avoid; }
 }
 </style>
 </head>
@@ -228,6 +252,14 @@
       </div>
     </div>
 
+    <!-- Buscador (aparece tras generar) -->
+    <div class="bol-search-bar" id="bol-search-bar">
+      <i class="fas fa-magnifying-glass" style="color:var(--text-muted);font-size:14px"></i>
+      <input type="text" id="bol-buscar" placeholder="Buscar alumno por nombre…"
+        oninput="filtrarBoletas()" autocomplete="off">
+      <span class="bol-search-count" id="bol-search-count"></span>
+    </div>
+
     <!-- Stats -->
     <div class="bol-stats" id="bol-stats" style="display:none">
       <div class="bol-stat"><label>Alumnos</label><strong id="st-alumnos">0</strong></div>
@@ -251,6 +283,93 @@
 <script src="js/config.js"></script>
 <script src="js/app.js"></script>
 <script>
+// ── Orden del plan de estudios ─────────────────────────────────────────────
+const NORM = s => (s||'').toLowerCase().normalize('NFD')
+  .replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9\s]/g,' ').replace(/\s+/g,' ').trim();
+
+const CURRICULUM = {
+  '1sem': ['espanol i','matematicas i','metodologia de las ciencias i','biologia i','ciencias sociales i',
+    'historia universal contemporanea','mecanografia i','complementos de aritmetica i',
+    'estructura empresarial mexicana i','superacion personal','deportes','ingles'],
+  '2sem': ['espanol ii','matematicas ii','metodologia de las ciencias ii','biologia ii','ciencias sociales ii',
+    'historia de mexico i','mecanografia ii computacion','complementos de aritmetica ii',
+    'estructura empresarial mexicana ii','archivo y documentacion','deportes','ingles'],
+  '3sem': ['taller de lectura y redaccion i','matematicas iii','lenguaje extranjero ingles i',
+    'quimica i','fisica i','historia de mexico ii','introduccion a la filosofia i',
+    'introduccion a la contabilidad','mecanografia iii','deportes'],
+  '4sem': ['taller de lectura y redaccion ii','matematicas iv','lenguaje extranjero ingles ii',
+    'quimica ii','fisica ii','historia de mexico iii','introduccion a la filosofia ii',
+    'relaciones humanas','introduccion a la contabilidad ii','hoja de calculo computacional',
+    'manejo de cuotas imss','deportes'],
+  '5sem': ['administracion i','matematicas financieras i','lenguaje extranjero ingles iii',
+    'nociones generales de derecho i','mercadotecnia i','economia i','contabilidad basica i',
+    'computacion estadistica i','matematicas temas complementarios i','contabilidad de costos i',
+    'fiscal i','deportes'],
+  '6sem': ['administracion ii','matematicas financieras ii','lenguaje extranjero ingles iv',
+    'nociones generales de derecho ii','mercadotecnia ii','economia ii','contabilidad basica ii',
+    'computacion estadistica ii','matematicas temas complementarios ii',
+    'interpretacion de estados financieros','artes','deportes'],
+  '1cuatri': ['algebra i','quimica i','metodos de investigacion i','introduccion a las ciencias sociales',
+    'taller de lectura y redaccion i','ingles i','actividades artisticas i','superacion personal','deportes'],
+  '2cuatri': ['algebra ii','quimica ii','metodos de investigacion ii','historia de mexico i',
+    'taller de lectura y redaccion ii','ingles ii','actividades artisticas ii','superacion personal','deportes'],
+  '3cuatri': ['trigonometria','fisica i','etica y valores','historia de mexico ii','literatura',
+    'ingles iii','orientacion vocacional i','deportes'],
+  '4cuatri': ['geometria analitica','fisica ii','filosofia','estructuras socioeconomicas de mexico',
+    'biologia','ingles iv','orientacion vocacional ii','humanidades','deportes'],
+  '5cuatri': ['sociologia i','matematicas financieras','calculo diferencial',
+    'temas selectos de psicologia i','administracion i','temas selectos de fisica i',
+    'temas selectos de derecho i','contabilidad i','dibujo tecnico','historia universal',
+    'economia i','estadistica i','literatura universal',
+    'problemas sociales politicos y economicos de mexico i','mecanica',
+    'ingles v','informatica i','deportes'],
+  '6cuatri': ['sociologia ii','probabilidad y estadistica','calculo integral',
+    'temas selectos de psicologia ii','administracion ii','temas selectos de fisica ii',
+    'temas selectos de derecho ii','contabilidad ii','diseno grafico','historia del arte',
+    'economia ii','estadistica ii','literatura mexicana',
+    'problemas sociales politicos y economicos de mexico ii','calor y electricidad',
+    'ingles vi','informatica ii','deportes'],
+};
+
+function ordenarMaterias(materias, grupo) {
+  const mod = (grupo.modalidad || '').toLowerCase();
+  const isCuatri = mod.includes('cuatri') || mod.includes('sab');
+  const modStr = isCuatri ? 'cuatri' : 'sem';
+  const m = (grupo.nombre || '').match(/^(\d)/);
+  const grado = m ? m[1] : null;
+  if (!grado) return materias;
+  const order = CURRICULUM[`${grado}${modStr}`];
+  if (!order) return materias;
+  const orderMap = Object.fromEntries(order.map((n,i) => [n, i]));
+  return [...materias].sort((a, b) => {
+    const ia = orderMap[NORM(a.nombre)] ?? 999;
+    const ib = orderMap[NORM(b.nombre)] ?? 999;
+    return ia !== ib ? ia - ib : (a.nombre||'').localeCompare(b.nombre||'', 'es');
+  });
+}
+
+function filtrarBoletas() {
+  const q = NORM(document.getElementById('bol-buscar').value);
+  let visible = 0;
+  document.querySelectorAll('.boleta-container').forEach(el => {
+    const coincide = !q || NORM(el.dataset.nombre || '').includes(q);
+    el.style.display = coincide ? '' : 'none';
+    if (coincide) visible++;
+  });
+  const cnt = document.getElementById('bol-search-count');
+  if (cnt) cnt.textContent = q ? `${visible} resultado${visible !== 1 ? 's' : ''}` : '';
+}
+
+function imprimirBoleta(btn) {
+  const container = btn.closest('.boleta-container');
+  document.body.classList.add('print-single');
+  container.classList.add('print-target');
+  window.print();
+  document.body.classList.remove('print-single');
+  container.classList.remove('print-target');
+}
+// ──────────────────────────────────────────────────────────────────────────
+
 let _grupos = [], _materias = [];
 
 (async function init() {
@@ -314,6 +433,8 @@ async function generarBoletas() {
       materiasActivas = _materias.filter(m => !m.inactiva && matIdsConCal.includes(m.id))
         .sort((a, b) => (a.nombre || '').localeCompare(b.nombre || '', 'es'));
     }
+    // Ordenar según plan de estudios
+    materiasActivas = ordenarMaterias(materiasActivas, grupo);
 
     let totalProms = 0, promCnt = 0, totalAp = 0, totalRep = 0;
 
@@ -356,7 +477,7 @@ async function generarBoletas() {
       const estColor   = aprobado === null ? 'nd' : aprobado ? 'ap' : 'rep';
 
       return `
-      <div class="boleta">
+      <div class="boleta" style="border-radius:0 0 8px 8px">
         ${boletaHeader(grupo, a, ciclo, periodo)}
         <table class="bol-table">
           <thead><tr>
@@ -414,7 +535,7 @@ async function generarBoletas() {
       const estColor   = aprobado === null ? 'nd' : aprobado ? 'ap' : 'rep';
 
       return `
-      <div class="boleta">
+      <div class="boleta" style="border-radius:0 0 8px 8px">
         ${boletaHeader(grupo, a, ciclo, 'General (Todos los Parciales)')}
         <table class="bol-table" style="font-size:11px">
           <thead><tr>
@@ -430,7 +551,22 @@ async function generarBoletas() {
       </div>`;
     }
 
-    wrap.innerHTML = alumnos.map(a => esGeneral ? buildBoletaGeneral(a) : buildBoletaSimple(a)).join('');
+    wrap.innerHTML = alumnos.map(a => {
+      const boletaHtml = esGeneral ? buildBoletaGeneral(a) : buildBoletaSimple(a);
+      return `<div class="boleta-container" data-nombre="${esc(a.nombre || '')}">
+        <div class="boleta-toolbar">
+          <span class="boleta-toolbar-name">
+            <i class="fas fa-user-graduate" style="color:var(--gold)"></i>
+            ${esc(a.nombre || '(sin nombre)')}
+          </span>
+          <button class="btn btn-sm" style="background:#dc2626;color:#fff;display:flex;align-items:center;gap:6px;font-size:11px;padding:5px 12px"
+            onclick="imprimirBoleta(this)">
+            <i class="fas fa-file-pdf"></i> PDF individual
+          </button>
+        </div>
+        ${boletaHtml}
+      </div>`;
+    }).join('');
 
     $('st-alumnos').textContent   = alumnos.length;
     $('st-aprobados').textContent = totalAp;
@@ -438,6 +574,9 @@ async function generarBoletas() {
     $('st-prom').textContent      = promCnt ? (totalProms / promCnt).toFixed(1) : '—';
     $('bol-stats').style.display  = 'flex';
     $('bol-actions').style.display= '';
+    // Mostrar buscador y limpiar búsqueda previa
+    const sbBar = $('bol-search-bar');
+    if (sbBar) { sbBar.classList.add('visible'); document.getElementById('bol-buscar').value = ''; $('bol-search-count').textContent = ''; }
 
   } catch(e) {
     wrap.innerHTML = `<div style="text-align:center;padding:40px;color:#b91c1c">Error: ${esc(e.message)}</div>`;

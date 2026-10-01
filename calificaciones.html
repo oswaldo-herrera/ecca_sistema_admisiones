@@ -485,7 +485,7 @@ async function cargarCaptura() {
                 : '<span class="badge-saved" style="background:#fee2e2;color:#b91c1c">Reprobado</span>')
                 : '<span class="badge-empty">Sin calificación</span>';
               // Bloquear celda si el maestro ya registró una calificación
-              const bloqueada = _esMaestro && _maestroNoEditar && val !== '';
+              const bloqueada = _maestroNoEditar && val !== '';
               const gradeCell = bloqueada
                 ? `<span class="badge-saved" style="font-size:13px;padding:4px 10px">
                     <i class="fas fa-lock" style="font-size:10px;margin-right:4px"></i>${val}
@@ -941,11 +941,15 @@ let _materiaDocenteId = null;
 let _maestroNoEditar  = false;
 
 (window._permisosListos || Promise.resolve()).then(() => {
+  // cal-no-editar funciona independientemente de cal-solo-captura
+  if (!window._esAdmin && typeof tienePermiso === 'function' && tienePermiso('cal-no-editar')) {
+    _maestroNoEditar = true;
+  }
   if (!window._esAdmin && typeof tienePermiso === 'function' && tienePermiso('cal-solo-captura')) {
     document.getElementById('tab-btn-alumno').style.display = 'none';
     document.getElementById('tab-btn-grupo').style.display  = 'none';
     _esMaestro = true;
-    _maestroNoEditar = tienePermiso('cal-no-editar');
+    _maestroNoEditar = true; // cal-solo-captura siempre implica no-editar
 
     // Extraer materia asignada del permiso cal-materia-{id}
     if (Array.isArray(window._permisosActivos)) {
