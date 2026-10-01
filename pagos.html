@@ -678,15 +678,15 @@ async function generarCorte() {
     const { data: pagosData, error } = await q;
     if (error) throw error;
 
-    // Filtrar confirmados y cuyo mes correspondiente (o fecha_pago) caiga en el rango
+    // Filtrar confirmados y cuya FECHA DE PAGO caiga en el rango seleccionado
     const pagos = (pagosData || [])
       .filter(p => p.estado === 'confirmado' || !p.estado)
-      .filter(p => meses.includes((p.mes_correspondiente || p.fecha_pago || '').slice(0, 7)));
+      .filter(p => meses.includes((p.fecha_pago || '').slice(0, 7)));
 
-    // 5. Construir mapa folio → mes → total (usa mes_correspondiente si existe)
+    // 5. Construir mapa folio → mes → total (agrupa por FECHA DE PAGO)
     const mapaAlumno = {};
     pagos.forEach(p => {
-      const mes = (p.mes_correspondiente || p.fecha_pago || '').slice(0,7);
+      const mes = (p.fecha_pago || '').slice(0, 7);
       if (!mapaAlumno[p.folio]) mapaAlumno[p.folio] = {};
       mapaAlumno[p.folio][mes] = (mapaAlumno[p.folio][mes] || 0) + parseFloat(p.monto || 0);
     });
@@ -1919,11 +1919,18 @@ async function generarConcentrado() {
       const mod = (folioModMap[p.folio] || '').toLowerCase();
       const grp = '';
 
-      if (con === 'colegiatura') {
+      if (con === 'colegiatura semestral') {
+        _concAdd(cols.sem,    dia, m);
+      } else if (con === 'colegiatura cuatrimestral') {
+        _concAdd(cols.cuatri, dia, m);
+      } else if (con === 'colegiatura sabatino') {
+        _concAdd(cols.sab,    dia, m);
+      } else if (con === 'colegiatura') {
+        // legado: detectar por modalidad del grupo
         if      (mod.includes('cuatri')) _concAdd(cols.cuatri, dia, m);
         else if (mod.includes('sab'))    _concAdd(cols.sab,    dia, m);
         else                             _concAdd(cols.sem,    dia, m);
-      } else if (con === 'inscripción' || con === 'reinscripción') {
+      } else if (con === 'inscripción' || con === 'reinscripción' || con === 'inscripcion' || con === 'reinscripcion') {
         _concAdd(cols.insc,  dia, m);
       } else if (con === 'certificado' || con === 'constancia') {
         _concAdd(cols.cert,  dia, m);
