@@ -899,16 +899,21 @@ async function aplicarPermisosSistema() {
 }
 
 function _ocultarModulos(permisos) {
+  // Maestros (cal-solo-captura) tienen acceso implícito al módulo calificaciones
+  const efectivos = permisos.includes('cal-solo-captura') && !permisos.includes('calificaciones')
+    ? [...permisos, 'calificaciones']
+    : permisos;
+
   document.querySelectorAll('.sb-item[data-modulo]').forEach(el => {
-    if (!permisos.includes(el.dataset.modulo)) el.style.display = 'none';
+    if (!efectivos.includes(el.dataset.modulo)) el.style.display = 'none';
   });
   const mod = document.body.dataset.modulo;
-  if (mod && !permisos.includes(mod)) {
+  if (mod && !efectivos.includes(mod)) {
     // Redirigir a la primera página del rol que sí está permitida
     const items = document.querySelectorAll('.sb-item[href][data-modulo]');
-    let destino = 'pagos.html';
+    let destino = efectivos.includes('cal-solo-captura') ? 'calificaciones.html' : 'pagos.html';
     for (const el of items) {
-      if (permisos.includes(el.dataset.modulo)) { destino = el.getAttribute('href'); break; }
+      if (efectivos.includes(el.dataset.modulo)) { destino = el.getAttribute('href'); break; }
     }
     window.location.replace(destino);
   }

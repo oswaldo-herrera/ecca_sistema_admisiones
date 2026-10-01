@@ -412,6 +412,7 @@ const COLORES_ROL = [
 ──────────────────────────────────────────── */
 let _usuarios    = [];
 let _roles       = [];
+let _materiasRol = [];
 let _editingId   = null;
 let _editingRolId = null;
 let _tempEmail = '', _tempPass = '';
@@ -433,7 +434,7 @@ function setTab(tab) {
    INIT
 ──────────────────────────────────────────── */
 (async function init() {
-  [_roles] = await Promise.all([getRolesPersonalizados()]);
+  [_roles, _materiasRol] = await Promise.all([getRolesPersonalizados(), getMaterias()]);
   poblarSelectsRol();
   await Promise.all([loadUsuarios(), renderRoles()]);
   refreshBadge();
@@ -696,17 +697,51 @@ function construirFormPermisos(permisosActivos) {
         <div class="perm-checks">
           ${mods.map(m => {
             const checked = permisosActivos.includes(m.key);
+            const extra = m.key === 'cal-solo-captura'
+              ? ` onchange="this.closest('.perm-check').classList.toggle('checked',this.checked);toggleMaestroConfig(this.checked)"`
+              : ` onchange="this.closest('.perm-check').classList.toggle('checked', this.checked)"`;
             return `
               <label class="perm-check ${checked ? 'checked' : ''}" id="lbl-${m.key}">
-                <input type="checkbox" id="perm-${m.key}" value="${m.key}" ${checked ? 'checked' : ''}
-                  onchange="this.closest('.perm-check').classList.toggle('checked', this.checked)">
+                <input type="checkbox" id="perm-${m.key}" value="${m.key}" ${checked ? 'checked' : ''}${extra}>
                 ${esc(m.label)}
               </label>`;
           }).join('')}
         </div>
       </div>`;
   }).join('');
-  $('rf-permisos').innerHTML = html;
+
+  // Configuración adicional para rol maestro
+  const tieneCap = permisosActivos.includes('cal-solo-captura');
+  const matActiva = permisosActivos.find(k => k.startsWith('cal-materia-'));
+  const matId = matActiva ? matActiva.replace('cal-materia-', '') : '';
+  const noEditar = permisosActivos.includes('cal-no-editar');
+  const matOpts = _materiasRol.map(m =>
+    `<option value="${m.id}" ${m.id == matId ? 'selected' : ''}>${esc(m.nombre)}${m.grado ? ' ('+esc(m.grado)+')' : ''}</option>`
+  ).join('');
+
+  const maestroHtml = `
+    <div id="rf-maestro-config" style="margin-top:14px;padding:12px 14px;background:#f0fdfa;border:1px solid #99f6e4;border-radius:8px;${tieneCap ? '' : 'display:none'}">
+      <span style="font-size:11px;font-weight:700;color:#0f766e;display:block;margin-bottom:10px"><i class="fas fa-chalkboard-teacher"></i> Configuración de Maestro</span>
+      <div class="field" style="margin-bottom:10px">
+        <label class="field-label" style="font-size:11px">Materia asignada para captura</label>
+        <select id="rf-materia-docente" style="width:100%;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--bg-card)">
+          <option value="">— Sin restricción de materia —</option>
+          ${matOpts}
+        </select>
+      </div>
+      <label class="perm-check ${noEditar ? 'checked' : ''}" style="margin-top:4px">
+        <input type="checkbox" id="perm-cal-no-editar" ${noEditar ? 'checked' : ''}
+          onchange="this.closest('.perm-check').classList.toggle('checked',this.checked)">
+        No puede editar calificaciones ya registradas (solo captura una vez)
+      </label>
+    </div>`;
+
+  $('rf-permisos').innerHTML = html + maestroHtml;
+}
+
+function toggleMaestroConfig(visible) {
+  const el = document.getElementById('rf-maestro-config');
+  if (el) el.style.display = visible ? '' : 'none';
 }
 
 function construirColorSwatches(colorActual) {
@@ -755,6 +790,12 @@ async function guardarRol() {
   const permisos = MODULOS_SISTEMA
     .filter(m => document.getElementById('perm-' + m.key)?.checked)
     .map(m => m.key);
+
+  // Agregar configuración de maestro
+  const matId = document.getElementById('rf-materia-docente')?.value;
+  if (permisos.includes('cal-solo-captura') && matId) permisos.push('cal-materia-' + matId);
+  if (document.getElementById('perm-cal-no-editar')?.checked) permisos.push('cal-no-editar');
+
   try {
     await saveRolPersonalizado({ id: _editingRolId, nombre, color, permisos, esAdmin: false });
     closeModal('modal-rol-form');

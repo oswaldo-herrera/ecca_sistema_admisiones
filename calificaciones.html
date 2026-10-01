@@ -443,24 +443,30 @@ async function cargarCaptura() {
                 ? '<span class="badge-saved">Aprobado</span>'
                 : '<span class="badge-saved" style="background:#fee2e2;color:#b91c1c">Reprobado</span>')
                 : '<span class="badge-empty">Sin calificación</span>';
+              // Bloquear celda si el maestro ya registró una calificación
+              const bloqueada = _esMaestro && _maestroNoEditar && val !== '';
+              const gradeCell = bloqueada
+                ? `<span class="badge-saved" style="font-size:13px;padding:4px 10px">
+                    <i class="fas fa-lock" style="font-size:10px;margin-right:4px"></i>${val}
+                   </span>`
+                : `<input type="number" class="grade-input ${ap}" id="gi-${i}"
+                    data-folio="${esc(a.folio)}" data-idx="${i}"
+                    value="${esc(String(val))}" min="0" max="10" step="0.1"
+                    placeholder="—"
+                    oninput="onGradeInput(this)"
+                    onkeydown="navGrade(event, ${i}, ${_capAlumnos.length - 1})">`;
+              const obsCell = bloqueada
+                ? `<span style="font-size:12px;color:var(--text-muted)">${esc(obs)}</span>`
+                : `<input type="text" class="obs-input" id="oi-${i}"
+                    data-folio="${esc(a.folio)}"
+                    value="${esc(obs)}" placeholder="Observación opcional">`;
               return `
               <tr id="cap-row-${a.folio.replace(/[^a-z0-9]/gi,'_')}">
                 <td class="td-num">${i + 1}</td>
                 <td class="td-folio">${esc(a.folio)}</td>
                 <td class="td-nombre">${esc(a.nombre || '(sin nombre)')}</td>
-                <td style="text-align:center">
-                  <input type="number" class="grade-input ${ap}" id="gi-${i}"
-                    data-folio="${esc(a.folio)}" data-idx="${i}"
-                    value="${esc(String(val))}" min="0" max="10" step="0.1"
-                    placeholder="—"
-                    oninput="onGradeInput(this)"
-                    onkeydown="navGrade(event, ${i}, ${_capAlumnos.length - 1})">
-                </td>
-                <td>
-                  <input type="text" class="obs-input" id="oi-${i}"
-                    data-folio="${esc(a.folio)}"
-                    value="${esc(obs)}" placeholder="Observación opcional">
-                </td>
+                <td style="text-align:center">${gradeCell}</td>
+                <td>${obsCell}</td>
                 <td style="text-align:center" id="cap-est-${i}">${est}</td>
               </tr>`;
             }).join('')}
@@ -517,6 +523,8 @@ async function guardarTodas(grupoId, materiaId, periodo) {
   _capAlumnos.forEach((a, i) => {
     const gInput = $('gi-' + i);
     const oInput = $('oi-' + i);
+    // Si es maestro con bloqueo y ya tenía calificación, saltar esa fila
+    if (!gInput && _esMaestro && _maestroNoEditar) return;
     if (!gInput) return;
     filas.push({
       folio: a.folio,
@@ -887,10 +895,28 @@ async function exportarGrupoExcel() {
 }
 
 /* ---- Init ---- */
+let _esMaestro = false;
+let _materiaDocenteId = null;
+let _maestroNoEditar  = false;
+
 (window._permisosListos || Promise.resolve()).then(() => {
   if (!window._esAdmin && typeof tienePermiso === 'function' && tienePermiso('cal-solo-captura')) {
     document.getElementById('tab-btn-alumno').style.display = 'none';
-    document.getElementById('tab-btn-grupo').style.display = 'none';
+    document.getElementById('tab-btn-grupo').style.display  = 'none';
+    _esMaestro = true;
+    _maestroNoEditar = tienePermiso('cal-no-editar');
+
+    // Extraer materia asignada del permiso cal-materia-{id}
+    if (Array.isArray(window._permisosActivos)) {
+      const k = window._permisosActivos.find(p => p.startsWith('cal-materia-'));
+      if (k) _materiaDocenteId = parseInt(k.replace('cal-materia-', ''));
+    }
+
+    // Pre-seleccionar y bloquear la materia
+    if (_materiaDocenteId) {
+      const sel = document.getElementById('cap-materia');
+      if (sel) { sel.value = _materiaDocenteId; sel.disabled = true; }
+    }
   }
 });
 </script>
