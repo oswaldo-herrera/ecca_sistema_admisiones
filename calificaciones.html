@@ -379,6 +379,47 @@ function setTab(tab) {
 function onCapGrupoChange() {
   _capGrupoId = gv('cap-grupo') || null;
   $('cap-resultado').innerHTML = `<div class="cal-empty"><i class="fas fa-list"></i><p>Pulse "Cargar Lista" para ver los alumnos del grupo.</p></div>`;
+  _filtrarMateriasPorGrupo();
+}
+
+function _filtrarMateriasPorGrupo() {
+  const grupoId = parseInt(gv('cap-grupo'));
+  const sel = $('cap-materia');
+  if (!grupoId) {
+    // Sin grupo: mostrar todas
+    sel.innerHTML = '<option value="">— Seleccione materia —</option>' +
+      _materias.map(m => `<option value="${m.id}">${esc(m.nombre)}${m.grado ? ' ('+esc(m.grado)+')' : ''}</option>`).join('');
+    return;
+  }
+  const grupo = _grupos.find(g => g.id === grupoId);
+  if (!grupo) return;
+
+  // Detectar grado numérico desde el nombre del grupo
+  const nom = (grupo.nombre || '').toUpperCase();
+  let grado = null;
+  if (/^6|6[A°]|SEXTO/.test(nom))          grado = 6;
+  else if (/5TO|5[A°]|QUINTO/.test(nom))   grado = 5;
+  else if (/4[A°]|CUARTO/.test(nom))       grado = 4;
+  else if (/3[°A]|TERCERO/.test(nom))      grado = 3;
+  else if (/2[A°]|SEGUNDO/.test(nom))      grado = 2;
+  else if (/^1[\s_]|1[A°\s]|PRIMERO/.test(nom)) grado = 1;
+  else { const m = nom.match(/^(\d)/); if (m) grado = parseInt(m[1]); }
+
+  // Modalidad: sabatino y cuatrimestral → Cuatrimestral; semestral → Semestral
+  const mod = (grupo.modalidad || '').toLowerCase();
+  const modStr = mod.includes('sem') ? 'Semestral' : 'Cuatrimestral';
+  const gradoStr = grado ? `${grado}° ${modStr}` : null;
+
+  const filtradas = gradoStr
+    ? _materias.filter(m => m.grado === gradoStr)
+    : _materias;
+
+  const prevVal = sel.value;
+  sel.innerHTML = '<option value="">— Seleccione materia —</option>' +
+    filtradas.map(m => `<option value="${m.id}">${esc(m.nombre)}</option>`).join('');
+
+  // Mantener selección previa si sigue disponible
+  if (prevVal && filtradas.some(m => m.id == prevVal)) sel.value = prevVal;
 }
 
 /* ────────────────────────────────────────────
