@@ -150,14 +150,13 @@
   .sidebar-overlay, .boleta-toolbar { display:none !important; }
   .main-content { padding:0 !important; margin:0 !important; }
   .layout { display:block !important; }
-  #boletas-wrap { gap:0; }
-  .boleta { box-shadow:none; border-radius:0 !important; max-width:100%; page-break-after:always; border:1.5px solid #1e2a4a; margin:0; }
+  #boletas-wrap { gap:0; display:block !important; }
+  /* El contenedor debe ser bloque en print para que Chrome lo imprima */
+  .boleta-container { display:block !important; width:100% !important; max-width:100% !important; margin:0 !important; }
+  .boleta { display:block !important; box-shadow:none !important; border-radius:0 !important;
+    width:100% !important; max-width:100% !important; page-break-after:always; border:1.5px solid #1e2a4a; margin:0 !important; }
   .boleta:last-child { page-break-after:avoid; }
   .bol-empty-screen { display:none !important; }
-  /* Impresión individual */
-  body.print-single .boleta-container { display:none !important; }
-  body.print-single .boleta-container.print-target { display:block !important; }
-  body.print-single .boleta-container.print-target .boleta { border-radius:0; page-break-after:avoid; }
 }
 </style>
 </head>
@@ -364,11 +363,39 @@ function filtrarBoletas() {
 
 function imprimirBoleta(btn) {
   const container = btn.closest('.boleta-container');
-  document.body.classList.add('print-single');
-  container.classList.add('print-target');
-  window.print();
-  document.body.classList.remove('print-single');
-  container.classList.remove('print-target');
+  const boletaEl = container.querySelector('.boleta');
+  if (!boletaEl) return;
+
+  const estilosInline = Array.from(document.querySelectorAll('style')).map(s => s.innerHTML).join('\n');
+  const base = window.location.href.replace(/[^/]*$/, '');
+  const win = window.open('', '_blank', 'width=820,height=960');
+  win.document.write(`<!DOCTYPE html>
+<html lang="es"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Boleta</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="${base}css/styles.css">
+<style>
+${estilosInline}
+body{margin:20px;background:#fff;font-family:'Segoe UI',Arial,sans-serif}
+.boleta{max-width:100%;margin:0;box-shadow:none!important;border-radius:8px}
+.bol-head-logo img{width:100%;height:100%;object-fit:contain}
+@media print{
+  body{margin:0}
+  .boleta{border-radius:0!important;box-shadow:none!important;max-width:100%!important;
+    width:100%!important;border:1.5px solid #1e2a4a;page-break-after:avoid}
+}
+</style>
+</head><body>
+${boletaEl.outerHTML}
+<script>
+window.onload=function(){
+  setTimeout(function(){window.print();},600);
+  window.onafterprint=function(){window.close();};
+};<\/script>
+</body></html>`);
+  win.document.close();
 }
 // ──────────────────────────────────────────────────────────────────────────
 
