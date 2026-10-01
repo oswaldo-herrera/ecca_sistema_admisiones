@@ -899,21 +899,31 @@ async function aplicarPermisosSistema() {
 }
 
 function _ocultarModulos(permisos) {
-  // Maestros (cal-solo-captura) tienen acceso implícito al módulo calificaciones
-  const efectivos = permisos.includes('cal-solo-captura') && !permisos.includes('calificaciones')
-    ? [...permisos, 'calificaciones']
-    : permisos;
+  const esMaestro = permisos.includes('cal-solo-captura');
+
+  // Maestros siempre van directo a calificaciones, sin importar otros módulos
+  if (esMaestro) {
+    const page = window.location.pathname.split('/').pop() || 'index.html';
+    // Ocultar todo el sidebar excepto calificaciones
+    document.querySelectorAll('.sb-item[data-modulo]').forEach(el => {
+      el.style.display = el.dataset.modulo === 'calificaciones' ? '' : 'none';
+    });
+    if (page !== 'calificaciones.html') {
+      window.location.replace('calificaciones.html');
+    }
+    return;
+  }
 
   document.querySelectorAll('.sb-item[data-modulo]').forEach(el => {
-    if (!efectivos.includes(el.dataset.modulo)) el.style.display = 'none';
+    if (!permisos.includes(el.dataset.modulo)) el.style.display = 'none';
   });
   const mod = document.body.dataset.modulo;
-  if (mod && !efectivos.includes(mod)) {
+  if (mod && !permisos.includes(mod)) {
     // Redirigir a la primera página del rol que sí está permitida
     const items = document.querySelectorAll('.sb-item[href][data-modulo]');
-    let destino = efectivos.includes('cal-solo-captura') ? 'calificaciones.html' : 'pagos.html';
+    let destino = 'pagos.html';
     for (const el of items) {
-      if (efectivos.includes(el.dataset.modulo)) { destino = el.getAttribute('href'); break; }
+      if (permisos.includes(el.dataset.modulo)) { destino = el.getAttribute('href'); break; }
     }
     window.location.replace(destino);
   }
