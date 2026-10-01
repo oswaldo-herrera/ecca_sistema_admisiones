@@ -366,32 +366,66 @@ function imprimirBoleta(btn) {
   const boletaEl = container.querySelector('.boleta');
   if (!boletaEl) return;
 
-  const estilosInline = Array.from(document.querySelectorAll('style')).map(s => s.innerHTML).join('\n');
-  const base = window.location.href.replace(/[^/]*$/, '');
+  const baseUrl = window.location.href.replace(/[^/]*$/, '');
   const win = window.open('', '_blank', 'width=820,height=960');
   win.document.write(`<!DOCTYPE html>
 <html lang="es"><head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Boleta</title>
+<base href="${baseUrl}">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-<link rel="stylesheet" href="${base}css/styles.css">
 <style>
-${estilosInline}
-body{margin:20px;background:#fff;font-family:'Segoe UI',Arial,sans-serif}
-.boleta{max-width:100%;margin:0;box-shadow:none!important;border-radius:8px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#fff;font-family:'Segoe UI',Arial,sans-serif;padding:16px}
+.boleta{background:#fff;border:2px solid #1e2a4a;border-radius:8px;width:100%;max-width:700px;margin:0 auto;font-size:12px;color:#1a1a1a;overflow:hidden}
+.bol-head{background:#1e2a4a;color:#fff;display:flex;align-items:center;gap:14px;padding:12px 18px}
+.bol-head-logo{width:54px;height:54px;flex-shrink:0;background:#fff;border-radius:6px;overflow:hidden;display:flex;align-items:center;justify-content:center}
 .bol-head-logo img{width:100%;height:100%;object-fit:contain}
+.bol-head-title{flex:1}
+.bol-head-title h1{font-size:15px;font-weight:700;margin:0 0 2px;letter-spacing:.3px}
+.bol-head-title p{font-size:10px;opacity:.75;margin:0}
+.bol-head-badge{background:#c9a227;color:#1a1a1a;font-weight:700;font-size:10px;letter-spacing:.6px;text-transform:uppercase;padding:4px 10px;border-radius:4px;white-space:nowrap}
+.bol-info{display:grid;grid-template-columns:1fr 1fr;border-bottom:2px solid #1e2a4a}
+.bol-info-item{padding:8px 18px;border-right:1px solid #dde;border-bottom:1px solid #dde}
+.bol-info-item:nth-child(even){border-right:none}
+.bol-info-item label{font-size:9px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:1px}
+.bol-info-item span{font-size:12px;font-weight:600;color:#1a1a1a}
+.bol-table{width:100%;border-collapse:collapse}
+.bol-table thead th{background:#1e2a4a;color:#fff;padding:7px 12px;font-size:10px;letter-spacing:.4px;text-transform:uppercase;text-align:left}
+.bol-table thead th:last-child,.bol-table thead th:nth-child(2){text-align:center}
+.bol-table thead th:nth-child(3){text-align:center}
+.bol-table tbody td{padding:7px 12px;border-bottom:1px solid #eef;font-size:12px}
+.bol-table tbody td:nth-child(2){text-align:center;font-weight:700;font-size:13px}
+.bol-table tbody td:nth-child(3){text-align:center}
+.bol-table tbody td:last-child{text-align:center}
+.bol-table tbody tr:last-child td{border-bottom:none}
+.bol-table tbody tr:nth-child(even) td{background:#f9f9fc}
+.badge-ap{display:inline-block;padding:2px 8px;border-radius:10px;font-size:9px;font-weight:700;background:#dcfce7;color:#15803d}
+.badge-rep{display:inline-block;padding:2px 8px;border-radius:10px;font-size:9px;font-weight:700;background:#fee2e2;color:#b91c1c}
+.badge-sc{display:inline-block;padding:2px 8px;border-radius:10px;font-size:9px;font-weight:600;background:#f3f4f6;color:#6b7280}
+.bol-foot{background:#f9f9fc;border-top:2px solid #1e2a4a;display:grid;grid-template-columns:1fr 1fr 1fr}
+.bol-foot-cell{padding:10px 14px;border-right:1px solid #dde;text-align:center}
+.bol-foot-cell:last-child{border-right:none}
+.bol-foot-cell label{font-size:9px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:2px}
+.bol-foot-cell .bol-val{font-size:20px;font-weight:800}
+.bol-foot-cell .bol-val.ap{color:#15803d}
+.bol-foot-cell .bol-val.rep{color:#b91c1c}
+.bol-foot-cell .bol-val.nd{color:#9ca3af;font-size:14px}
+.bol-firmas{display:grid;grid-template-columns:1fr 1fr 1fr;border-top:1px solid #dde;padding:18px 14px 10px}
+.bol-firma-item{text-align:center;padding:0 10px}
+.bol-firma-line{border-top:1px solid #555;margin:0 10px 4px}
+.bol-firma-label{font-size:9px;color:#888;font-weight:600;text-transform:uppercase;letter-spacing:.4px}
 @media print{
-  body{margin:0}
-  .boleta{border-radius:0!important;box-shadow:none!important;max-width:100%!important;
-    width:100%!important;border:1.5px solid #1e2a4a;page-break-after:avoid}
+  body{padding:0;margin:0;background:#fff}
+  .boleta{border-radius:0;max-width:100%;width:100%;box-shadow:none;border:1.5px solid #1e2a4a;margin:0}
 }
 </style>
 </head><body>
 ${boletaEl.outerHTML}
 <script>
 window.onload=function(){
-  setTimeout(function(){window.print();},600);
+  setTimeout(function(){window.print();},500);
   window.onafterprint=function(){window.close();};
 };<\/script>
 </body></html>`);
