@@ -920,10 +920,15 @@ function _ocultarModulos(permisos) {
   const mod = document.body.dataset.modulo;
   if (mod && !permisos.includes(mod)) {
     // Redirigir a la primera página del rol que sí está permitida
+    // Excluir index.html (splash sin app.js) como destino
     const items = document.querySelectorAll('.sb-item[href][data-modulo]');
-    let destino = 'pagos.html';
+    let destino = 'calificaciones.html';
     for (const el of items) {
-      if (permisos.includes(el.dataset.modulo)) { destino = el.getAttribute('href'); break; }
+      const href = el.getAttribute('href');
+      if (permisos.includes(el.dataset.modulo) && href !== 'index.html') {
+        destino = href;
+        break;
+      }
     }
     window.location.replace(destino);
   }
