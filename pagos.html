@@ -1149,15 +1149,21 @@ function _getPdfCss() {
     '@media print{@page{size:letter portrait;margin:12mm 10mm}}';
 }
 
-function _abrirVentanaPDF(titulo, bodyHtml) {
+function _abrirVentanaPDF(titulo, bodyHtml, centroHdr) {
   var w = window.open('', '_blank', 'width=900,height=700');
   var fecha = new Date().toLocaleDateString('es-MX', {day:'2-digit', month:'long', year:'numeric'});
   var C = '<'; var S = '>';
+  var centroParte = centroHdr
+    ? C + 'div style="text-align:center;flex:1"' + S +
+        C + 'div style="font-size:14px;font-weight:800;color:#1e3a5f;letter-spacing:.6px;text-transform:uppercase"' + S + centroHdr + C + '/div' + S +
+      C + '/div' + S
+    : C + 'div style="flex:1"' + S + C + '/div' + S;
   var header = C + 'div class="logo-hdr"' + S + C + 'div' + S +
     C + 'div style="font-size:17px;font-weight:700;color:#1e3a5f"' + S + 'ECCA Prepa León' + C + '/div' + S +
     C + 'div style="font-size:11px;color:#6b7280"' + S + 'Sistema de Admisiones' + C + '/div' + S +
     C + '/div' + S +
-    C + 'div style="margin-left:auto;text-align:right;font-size:11px;color:#6b7280"' + S + 'Generado: ' + fecha + C + '/div' + S +
+    centroParte +
+    C + 'div style="text-align:right;font-size:11px;color:#6b7280"' + S + 'Generado: ' + fecha + C + '/div' + S +
     C + '/div' + S;
   w.document.open();
   w.document.write('<!DOCTYPE html>' + C + 'html' + S + C + 'head' + S +
@@ -1452,10 +1458,24 @@ function imprimirCorteDiario() {
       ${firmaHtml}
     </div>`;
 
+  // Construir título central: "CORTE DEL DIA / CORTE DEL X AL Y"
+  const _desde = $('cd-desde').value;
+  const _hasta = $('cd-hasta').value;
+  function _fmtHdrDate(d) {
+    if (!d) return '';
+    const [y, m, day] = d.split('-').map(Number);
+    const meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+    return `${day} de ${meses[m-1]} de ${y}`;
+  }
+  const _tituloCorte = _desde === _hasta
+    ? 'Corte del ' + _fmtHdrDate(_desde)
+    : 'Corte del ' + _fmtHdrDate(_desde) + ' al ' + _fmtHdrDate(_hasta);
+
   _abrirVentanaPDF('Corte Diario de Pagos',
     `<h2>Corte Diario de Pagos</h2><p>${lbl}</p>${statsHtml}${diasHtml}
      ${resumenHtml}
-     <div class="total-gral">TOTAL GENERAL: ${fmtMoney(totalGral)}</div>`);
+     <div class="total-gral">TOTAL GENERAL: ${fmtMoney(totalGral)}</div>`,
+    _tituloCorte);
 }
 
 function _doExportDiario() {

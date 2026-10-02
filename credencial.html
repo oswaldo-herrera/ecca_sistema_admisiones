@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
@@ -6,6 +6,60 @@
 <title>ECCA — Credencialización</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <link rel="stylesheet" href="css/styles.css">
+<style>
+/* ===== TABS ===== */
+.cred-tab-bar{display:flex;gap:0;border-bottom:2px solid var(--border,#e5e7eb);margin-bottom:18px}
+.cred-tab-btn{padding:9px 22px;border:none;background:none;cursor:pointer;font-size:14px;font-weight:600;color:var(--text-muted,#6b7280);border-bottom:3px solid transparent;margin-bottom:-2px;transition:.15s;display:flex;align-items:center;gap:7px}
+.cred-tab-btn.active{color:var(--gold,#b8960c);border-bottom-color:var(--gold,#b8960c)}
+
+/* ===== DEPORTIVA CARD ===== */
+.dep-wrap{display:flex;justify-content:center;padding-top:30px}
+.dep-card{
+  width:310px;background:#fff;border-radius:12px;
+  position:relative;box-shadow:0 4px 20px rgba(0,0,0,.14);
+  font-family:Arial,Helvetica,sans-serif;overflow:visible;
+  border:1.5px solid #e8e0d0
+}
+.dep-photo{
+  position:absolute;top:-26px;left:16px;
+  width:88px;height:108px;
+  border:3px solid #7b1e2e;background:#f5f5f5;
+  overflow:hidden;z-index:3;
+  box-shadow:4px 4px 0 #c9a227
+}
+.dep-photo img{width:100%;height:100%;object-fit:cover;display:block}
+.dep-photo .fa-user{font-size:40px;color:#ccc;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}
+.dep-top{background:#7b1e2e;min-height:80px;display:flex;justify-content:flex-end;align-items:flex-start;padding:10px 14px;border-radius:10px 10px 0 0}
+.dep-fmf{text-align:right}
+.dep-fmf-logo{display:inline-block;background:#fff;color:#7b1e2e;font-size:20px;font-weight:900;letter-spacing:1.5px;padding:2px 8px;border-radius:3px;margin-bottom:4px;font-style:italic}
+.dep-fmf-sub{font-size:7.5px;color:rgba(255,255,255,.8);line-height:1.4;max-width:130px}
+.dep-gold-line{height:3px;background:linear-gradient(90deg,#c9a227,#e8c84a,#c9a227)}
+.dep-name{color:#7b1e2e;font-size:13px;font-weight:900;text-align:center;padding:10px 14px 6px 120px;text-transform:uppercase;letter-spacing:.5px;line-height:1.3;min-height:44px;display:flex;align-items:center;justify-content:center}
+.dep-club-row{display:flex;align-items:center;gap:10px;padding:6px 14px 8px;border-bottom:1.5px solid #f0e8d8}
+.dep-shield{font-size:22px;color:#c9a227}
+.dep-club-lbl{font-size:7px;color:#c9a227;text-transform:uppercase;letter-spacing:.8px;font-weight:700;margin-bottom:2px}
+.dep-club-val{font-size:12px;color:#7b1e2e;font-weight:700}
+.dep-fields{display:flex;padding:8px 14px 6px;border-bottom:1.5px solid #f0e8d8}
+.dep-field{flex:1;padding-right:8px;margin-right:8px;border-right:1px solid #f0e8d8}
+.dep-field:last-child{border-right:none;padding-right:0;margin-right:0}
+.dep-field-lbl{font-size:7px;color:#c9a227;text-transform:uppercase;letter-spacing:.8px;font-weight:700}
+.dep-field-val{font-size:11px;color:#7b1e2e;font-weight:700;margin-top:2px}
+.dep-cat-row{display:flex;align-items:flex-end;justify-content:space-between;padding:8px 14px 6px}
+.dep-cat-lbl{font-size:8px;color:#c9a227;text-transform:uppercase;letter-spacing:.8px;font-weight:700}
+.dep-cat-val{font-size:34px;font-weight:900;color:#7b1e2e;line-height:1}
+.dep-qr-box{border:2px solid #7b1e2e;padding:3px;background:#fff;border-radius:3px}
+.dep-torneo{padding:2px 14px 4px;border-top:1.5px solid #f0e8d8}
+.dep-torneo-lbl{font-size:7px;color:#c9a227;text-transform:uppercase;letter-spacing:.8px;font-weight:700}
+.dep-torneo-val{font-size:12px;color:#7b1e2e;font-weight:700}
+.dep-carnet{font-size:9px;color:#bbb;padding:2px 14px 12px;letter-spacing:1px;text-transform:uppercase}
+
+@media print{
+  .cred-tab-bar,#tab-deportiva,.page-header,.topbar .topbar-right,
+  .card:has(#foto-input),.card:has(#dep-in-camiseta){display:none!important}
+  .cred-wrap{display:flex!important;flex-wrap:wrap}
+  .cred-card{box-shadow:none!important;border-radius:0!important}
+}
+</style>
 </head>
 <body data-modulo="credencial">
 <div class="layout">
@@ -109,61 +163,189 @@
               <div class="cred-upload-preview" id="upload-preview"><i class="fas fa-user"></i></div>
               <div>
                 <input type="file" id="foto-input" accept="image/png,image/jpeg" style="display:none" onchange="onFotoChange(event)">
-                <button class="btn btn-secondary btn-sm" onclick="$('foto-input').click()"><i class="fas fa-upload"></i> Subir Foto</button>
+                <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                  <button class="btn btn-secondary btn-sm" onclick="$('foto-input').click()"><i class="fas fa-upload"></i> Subir Foto</button>
+                  <button class="btn btn-sm" id="btn-eliminar-foto" style="display:none;background:#fee2e2;color:#b91c1c;border:1px solid #fca5a5" onclick="eliminarFoto()"><i class="fas fa-trash"></i> Eliminar Foto</button>
+                </div>
                 <div style="font-size:11.5px;color:var(--text-muted);margin-top:8px" id="upload-status"></div>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Vista previa de credencial -->
-        <div class="card">
-          <div class="card-header">
-            <div class="ch-icon ch-gold"><i class="fas fa-eye"></i></div>
-            <div><div class="ch-title">Vista Previa</div><div class="ch-sub">Frente y reverso de la credencial</div></div>
-          </div>
-          <div class="card-body">
-            <div class="cred-wrap" id="cred-wrap">
+        <!-- Tabs -->
+        <div class="cred-tab-bar">
+          <button class="cred-tab-btn active" data-tab="academica" onclick="setCredTab('academica')">
+            <i class="fas fa-graduation-cap"></i> Académica
+          </button>
+          <button class="cred-tab-btn" data-tab="deportiva" onclick="setCredTab('deportiva')">
+            <i class="fas fa-futbol"></i> Deportiva
+          </button>
+        </div>
 
-              <!-- FRENTE -->
-              <div class="cred-card" id="cred-front">
-                <div class="cred-crest"><img src="images/ecca_logo.png" alt="ECCA"></div>
-                <div class="cred-photo-frame" id="cred-photo-frame"><i class="fas fa-user"></i></div>
-                <div class="cred-name" id="cred-nombre">NOMBRE DEL ALUMNO</div>
-                <div class="cred-matricula" id="cred-matricula">MATRÍCULA: —</div>
-                <div class="cred-programa" id="cred-programa">—</div>
-                <div class="cred-motto">Por Dios, por León, por ECCA</div>
-              </div>
+        <!-- ===== TAB: ACADÉMICA ===== -->
+        <div id="tab-academica">
+          <div class="card">
+            <div class="card-header">
+              <div class="ch-icon ch-gold"><i class="fas fa-eye"></i></div>
+              <div><div class="ch-title">Vista Previa</div><div class="ch-sub">Frente y reverso de la credencial</div></div>
+            </div>
+            <div class="card-body">
+              <div class="cred-wrap" id="cred-wrap">
 
-              <!-- REVERSO -->
-              <div class="cred-card" id="cred-back">
-                <div class="cred-back-title">¡Hoy decido<br>quién quiero ser!</div>
-                <div class="cred-oath-label">Hoy juro:</div>
-                <div class="cred-oath-list">
-                  <div class="cred-oath-item"><i class="fas fa-handshake"></i> Ser agradecido</div>
-                  <div class="cred-oath-item"><i class="fas fa-check"></i> Cumplir mi palabra</div>
-                  <div class="cred-oath-item"><i class="fas fa-comment"></i> Hablar con verdad</div>
-                  <div class="cred-oath-item"><i class="fas fa-scale-balanced"></i> Ser honesto</div>
-                  <div class="cred-oath-item"><i class="fas fa-shield-halved"></i> No aprovecharme del débil</div>
-                  <div class="cred-oath-item"><i class="fas fa-fire"></i> Levantarme cuando caiga</div>
+                <!-- FRENTE -->
+                <div class="cred-card" id="cred-front">
+                  <div class="cred-crest"><img src="images/ecca_logo.png" alt="ECCA"></div>
+                  <div class="cred-photo-frame" id="cred-photo-frame"><i class="fas fa-user"></i></div>
+                  <div class="cred-name" id="cred-nombre">NOMBRE DEL ALUMNO</div>
+                  <div class="cred-matricula" id="cred-matricula">MATRÍCULA: —</div>
+                  <div class="cred-programa" id="cred-programa">—</div>
+                  <div class="cred-motto">Por Dios, por León, por ECCA</div>
                 </div>
-                <div class="cred-back-footer">
-                  <div class="cred-qr-wrap"><img id="cred-qr" alt="QR" width="72" height="72"></div>
-                  <div class="cred-contact">
-                    <div><i class="fas fa-globe"></i> www.eccapreparatoria.com</div>
-                    <div><i class="fas fa-phone"></i> 477 716 7495</div>
+
+                <!-- REVERSO -->
+                <div class="cred-card" id="cred-back">
+                  <div class="cred-back-title">¡Hoy decido<br>quién quiero ser!</div>
+                  <div class="cred-oath-label">Hoy juro:</div>
+                  <div class="cred-oath-list">
+                    <div class="cred-oath-item"><i class="fas fa-handshake"></i> Ser agradecido</div>
+                    <div class="cred-oath-item"><i class="fas fa-check"></i> Cumplir mi palabra</div>
+                    <div class="cred-oath-item"><i class="fas fa-comment"></i> Hablar con verdad</div>
+                    <div class="cred-oath-item"><i class="fas fa-scale-balanced"></i> Ser honesto</div>
+                    <div class="cred-oath-item"><i class="fas fa-shield-halved"></i> No aprovecharme del débil</div>
+                    <div class="cred-oath-item"><i class="fas fa-fire"></i> Levantarme cuando caiga</div>
                   </div>
-                  <div class="cred-social">
-                    <span><i class="fab fa-facebook"></i> prepaecca</span>
-                    <span><i class="fab fa-tiktok"></i> preparatoria.ecca</span>
-                    <span><i class="fab fa-youtube"></i> ECCA Preparatoria</span>
+                  <div class="cred-back-footer">
+                    <div class="cred-qr-wrap"><img id="cred-qr" alt="QR" width="72" height="72"></div>
+                    <div class="cred-contact">
+                      <div><i class="fas fa-globe"></i> www.eccapreparatoria.com</div>
+                      <div><i class="fas fa-phone"></i> 477 716 7495</div>
+                    </div>
+                    <div class="cred-social">
+                      <span><i class="fab fa-facebook"></i> prepaecca</span>
+                      <span><i class="fab fa-tiktok"></i> preparatoria.ecca</span>
+                      <span><i class="fab fa-youtube"></i> ECCA Preparatoria</span>
+                    </div>
                   </div>
                 </div>
-              </div>
 
+              </div>
             </div>
           </div>
-        </div>
+        </div><!-- /tab-academica -->
+
+        <!-- ===== TAB: DEPORTIVA ===== -->
+        <div id="tab-deportiva" style="display:none">
+
+          <!-- Datos deportivos -->
+          <div class="card">
+            <div class="card-header">
+              <div class="ch-icon" style="background:#dcfce7"><i class="fas fa-futbol" style="color:#16a34a"></i></div>
+              <div><div class="ch-title">Datos Deportivos</div><div class="ch-sub">Información adicional para la credencial</div></div>
+            </div>
+            <div class="card-body">
+              <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px">
+                <div class="form-group">
+                  <label class="form-label">Camiseta #</label>
+                  <input type="text" class="form-input" id="dep-in-camiseta" placeholder="ej. 801" oninput="renderCredDep()">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Categoría</label>
+                  <select class="form-input" id="dep-in-cat" onchange="renderCredDep()">
+                    <option>Menor</option>
+                    <option>Mayor</option>
+                    <option>Varonil</option>
+                    <option>Femenil</option>
+                    <option>Sub-15</option>
+                    <option>Sub-17</option>
+                    <option>Sub-20</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Club</label>
+                  <input type="text" class="form-input" id="dep-in-club" value="Atlético ECCA" oninput="renderCredDep()">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Torneo</label>
+                  <input type="text" class="form-input" id="dep-in-torneo" value="APERTURA 2026" oninput="renderCredDep()">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Vista previa deportiva -->
+          <div class="card">
+            <div class="card-header">
+              <div class="ch-icon ch-gold"><i class="fas fa-eye"></i></div>
+              <div><div class="ch-title">Vista Previa — Deportiva</div><div class="ch-sub">Credencial FMF del jugador</div></div>
+            </div>
+            <div class="card-body">
+              <div class="dep-wrap">
+                <div class="dep-card" id="dep-card">
+
+                  <div class="dep-photo" id="dep-photo-frame">
+                    <i class="fas fa-user"></i>
+                  </div>
+
+                  <div class="dep-top">
+                    <div class="dep-fmf">
+                      <div class="dep-fmf-logo">FMF</div>
+                      <div class="dep-fmf-sub">Federación Mexicana<br>de Futbol</div>
+                    </div>
+                  </div>
+                  <div class="dep-gold-line"></div>
+
+                  <div class="dep-name" id="dep-nombre">NOMBRE DEL JUGADOR</div>
+
+                  <div class="dep-club-row">
+                    <div class="dep-shield"><i class="fas fa-shield-halved"></i></div>
+                    <div style="flex:1">
+                      <div class="dep-club-lbl">Club</div>
+                      <div class="dep-club-val" id="dep-club">Atlético ECCA</div>
+                    </div>
+                    <div style="text-align:right">
+                      <div class="dep-club-lbl">Jugador</div>
+                      <div class="dep-club-val">FM</div>
+                    </div>
+                  </div>
+
+                  <div class="dep-fields">
+                    <div class="dep-field">
+                      <div class="dep-field-lbl">NUE</div>
+                      <div class="dep-field-val" id="dep-nue">—</div>
+                    </div>
+                    <div class="dep-field">
+                      <div class="dep-field-lbl">Nacimiento</div>
+                      <div class="dep-field-val" id="dep-nac">—</div>
+                    </div>
+                    <div class="dep-field">
+                      <div class="dep-field-lbl">Camiseta</div>
+                      <div class="dep-field-val">#<span id="dep-camiseta">—</span></div>
+                    </div>
+                  </div>
+
+                  <div class="dep-cat-row">
+                    <div>
+                      <div class="dep-cat-lbl">Categoría</div>
+                      <div class="dep-cat-val" id="dep-cat">Menor</div>
+                    </div>
+                    <div class="dep-qr-box">
+                      <img id="dep-qr" alt="QR" width="68" height="68">
+                    </div>
+                  </div>
+
+                  <div class="dep-torneo">
+                    <div class="dep-torneo-lbl">Expedido en el torneo</div>
+                    <div class="dep-torneo-val" id="dep-torneo">APERTURA 2026</div>
+                  </div>
+                  <div class="dep-carnet">Carnet Único</div>
+
+                </div><!-- /dep-card -->
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /tab-deportiva -->
 
       </div><!-- /cred-content -->
 
@@ -199,7 +381,19 @@
 <script>
 let currentRec  = null;
 let _searchCache = [];
+let _activeTab = 'academica';
 
+/* ---- Tabs ---- */
+function setCredTab(tab) {
+  _activeTab = tab;
+  $('tab-academica').style.display = tab === 'academica' ? '' : 'none';
+  $('tab-deportiva').style.display  = tab === 'deportiva'  ? '' : 'none';
+  document.querySelectorAll('.cred-tab-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.tab === tab)
+  );
+}
+
+/* ---- Estado vacío ---- */
 function mostrarVacio() {
   $('cred-empty').style.display   = 'block';
   $('cred-content').style.display = 'none';
@@ -207,6 +401,7 @@ function mostrarVacio() {
   $('tb-folio').textContent  = '—';
 }
 
+/* ---- Render académica ---- */
 function renderCred(rec) {
   currentRec = rec;
   $('cred-empty').style.display   = 'none';
@@ -228,11 +423,59 @@ function renderCred(rec) {
     ? `<img src="${esc(rec.fotoUrl)}" alt="Foto">`
     : `<i class="fas fa-user"></i>`;
   $('upload-status').textContent = '';
+  $('btn-eliminar-foto').style.display = rec.fotoUrl ? '' : 'none';
 
   const qrData = `ECCA Prepa León\nAlumno: ${rec.nombre || ''}\nMatrícula: ${rec.folio || ''}\nModalidad: ${rec.modalidad || ''}`;
   $('cred-qr').src = 'https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=2&data=' + encodeURIComponent(qrData);
+
+  renderCredDep();
 }
 
+/* ---- Render deportiva ---- */
+function renderCredDep() {
+  if (!currentRec) return;
+  const rec = currentRec;
+
+  $('dep-nombre').textContent = (rec.nombre || 'NOMBRE DEL JUGADOR').toUpperCase();
+
+  const depFrame = $('dep-photo-frame');
+  depFrame.innerHTML = rec.fotoUrl
+    ? `<img src="${esc(rec.fotoUrl)}" alt="Foto">`
+    : `<i class="fas fa-user"></i>`;
+
+  $('dep-nue').textContent = rec.folio || '—';
+
+  let nacStr = '—';
+  if (rec.fechaNac) {
+    const parts = rec.fechaNac.split('-');
+    nacStr = parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : rec.fechaNac;
+  }
+  $('dep-nac').textContent = nacStr;
+
+  $('dep-camiseta').textContent = ($('dep-in-camiseta').value || '—');
+  $('dep-cat').textContent      = ($('dep-in-cat').value     || 'Menor');
+  $('dep-club').textContent     = ($('dep-in-club').value    || 'Atlético ECCA');
+  $('dep-torneo').textContent   = ($('dep-in-torneo').value  || 'APERTURA 2026').toUpperCase();
+
+  const qrData = `Atlético ECCA\nJugador: ${rec.nombre || ''}\nNUE: ${rec.folio || ''}\nCategoría: ${$('dep-in-cat').value || 'Menor'}`;
+  $('dep-qr').src = 'https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=2&data=' + encodeURIComponent(qrData);
+}
+
+/* ---- Eliminar foto ---- */
+async function eliminarFoto() {
+  if (!currentRec || !currentRec.fotoUrl) return;
+  if (!confirm('¿Eliminar la foto de este alumno?')) return;
+  try {
+    currentRec.fotoUrl = null;
+    await saveRecord(currentRec);
+    renderCred(currentRec);
+    toast('Foto eliminada.', 'ok');
+  } catch (err) {
+    toast('Error al eliminar la foto: ' + err.message, 'err');
+  }
+}
+
+/* ---- Subir foto ---- */
 async function onFotoChange(e) {
   const file = e.target.files[0];
   if (!file || !currentRec) return;
@@ -250,7 +493,154 @@ async function onFotoChange(e) {
   }
 }
 
-function imprimirCred() { window.print(); }
+/* ---- CSS compartido para ventanas de impresión ---- */
+var _G = '#7b1e2e', _D = '#c9a227';
+function _printCss() {
+  return '*{box-sizing:border-box;margin:0;padding:0}'
+    +'body{background:#f0ece4;font-family:Arial,Helvetica,sans-serif;display:flex;flex-wrap:wrap;gap:28px;justify-content:center;padding:36px 24px;min-height:100vh}'
+    +'.card{width:310px;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 6px 24px rgba(0,0,0,.18);position:relative;border:1.5px solid #e8e0d0}'
+    +'.band{background:'+_G+';padding:13px 15px;display:flex;align-items:center;gap:10px}'
+    +'.band img{width:38px;height:38px;object-fit:contain;border-radius:50%;background:#fff;padding:2px}'
+    +'.band-title{color:#fff;font-size:13px;font-weight:700;line-height:1.2}'
+    +'.band-sub{color:rgba(255,255,255,.7);font-size:8px;letter-spacing:.8px;text-transform:uppercase;margin-top:1px}'
+    +'.gold-line{height:3px;background:linear-gradient(90deg,'+_D+',#e8c84a,'+_D+')}'
+    +'.card-body{padding:20px 18px 14px}'
+    +'.photo-frame{width:96px;height:118px;margin:0 auto 14px;border:3px solid '+_G+';position:relative;overflow:hidden;background:#f0f0f0;box-shadow:4px 4px 0 '+_D+'}'
+    +'.photo-frame img{width:100%;height:100%;object-fit:cover;display:block}'
+    +'.photo-frame .noimg{font-size:46px;color:#ccc;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}'
+    +'.student-name{text-align:center;color:'+_G+';font-size:14px;font-weight:900;letter-spacing:.5px;text-transform:uppercase;line-height:1.3;margin-bottom:10px}'
+    +'.divider{height:1.5px;background:'+_D+';margin:0 0 12px;position:relative}'
+    +'.divider::before,.divider::after{content:"";position:absolute;top:-2.5px;width:6px;height:6px;background:'+_D+';transform:rotate(45deg)}'
+    +'.divider::before{left:0}.divider::after{right:0}'
+    +'.info-row{display:flex;gap:8px}'
+    +'.info-item{flex:1}'
+    +'.info-lbl{font-size:7px;color:'+_D+';text-transform:uppercase;letter-spacing:1px;font-weight:700}'
+    +'.info-val{font-size:12px;color:#333;font-weight:600;margin-top:2px}'
+    +'.card-footer{background:'+_G+';padding:9px 16px;text-align:center}'
+    +'.card-footer span{color:'+_D+';font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;font-style:italic}'
+    +'.back-header{background:'+_G+';padding:16px;text-align:center}'
+    +'.back-title{color:'+_D+';font-size:14px;font-weight:900;letter-spacing:.4px;line-height:1.4}'
+    +'.oath-section{padding:14px 18px}'
+    +'.oath-lbl{font-size:8px;color:'+_G+';font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px;padding-bottom:5px;border-bottom:1.5px solid '+_D+'}'
+    +'.oath-item{display:flex;align-items:flex-start;gap:9px;margin-bottom:8px}'
+    +'.diamond{width:7px;height:7px;background:'+_D+';transform:rotate(45deg);flex-shrink:0;margin-top:3px}'
+    +'.oath-text{font-size:11px;color:#333;line-height:1.3}'
+    +'.back-foot{padding:12px 18px;border-top:1.5px solid #eee;display:flex;align-items:center;gap:12px}'
+    +'.qr-box{border:2px solid '+_G+';padding:3px}'
+    +'.contact{flex:1}'
+    +'.contact-line{font-size:8.5px;color:#555;margin-bottom:3px}'
+    +'.social{margin-top:5px;font-size:7.5px;color:'+_D+';font-weight:700}'
+    +'.dep-wrap{padding-top:30px}'
+    +'.dep-card{width:310px;background:#fff;border-radius:12px;position:relative;box-shadow:0 6px 24px rgba(0,0,0,.18);overflow:visible;border:1.5px solid #e8e0d0}'
+    +'.dep-photo{position:absolute;top:-26px;left:16px;width:88px;height:108px;border:3px solid '+_G+';background:#f5f5f5;overflow:hidden;z-index:3;box-shadow:4px 4px 0 '+_D+'}'
+    +'.dep-photo img{width:100%;height:100%;object-fit:cover;display:block}'
+    +'.dep-photo .noimg{font-size:40px;color:#ccc;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}'
+    +'.dep-top{background:'+_G+';min-height:80px;display:flex;justify-content:flex-end;align-items:flex-start;padding:10px 14px;border-radius:10px 10px 0 0}'
+    +'.dep-fmf{text-align:right}'
+    +'.dep-fmf-logo{display:inline-block;background:#fff;color:'+_G+';font-size:20px;font-weight:900;letter-spacing:1.5px;padding:2px 8px;border-radius:3px;margin-bottom:4px;font-style:italic}'
+    +'.dep-fmf-sub{font-size:7.5px;color:rgba(255,255,255,.8);line-height:1.4}'
+    +'.gold-line{height:3px;background:linear-gradient(90deg,'+_D+',#e8c84a,'+_D+')}'
+    +'.dep-name{color:'+_G+';font-size:13px;font-weight:900;text-align:center;padding:10px 14px 6px 120px;text-transform:uppercase;letter-spacing:.5px;line-height:1.3;min-height:44px;display:flex;align-items:center;justify-content:center}'
+    +'.dep-club-row{display:flex;align-items:center;gap:10px;padding:6px 14px 8px;border-bottom:1.5px solid #f0e8d8}'
+    +'.dep-shield{font-size:22px;color:'+_D+'}'
+    +'.dep-club-lbl{font-size:7px;color:'+_D+';text-transform:uppercase;letter-spacing:.8px;font-weight:700;margin-bottom:2px}'
+    +'.dep-club-val{font-size:12px;color:'+_G+';font-weight:700}'
+    +'.dep-fields{display:flex;padding:8px 14px 6px;border-bottom:1.5px solid #f0e8d8}'
+    +'.dep-field{flex:1;padding-right:8px;margin-right:8px;border-right:1px solid #f0e8d8}'
+    +'.dep-field:last-child{border-right:none;padding-right:0;margin-right:0}'
+    +'.dep-field-lbl{font-size:7px;color:'+_D+';text-transform:uppercase;letter-spacing:.8px;font-weight:700}'
+    +'.dep-field-val{font-size:11px;color:'+_G+';font-weight:700;margin-top:2px}'
+    +'.dep-cat-row{display:flex;align-items:flex-end;justify-content:space-between;padding:8px 14px 6px}'
+    +'.dep-cat-lbl{font-size:8px;color:'+_D+';text-transform:uppercase;letter-spacing:.8px;font-weight:700}'
+    +'.dep-cat-val{font-size:34px;font-weight:900;color:'+_G+';line-height:1}'
+    +'.dep-qr-box{border:2px solid '+_G+';padding:3px;border-radius:3px}'
+    +'.dep-torneo{padding:2px 14px 4px;border-top:1.5px solid #f0e8d8}'
+    +'.dep-torneo-lbl{font-size:7px;color:'+_D+';text-transform:uppercase;letter-spacing:.8px;font-weight:700}'
+    +'.dep-torneo-val{font-size:12px;color:'+_G+';font-weight:700}'
+    +'.dep-carnet{font-size:9px;color:#bbb;padding:2px 14px 12px;letter-spacing:1px;text-transform:uppercase}'
+    +'@media print{body{background:#fff;padding:16px;gap:20px}.card,.dep-card{box-shadow:none!important;border-radius:0!important;break-inside:avoid}}';
+}
+function _writeWin(win, baseUrl, bodyHtml) {
+  var O = '<', C = '>';
+  var h = O+'!DOCTYPE html'+C+O+'html lang="es"'+C
+    +O+'head'+C+O+'meta charset="UTF-8"'+C
+    +O+'base href="'+baseUrl+'"'+C
+    +O+'link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"'+C
+    +O+'style'+C+_printCss()+O+'/style'+C
+    +O+'/head'+C+O+'body'+C
+    +bodyHtml
+    +O+'script'+C+'window.onload=function(){setTimeout(function(){window.print();},600);window.onafterprint=function(){window.close();};};'+O+'/script'+C
+    +O+'/body'+C+O+'/html'+C;
+  win.document.write(h);
+  win.document.close();
+}
+
+/* ---- Imprimir deportiva (nueva ventana) ---- */
+function imprimirCredDep() {
+  var card = $('dep-card');
+  if (!card) return;
+  var baseUrl = window.location.href.replace(/[^/]*$/, '');
+  var win = window.open('', '_blank', 'width=480,height=700');
+  var O = '<', C = '>';
+  var O = '<', C = '>';
+  _writeWin(win, baseUrl, O+'div class="dep-wrap"'+C+card.outerHTML+O+'/div'+C);
+}
+
+/* ---- Imprimir académica (nueva ventana elegante) ---- */
+function imprimirCred() {
+  if (_activeTab === 'deportiva') { imprimirCredDep(); return; }
+  if (!currentRec) return;
+  var rec = currentRec;
+  var baseUrl = window.location.href.replace(/[^/]*$/, '');
+  var win = window.open('', '_blank', 'width=760,height=900');
+  var O = '<', C = '>';
+  var qrData = encodeURIComponent('ECCA Prepa León\nAlumno:'+(rec.nombre||'')+'\nMatrícula:'+(rec.folio||'')+'\nModalidad:'+(rec.modalidad||''));
+  var qrSrc = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&margin=2&data='+qrData;
+  var fotoHtml = rec.fotoUrl
+    ? O+'img src="'+rec.fotoUrl+'" alt="Foto"'+C
+    : O+'span class="noimg fas fa-user"'+C+O+'/span'+C;
+  var oaths = ['Ser agradecido','Cumplir mi palabra','Hablar con verdad','Ser honesto','No aprovecharme del débil','Levantarme cuando caiga'];
+  var oathHtml = oaths.map(function(t){
+    return O+'div class="oath-item"'+C+O+'div class="diamond"'+C+O+'/div'+C+O+'span class="oath-text"'+C+t+O+'/span'+C+O+'/div'+C;
+  }).join('');
+
+  var front = O+'div class="card"'+C
+    +O+'div class="band"'+C
+    +O+'img src="images/ecca_logo.png" alt="ECCA"'+C
+    +O+'div'+C+O+'div class="band-title"'+C+'ECCA Prepa León'+O+'/div'+C+O+'div class="band-sub"'+C+'Preparatoria'+O+'/div'+C+O+'/div'+C
+    +O+'/div'+C
+    +O+'div class="gold-line"'+C+O+'/div'+C
+    +O+'div class="card-body"'+C
+    +O+'div class="photo-frame"'+C+fotoHtml+O+'/div'+C
+    +O+'div class="student-name"'+C+(rec.nombre||'NOMBRE DEL ALUMNO').toUpperCase()+O+'/div'+C
+    +O+'div class="divider"'+C+O+'/div'+C
+    +O+'div class="info-row"'+C
+    +O+'div class="info-item"'+C+O+'div class="info-lbl"'+C+'Matrícula'+O+'/div'+C+O+'div class="info-val"'+C+(rec.folio||'—')+O+'/div'+C+O+'/div'+C
+    +O+'div class="info-item"'+C+O+'div class="info-lbl"'+C+'Modalidad'+O+'/div'+C+O+'div class="info-val"'+C+(rec.modalidad||'—')+O+'/div'+C+O+'/div'+C
+    +O+'/div'+C
+    +O+'/div'+C
+    +O+'div class="card-footer"'+C+O+'span'+C+'Por Dios, por León, por ECCA'+O+'/span'+C+O+'/div'+C
+    +O+'/div'+C;
+
+  var back = O+'div class="card"'+C
+    +O+'div class="back-header"'+C+O+'div class="back-title"'+C+'¡Hoy decido quién quiero ser!'+O+'/div'+C+O+'/div'+C
+    +O+'div class="gold-line"'+C+O+'/div'+C
+    +O+'div class="oath-section"'+C
+    +O+'div class="oath-lbl"'+C+'Hoy juro:'+O+'/div'+C
+    +oathHtml
+    +O+'/div'+C
+    +O+'div class="back-foot"'+C
+    +O+'div class="qr-box"'+C+O+'img src="'+qrSrc+'" width="70" height="70" alt="QR"'+C+O+'/div'+C
+    +O+'div class="contact"'+C
+    +O+'div class="contact-line"'+C+'&#127760; eccapreparatoria.com'+O+'/div'+C
+    +O+'div class="contact-line"'+C+'&#128222; 477 716 7495'+O+'/div'+C
+    +O+'div class="social"'+C+'fb/ig: @prepaecca'+O+'/div'+C
+    +O+'/div'+C
+    +O+'/div'+C
+    +O+'/div'+C;
+
+  _writeWin(win, baseUrl, front+back);
+}
 
 /* ---- Buscar (carga en caché al abrir, filtra en memoria) ---- */
 async function abrirBuscar() {
@@ -292,7 +682,7 @@ function selResult(folio) {
   renderCred(rec);
 }
 
-/* ---- Init: restaurar folio activo si existe ---- */
+/* ---- Init ---- */
 (async function init() {
   const folio = getActiveFolio();
   if (folio) {
@@ -306,5 +696,3 @@ function selResult(folio) {
 </script>
 </body>
 </html>
-
-

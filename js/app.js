@@ -141,13 +141,29 @@ async function nextFolio() {
   return 'ECF' + String(n + 1).padStart(4, '0');
 }
 
+async function _uploadStorage(bucket, path, file) {
+  // Usa fetch directo con service role key para evitar conflictos de sesión
+  const key = (typeof SUPABASE_SERVICE_KEY !== 'undefined' && SUPABASE_SERVICE_KEY)
+    ? SUPABASE_SERVICE_KEY : SUPABASE_KEY;
+  const resp = await fetch(`${SUPABASE_URL}/storage/v1/object/${bucket}/${path}`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${key}`,
+      'Content-Type': file.type || 'application/octet-stream',
+      'x-upsert': 'true'
+    },
+    body: file
+  });
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({}));
+    throw new Error(err.message || err.error || `Upload error ${resp.status}`);
+  }
+}
+
 async function uploadFoto(file, folio) {
   const ext  = (file.name.split('.').pop() || 'jpg').toLowerCase();
   const path = `${folio}_${Date.now()}.${ext}`;
-  const { error } = await _sb.storage.from('fotos').upload(path, file, {
-    contentType: file.type, upsert: true
-  });
-  if (error) throw error;
+  await _uploadStorage('fotos', path, file);
   const { data } = _sb.storage.from('fotos').getPublicUrl(path);
   return data.publicUrl;
 }
@@ -372,10 +388,7 @@ async function deletePago(id) {
 async function uploadComprobante(file, folio) {
   const ext  = (file.name.split('.').pop() || 'jpg').toLowerCase();
   const path = `${folio}_${Date.now()}.${ext}`;
-  const { error } = await _sb.storage.from('comprobantes').upload(path, file, {
-    contentType: file.type, upsert: true
-  });
-  if (error) throw error;
+  await _uploadStorage('comprobantes', path, file);
   const { data } = _sb.storage.from('comprobantes').getPublicUrl(path);
   return data.publicUrl;
 }
