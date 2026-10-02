@@ -384,7 +384,7 @@
       </div>
       <div class="field" style="margin-bottom:12px">
         <label class="field-label">Concepto <span class="req">*</span></label>
-        <select class="field-select" id="pf-concepto">
+        <select class="field-select" id="pf-concepto" onchange="_checkRecargoPago()">
           <option value="">— Seleccionar —</option>
           <option>Inscripción</option>
           <option>Reinscripción</option>
@@ -400,6 +400,24 @@
           <option>Otro</option>
         </select>
       </div>
+
+      <!-- Alerta de recargo por mora -->
+      <div id="pf-recargo-alerta" style="display:none;background:#fff7ed;border:1.5px solid #f97316;border-radius:8px;padding:10px 14px;margin-bottom:12px">
+        <div style="display:flex;align-items:flex-start;gap:10px">
+          <i class="fas fa-triangle-exclamation" style="color:#ea580c;margin-top:2px;font-size:15px;flex-shrink:0"></i>
+          <div style="flex:1">
+            <div style="font-weight:700;font-size:13px;color:#9a3412">Recargo por mora — $100</div>
+            <div style="font-size:12px;color:#7c2d12;margin-top:3px" id="pf-rec-detalle">
+              Este alumno no ha pagado su colegiatura antes del 4° día hábil del mes.
+            </div>
+            <label style="display:flex;align-items:center;gap:7px;margin-top:8px;font-size:12px;color:#9a3412;font-weight:600;cursor:pointer">
+              <input type="checkbox" id="pf-rec-check" style="width:14px;height:14px">
+              Registrar también el recargo de $100 junto con este pago
+            </label>
+          </div>
+        </div>
+      </div>
+
       <div class="form-grid" style="margin-bottom:12px">
         <div class="field">
           <label class="field-label">Monto ($) <span class="req">*</span></label>
@@ -411,7 +429,7 @@
         </div>
         <div class="field">
           <label class="field-label">Fecha que corresponde</label>
-          <input class="field-input" id="pf-mes" type="month" title="¿A qué mes corresponde este pago?">
+          <input class="field-input" id="pf-mes" type="month" title="¿A qué mes corresponde este pago?" onchange="_checkRecargoPago()">
         </div>
         <div class="field">
           <label class="field-label">Forma de pago</label>
@@ -1605,6 +1623,55 @@ function renderPagos() {
     }).join('');
 }
 
+/* ---- Verificación de recargo por mora ---- */
+function _diaHabilPagos(anio, mes, n) {
+  let habiles = 0, dia = 1;
+  while (true) {
+    const dow = new Date(anio, mes - 1, dia).getDay();
+    if (dow !== 0 && dow !== 6) { habiles++; if (habiles === n) break; }
+    dia++;
+  }
+  return new Date(anio, mes - 1, dia);
+}
+
+function _checkRecargoPago() {
+  const alerta = $('pf-recargo-alerta');
+  const concepto = gv('pf-concepto');
+  const mesVal = gv('pf-mes'); // YYYY-MM
+
+  // Solo aplica a colegiaturas
+  const esCol = concepto && concepto.toLowerCase().includes('colegiatura');
+  if (!esCol || !mesVal || _paEditandoPagoId) {
+    alerta.style.display = 'none';
+    return;
+  }
+
+  const [anio, mes] = mesVal.split('-').map(Number);
+  const hoy = new Date(); hoy.setHours(0,0,0,0);
+  const cuartoHabil = _diaHabilPagos(anio, mes, 4);
+
+  // Solo si ya pasó el 4° día hábil de ese mes
+  if (hoy <= cuartoHabil) { alerta.style.display = 'none'; return; }
+
+  // Verificar si ya existe un recargo para ese mes en los pagos del alumno
+  const mesKey = mesVal; // YYYY-MM
+  const yaRecargo = (_paPagos || []).some(p =>
+    p.concepto === 'Recargo' &&
+    (p.mes_correspondiente || '').startsWith(mesKey)
+  );
+
+  if (yaRecargo) { alerta.style.display = 'none'; return; }
+
+  // Mostrar alerta
+  const limiteStr = cuartoHabil.toLocaleDateString('es-MX', { weekday:'long', day:'numeric', month:'long' });
+  const mesStr = new Date(anio, mes - 1, 1).toLocaleDateString('es-MX', { month:'long', year:'numeric' });
+  $('pf-rec-detalle').innerHTML =
+    `Venció el <strong>${limiteStr}</strong> (4° día hábil de ${mesStr}).<br>` +
+    `Si no ha pagado su recargo, márcalo abajo para registrarlo junto con la colegiatura.`;
+  $('pf-rec-check').checked = false;
+  alerta.style.display = '';
+}
+
 /* ---- Modal: registrar / editar pago ---- */
 var _paEditandoPagoId = null;
 
@@ -1624,7 +1691,10 @@ function abrirPagoForm(cargoId) {
   const cargo = cargoId ? _paCargos.find(c => c.id === cargoId) : null;
   sv('pf-concepto', cargo ? cargo.concepto : '');
   if (cargo) sv('pf-monto', cargo.monto);
+  $('pf-recargo-alerta').style.display = 'none';
   openModal('modal-pago-form');
+  // Verificar recargo después de abrir (por si concepto ya viene cargado)
+  setTimeout(_checkRecargoPago, 50);
 }
 
 function editarPago(id) {
@@ -1667,10 +1737,28 @@ async function guardarPagoForm() {
       recibio: gv('pf-recibio'),
       comprobanteUrl,
     });
+    // Guardar recargo por mora si el cajero lo marcó
+    const cobrarRecargo = !_paEditandoPagoId &&
+      $('pf-rec-check')?.checked &&
+      $('pf-recargo-alerta')?.style.display !== 'none';
+    if (cobrarRecargo) {
+      const mesCorr = gv('pf-mes') ? gv('pf-mes') + '-01' : null;
+      await savePago({
+        folio: _paAlumno.folio,
+        concepto: 'Recargo',
+        monto: 100,
+        fechaPago: gv('pf-fecha'),
+        mesCorrespondiente: mesCorr,
+        formaPago: gv('pf-forma'),
+        recibio: gv('pf-recibio'),
+        comprobanteUrl: null,
+      });
+    }
     closeModal('modal-pago-form');
     const accion = _paEditandoPagoId ? 'EDITAR PAGO' : 'NUEVO PAGO';
-    toast(_paEditandoPagoId ? 'Pago actualizado correctamente.' : 'Pago registrado correctamente.', 'ok');
-    logActividad(accion, 'Pagos', _paAlumno.folio, (_paAlumno.nombre ? _paAlumno.nombre + ' - ' : '') + concepto + ' $' + parseFloat(monto).toFixed(2));
+    const msgExtra = cobrarRecargo ? ' + recargo $100' : '';
+    toast(_paEditandoPagoId ? 'Pago actualizado correctamente.' : `Pago registrado correctamente.${msgExtra}`, 'ok');
+    logActividad(accion, 'Pagos', _paAlumno.folio, (_paAlumno.nombre ? _paAlumno.nombre + ' - ' : '') + concepto + ' $' + parseFloat(monto).toFixed(2) + msgExtra);
     await refrescarAlumno();
   } catch (e) {
     toast('Error al guardar el pago: ' + e.message, 'err');

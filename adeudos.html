@@ -93,6 +93,24 @@
         </div>
       </div>
 
+      <!-- Card recargos por mora -->
+      <div class="card" id="ad-recargo-card" style="display:none;margin-bottom:16px;border-left:4px solid #f59e0b">
+        <div class="card-body" style="padding:12px 16px">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:10px">
+            <div>
+              <div style="font-weight:700;font-size:13px;color:#92400e">
+                <i class="fas fa-triangle-exclamation"></i> Recargos por mora &mdash; <span id="ad-rec-mes"></span>
+              </div>
+              <div style="font-size:12px;color:var(--text-muted);margin-top:4px" id="ad-rec-info"></div>
+            </div>
+            <button class="btn btn-sm" id="ad-rec-btn" style="background:#f59e0b;color:#1a1a1a;font-weight:700;display:none"
+              onclick="aplicarRecargosDelMes()">
+              <i class="fas fa-bolt"></i> Aplicar Recargo $100
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- Resumen chips -->
       <div id="ad-resumen" style="display:none;margin-bottom:14px;display:none">
         <div style="display:flex;gap:10px;flex-wrap:wrap">
@@ -127,6 +145,101 @@
 <script src="js/config.js"></script>
 <script src="js/app.js"></script>
 <script>
+// ── Recargos por mora ────────────────────────────────────────────────────
+
+// Retorna el Date del N-ésimo día hábil (L-V) de un mes
+function diaHabil(anio, mes, n) {
+  let habiles = 0, dia = 1;
+  while (true) {
+    const dow = new Date(anio, mes - 1, dia).getDay();
+    if (dow !== 0 && dow !== 6) { habiles++; if (habiles === n) break; }
+    dia++;
+  }
+  return new Date(anio, mes - 1, dia);
+}
+
+let _recargoSet = new Set(); // folios con recargo aplicado este mes
+let _recargoMesKey = '';
+
+async function verificarRecargos(alumnos, pagoMap) {
+  const hoy = new Date(); hoy.setHours(0,0,0,0);
+  const anio = hoy.getFullYear(), mes = hoy.getMonth() + 1;
+  _recargoMesKey = `${anio}-${String(mes).padStart(2,'0')}`;
+
+  const cuartoHabil = diaHabil(anio, mes, 4);
+  const card = $('ad-recargo-card');
+
+  if (hoy <= cuartoHabil) { card.style.display = 'none'; return; }
+
+  // Alumnos que deben colegiatura del mes actual
+  const foliosDeudores = alumnos
+    .filter(a => !(pagoMap[a.folio] || {})[_recargoMesKey])
+    .map(a => a.folio);
+
+  if (!foliosDeudores.length) { card.style.display = 'none'; return; }
+
+  // Consultar recargos ya aplicados este mes
+  const { data: recargos } = await _sb.from('pagos')
+    .select('folio')
+    .in('folio', foliosDeudores)
+    .eq('concepto', 'Recargo')
+    .gte('mes_correspondiente', _recargoMesKey + '-01')
+    .lte('mes_correspondiente', _recargoMesKey + '-31');
+
+  _recargoSet = new Set((recargos || []).map(r => r.folio));
+  const sinRecargo = foliosDeudores.filter(f => !_recargoSet.has(f));
+
+  const limiteStr = cuartoHabil.toLocaleDateString('es-MX', { weekday:'long', day:'numeric', month:'long' });
+  const mesStr = new Date(anio, mes - 1, 1).toLocaleDateString('es-MX', { month:'long', year:'numeric' });
+
+  $('ad-rec-mes').textContent = mesStr.charAt(0).toUpperCase() + mesStr.slice(1);
+  $('ad-rec-info').innerHTML =
+    `4° día hábil: <strong>${limiteStr}</strong> &nbsp;·&nbsp; ` +
+    `<span style="color:#15803d;font-weight:600">${_recargoSet.size} recargo(s) ya aplicado(s)</span> &nbsp;·&nbsp; ` +
+    `<span style="color:#dc2626;font-weight:600">${sinRecargo.length} pendiente(s)</span>`;
+
+  const btn = $('ad-rec-btn');
+  if (sinRecargo.length > 0) {
+    btn.style.display = '';
+    btn.dataset.folios = JSON.stringify(sinRecargo);
+    card.style.borderLeftColor = '#f59e0b';
+  } else {
+    btn.style.display = 'none';
+    card.style.borderLeftColor = '#16a34a';
+  }
+  card.style.display = '';
+}
+
+async function aplicarRecargosDelMes() {
+  const btn = $('ad-rec-btn');
+  const folios = JSON.parse(btn.dataset.folios || '[]');
+  if (!folios.length) return;
+
+  if (!confirm(`¿Aplicar recargo de $100 a ${folios.length} alumno(s) que no han pagado en ${_recargoMesKey}?`)) return;
+
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Aplicando…';
+
+  try {
+    const registros = folios.map(folio => ({
+      folio,
+      concepto: 'Recargo',
+      monto: 100,
+      mes_correspondiente: _recargoMesKey + '-01',
+      estado: 'pendiente',
+    }));
+    const { error } = await _sb.from('pagos').insert(registros);
+    if (error) throw error;
+    toast(`Recargo $100 aplicado a ${folios.length} alumno(s).`, 'ok');
+    await generarAdeudos();
+  } catch(e) {
+    toast('Error: ' + e.message, 'err');
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-bolt"></i> Aplicar Recargo $100';
+  }
+}
+// ──────────────────────────────────────────────────────────────────────────
+
 // Pre-llenar año actual
 (function() {
   $('ad-anio').value = new Date().getFullYear();
@@ -264,6 +377,13 @@ async function generarAdeudos() {
       if (debeAlgo) totalDeudores++; else totalAlCorrente++;
     });
 
+    // Verificar recargos (solo si el año consultado es el año actual)
+    if (anio === new Date().getFullYear()) {
+      await verificarRecargos(alumnos, pagoMap);
+    } else {
+      $('ad-recargo-card').style.display = 'none';
+    }
+
     _adDatos = { anio, porGrupo, alumnos, pagoMap };
 
     $('ad-stat-grupos').textContent  = Object.keys(porGrupo).length;
@@ -296,7 +416,15 @@ async function generarAdeudos() {
       const rows = lista.map((a, i) => {
         const pm = pagoMap[a.folio] || {};
         const debeAlgo = cols.some(c => !pm[c.key]);
-        const celdas = cols.map(c => `<td style="padding:6px 8px;text-align:center;border-bottom:1px solid var(--border)">${_celda(pm[c.key], false)}</td>`).join('');
+        const celdas = cols.map(c => {
+          const base = _celda(pm[c.key], false);
+          // Badge REC si: no pagó, es el mes actual con recargo aplicado
+          const esRecargo = !pm[c.key] && _recargoSet.has(a.folio) && c.key === _recargoMesKey;
+          const recBadge = esRecargo
+            ? `<div style="font-size:9px;background:#fef3c7;color:#92400e;border-radius:4px;padding:1px 4px;margin-top:2px;font-weight:700">+$100 REC</div>`
+            : '';
+          return `<td style="padding:6px 8px;text-align:center;border-bottom:1px solid var(--border)">${base}${recBadge}</td>`;
+        }).join('');
         return `<tr style="${debeAlgo ? 'background:#fff9f9' : ''}">
           <td style="padding:7px 14px;font-size:12px;color:var(--text-muted);border-bottom:1px solid var(--border)">${i+1}</td>
           <td style="padding:7px 14px;font-size:13px;font-weight:500;border-bottom:1px solid var(--border)">${a.nombre || a.folio}</td>
