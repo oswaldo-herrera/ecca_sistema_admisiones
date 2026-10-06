@@ -32,15 +32,15 @@
               display:flex; gap:6px; justify-content:flex-end; }
 
 /* ── Checkbox grid para permisos ── */
-.perm-group { margin-bottom:14px; }
-.perm-group-label { font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase;
-                    letter-spacing:.5px; margin-bottom:7px; display:block; }
-.perm-checks { display:grid; grid-template-columns:repeat(2,1fr); gap:6px; }
-.perm-check  { display:flex; align-items:center; gap:8px; cursor:pointer;
-               padding:6px 10px; border-radius:var(--r-sm); border:1px solid var(--border);
-               transition:.15s; font-size:13px; }
+.perm-group { margin-bottom:10px; }
+.perm-group-label { font-size:10px; font-weight:700; color:var(--text-muted); text-transform:uppercase;
+                    letter-spacing:.5px; margin-bottom:5px; display:block; }
+.perm-checks { display:grid; grid-template-columns:repeat(4,1fr); gap:4px; }
+.perm-check  { display:flex; align-items:center; gap:6px; cursor:pointer;
+               padding:4px 8px; border-radius:var(--r-sm); border:1px solid var(--border);
+               transition:.15s; font-size:11.5px; }
 .perm-check:hover   { border-color:var(--gold); background:var(--bg-hover); }
-.perm-check input   { width:15px; height:15px; cursor:pointer; accent-color:var(--navy); }
+.perm-check input   { width:13px; height:13px; cursor:pointer; accent-color:var(--navy); flex-shrink:0; }
 .perm-check.checked { border-color:var(--navy); background:#f0f4ff; }
 
 /* ── Color swatches ── */
@@ -348,13 +348,13 @@
 
 <!-- ===== MODAL CREAR/EDITAR ROL ===== -->
 <div class="modal-ov" id="modal-rol-form">
-  <div class="modal-box" style="max-width:500px">
+  <div class="modal-box" style="max-width:780px;max-height:90vh;display:flex;flex-direction:column">
     <div class="modal-header">
       <h3 id="rf-titulo"><i class="fas fa-shield-halved" style="color:var(--gold)"></i> Nuevo Rol</h3>
       <button class="modal-close" onclick="closeModal('modal-rol-form')">&#10005;</button>
     </div>
-    <div class="modal-body">
-      <div class="form-grid" style="margin-bottom:14px">
+    <div class="modal-body" style="overflow-y:auto;flex:1;padding:14px 18px">
+      <div class="form-grid" style="margin-bottom:10px">
         <div class="field half">
           <label class="field-label">Nombre del rol <span class="req">*</span></label>
           <input class="field-input" id="rf-nombre" type="text" placeholder="Ej. Secretaría, Rector...">

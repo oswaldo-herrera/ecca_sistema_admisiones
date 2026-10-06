@@ -509,6 +509,7 @@ async function signOut() {
   sessionStorage.removeItem('ecca_rol');
   sessionStorage.removeItem('ecca_nombre');
   sessionStorage.removeItem('ecca_solo_sabatino');
+  sessionStorage.removeItem('ecca_permisos');
   await _sb.auth.signOut();
   window.location.href = 'login.html';
 }
@@ -574,7 +575,16 @@ function _aplicarPermisos(rol, nombre) {
     lbl.style.display = tieneVisible ? '' : 'none';
   });
 
-  // Revelar sidebar
+  // Aplicar permisos personalizados desde caché (evita flash al recargar)
+  const _cp = sessionStorage.getItem('ecca_permisos');
+  if (_cp && _cp !== '__admin__') {
+    try {
+      const _pa = JSON.parse(_cp);
+      _ocultarModulos(_pa.filter(x => x !== 'solo_sabatino'));
+    } catch(e) {}
+  }
+
+  // Revelar sidebar (después de TODO el filtrado)
   document.querySelector('.sb-nav')?.classList.add('sb-ready');
 }
 
@@ -898,12 +908,14 @@ async function aplicarPermisosSistema() {
       window._esAdmin = true;
       window._soloSabatino = false;
       sessionStorage.setItem('ecca_solo_sabatino', 'false');
+      sessionStorage.setItem('ecca_permisos', '__admin__');
       document.querySelectorAll('.sb-item[href="usuarios.html"]').forEach(el => el.style.display = '');
     } else {
       _permisosActivos = permisos || [];
       window._esAdmin = false;
       window._soloSabatino = esSabatino;
       sessionStorage.setItem('ecca_solo_sabatino', esSabatino ? 'true' : 'false');
+      sessionStorage.setItem('ecca_permisos', JSON.stringify(_permisosActivos));
       _ocultarModulos(_permisosActivos.filter(p => p !== 'solo_sabatino'));
     }
   } catch(err) { console.error('[permisos] excepción:', err); }
@@ -917,9 +929,9 @@ function _ocultarModulos(permisos) {
   // Maestros siempre van directo a calificaciones, sin importar otros módulos
   if (esMaestro) {
     const page = window.location.pathname.split('/').pop() || 'index.html';
-    // Ocultar todo el sidebar excepto calificaciones
+    // Ocultar todo el sidebar excepto calificaciones (solo el link exacto, no boletas)
     document.querySelectorAll('.sb-item[data-modulo]').forEach(el => {
-      el.style.display = el.dataset.modulo === 'calificaciones' ? '' : 'none';
+      el.style.display = el.getAttribute('href') === 'calificaciones.html' ? '' : 'none';
     });
     if (page !== 'calificaciones.html') {
       window.location.replace('calificaciones.html');
