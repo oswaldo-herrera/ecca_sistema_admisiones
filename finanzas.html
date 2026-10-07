@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ECCA — Finanzas</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="css/styles.css">
+<style>
+/* ── KPI cards ── */
+.fin-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:14px; margin-bottom:22px; }
+.fin-card { background:var(--card-bg); border:1px solid var(--border); border-radius:var(--r-lg);
+            padding:18px 20px; position:relative; overflow:hidden; }
+.fin-card::after { content:''; position:absolute; inset:0 auto 0 0; width:4px; border-radius:4px 0 0 4px; }
+.fin-card.gold::after  { background:var(--gold); }
+.fin-card.red::after   { background:#ef4444; }
+.fin-card.green::after { background:#22c55e; }
+.fin-card.navy::after  { background:var(--navy); }
+.fin-icon { width:38px; height:38px; border-radius:10px; display:flex; align-items:center;
+            justify-content:center; font-size:16px; margin-bottom:10px; }
+.fin-icon.gold   { background:rgba(201,162,39,.12); color:var(--gold); }
+.fin-icon.red    { background:#fef2f2; color:#ef4444; }
+.fin-icon.green  { background:#f0fdf4; color:#22c55e; }
+.fin-icon.navy   { background:#eef2ff; color:var(--navy); }
+.fin-val  { font-size:26px; font-weight:800; color:var(--text); line-height:1; margin-bottom:3px; }
+.fin-lbl  { font-size:12px; color:var(--text-muted); font-weight:500; }
+.fin-sub  { font-size:10.5px; color:var(--text-light); margin-top:2px; }
+
+/* ── Saldo neto ── */
+.saldo-box { background:var(--navy); border-radius:var(--r-lg); padding:18px 24px;
+             display:flex; align-items:center; justify-content:space-between; gap:14px;
+             margin-bottom:22px; flex-wrap:wrap; }
+.saldo-item { text-align:center; flex:1; min-width:120px; }
+.saldo-item .s-lbl { font-size:10px; color:rgba(255,255,255,.5); text-transform:uppercase;
+                     letter-spacing:.6px; margin-bottom:5px; }
+.saldo-item .s-val { font-size:22px; font-weight:800; }
+.s-val.cobrado  { color:var(--gold); }
+.s-val.gasto    { color:#f87171; }
+.s-val.saldo    { color:#4ade80; }
+.s-val.negativo { color:#f87171; }
+.saldo-sep { width:1px; background:rgba(255,255,255,.12); align-self:stretch; min-height:50px; }
+
+/* ── Formas de pago ── */
+.fpago-row { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; margin-bottom:22px; }
+.fpago-card { background:var(--card-bg); border:1px solid var(--border); border-radius:var(--r-lg);
+              padding:14px 16px; text-align:center; }
+.fpago-icon { font-size:18px; margin-bottom:6px; }
+.fpago-icon.efectivo    { color:#22c55e; }
+.fpago-icon.transferencia { color:#3b82f6; }
+.fpago-icon.deposito    { color:#f59e0b; }
+.fpago-icon.otro        { color:#8b5cf6; }
+.fpago-val { font-size:18px; font-weight:800; color:var(--navy); }
+.fpago-lbl { font-size:11px; color:var(--text-muted); margin-top:2px; }
+.fpago-cnt { font-size:10px; color:var(--text-light); margin-top:1px; }
+
+/* ── Gastos ── */
+.gasto-form { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px; }
+.gasto-form input { height:36px; border:1px solid var(--border); border-radius:var(--r-sm);
+                    padding:0 10px; font-size:13px; background:var(--card-bg); color:var(--text); }
+.gasto-form input[type=text]   { flex:1; min-width:160px; }
+.gasto-form input[type=number] { width:120px; }
+.gasto-form input[type=date]   { width:138px; }
+.gasto-form input:focus { outline:none; border-color:var(--gold); }
+.gastos-tbl { width:100%; border-collapse:collapse; font-size:13px; }
+.gastos-tbl th { background:var(--navy); color:#fff; padding:8px 12px; text-align:left;
+                 font-size:11px; letter-spacing:.4px; white-space:nowrap; }
+.gastos-tbl td { padding:7px 12px; border-bottom:1px solid var(--border); vertical-align:middle; }
+.gastos-tbl tr:last-child td { border-bottom:none; }
+.gastos-tbl tr:hover td { background:var(--bg-hover); }
+.gastos-tbl .td-monto { font-weight:700; color:#ef4444; }
+.gastos-tbl .td-fecha { font-size:12px; color:var(--text-muted); white-space:nowrap; }
+.gastos-empty { text-align:center; padding:28px; color:var(--text-light); font-size:13px; }
+
+/* ── Sin pagar ── */
+.sinpagar-list { max-height:300px; overflow-y:auto; }
+.sinpagar-item { display:flex; align-items:center; justify-content:space-between; padding:8px 14px;
+                 border-bottom:1px solid var(--border); font-size:12px; gap:8px; }
+.sinpagar-item:last-child { border-bottom:none; }
+.sinpagar-nombre { font-weight:500; color:var(--text); flex:1; }
+.sinpagar-grupo  { font-size:11px; color:var(--text-muted); white-space:nowrap; text-align:right; }
+.sinpagar-empty  { text-align:center; padding:28px; color:var(--text-light); font-size:13px; }
+
+/* ── Mes selector ── */
+.mes-ctrl { display:flex; align-items:center; gap:8px; }
+.mes-ctrl label { font-size:12px; font-weight:600; color:var(--text-muted); }
+.mes-ctrl input[type=month] { height:34px; border:1px solid var(--border); border-radius:var(--r-sm);
+                               padding:0 10px; font-size:13px; background:var(--card-bg); color:var(--text); }
+.mes-ctrl input[type=month]:focus { outline:none; border-color:var(--gold); }
+
+/* Mobile */
+@media(max-width:768px){
+  .saldo-box { flex-direction:column; gap:12px; }
+  .saldo-sep { width:80%; height:1px; min-height:0; }
+}
+
+/* Print */
+@media print {
+  .sidebar, .topbar, .sidebar-overlay, .gasto-form, .mes-ctrl,
+  .btn, button, .page-actions { display:none !important; }
+  .main-content { margin-left:0 !important; }
+  .page-header { padding:0 0 10px !important; }
+  .page-body { padding:0 !important; }
+  body, .main-content { background:#fff !important; }
+  .fin-card, .card, .saldo-box, .fpago-card { box-shadow:none !important; border:1px solid #ddd !important; }
+  .saldo-box { background:#1b2a6e !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  .sinpagar-list { max-height:none !important; overflow:visible !important; }
+  .print-header { display:block !important; }
+}
+</style>
+</head>
+<body data-modulo="finanzas">
+<div class="layout">
+
+  <!-- ===== SIDEBAR ===== -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-brand">
+      <div class="sb-logo" style="background:#fff;padding:3px">
+        <img src="images/ecca_logo.png" alt="Logo ECCA" style="width:100%;height:100%;object-fit:contain;display:block">
+      </div>
+      <div>
+        <div class="sb-brand-name">ECCA Prepa León</div>
+        <div class="sb-brand-sub">Sistema de Admisiones</div>
+      </div>
+    </div>
+    <nav class="sb-nav">
+      <div class="sb-group-label">Principal</div>
+      <a href="index.html" class="sb-item" data-modulo="inicio"><i class="fas fa-house"></i><span>Inicio</span></a>
+      <a href="formulario.html" class="sb-item" data-modulo="nueva-inscripcion"><i class="fas fa-user-plus"></i><span>Nueva Inscripción</span></a>
+      <div class="sb-group-label">Gestión</div>
+      <a href="base-datos.html" class="sb-item" data-modulo="base-datos"><i class="fas fa-table-list"></i><span>Base de Datos</span><span class="sb-badge">0</span></a>
+      <a href="grupos.html" class="sb-item" data-modulo="grupos"><i class="fas fa-people-group"></i><span>Grupos</span></a>
+      <a href="sin-grupo.html" class="sb-item" style="display:none"><i class="fas fa-user-clock"></i><span>Sin Grupo</span></a>
+      <a href="deportes.html" class="sb-item" data-modulo="deportes"><i class="fas fa-futbol"></i><span>Deportes</span></a>
+      <a href="horarios.html" class="sb-item" data-modulo="horarios"><i class="fas fa-calendar-week"></i><span>Horarios</span></a>
+      <a href="calificaciones.html" class="sb-item" data-modulo="calificaciones"><i class="fas fa-star-half-stroke"></i><span>Calificaciones</span></a>
+      <a href="boletas.html" class="sb-item" data-modulo="calificaciones"><i class="fas fa-file-lines"></i><span>Boletas</span></a>
+      <a href="documentos.html" class="sb-item" data-modulo="documentos"><i class="fas fa-folder-open"></i><span>Documentos</span></a>
+      <a href="pagos.html" class="sb-item" data-modulo="pagos"><i class="fas fa-circle-dollar-to-slot"></i><span>Pagos</span></a>
+      <a href="adeudos.html" class="sb-item" data-modulo="adeudos"><i class="fas fa-triangle-exclamation"></i><span>Adeudos</span></a>
+      <a href="recibo.html" class="sb-item" data-modulo="recibo"><i class="fas fa-file-invoice"></i><span>Recibo</span></a>
+      <a href="credencial.html" class="sb-item" data-modulo="credencial"><i class="fas fa-id-card"></i><span>Credencial</span></a>
+      <a href="cumpleanos.html" class="sb-item" data-modulo="cumpleanos"><i class="fas fa-cake-candles"></i><span>Cumpleaños</span></a>
+      <div class="sb-group-label">Administración</div>
+      <a href="finanzas.html" class="sb-item" data-modulo="finanzas"><i class="fas fa-chart-line"></i><span>Finanzas</span></a>
+      <a href="bitacora.html" class="sb-item" data-modulo="bitacora"><i class="fas fa-clipboard-list"></i><span>Bitácora</span></a>
+      <a href="usuarios.html" class="sb-item" data-modulo="usuarios"><i class="fas fa-users-gear"></i><span>Usuarios</span></a>
+    </nav>
+    <div class="sb-footer">
+      <i class="fas fa-location-dot"></i> 5 de Febrero 634, San Juan de Dios, 37000 León de los Aldama, Gto.<br>
+      Tel. 479 153 4007
+    </div>
+  </aside>
+  <div class="sidebar-overlay"></div>
+
+  <!-- ===== MAIN ===== -->
+  <div class="main-content">
+    <header class="topbar">
+      <button class="topbar-hamburger" aria-label="Menú"><i class="fas fa-bars"></i></button>
+      <nav class="topbar-breadcrumb">
+        <a href="index.html"><i class="fas fa-house"></i></a>
+        <span class="sep">›</span>
+        <span class="current">Finanzas</span>
+      </nav>
+      <div class="topbar-right">
+        <button class="btn btn-secondary btn-sm" onclick="imprimirFinanzas()">
+          <i class="fas fa-file-pdf"></i> PDF
+        </button>
+        <button class="btn btn-primary btn-sm" onclick="cargarDatos()">
+          <i class="fas fa-rotate-right"></i> Actualizar
+        </button>
+      </div>
+    </header>
+
+    <div class="page-header">
+      <div>
+        <div class="page-title">Finanzas</div>
+        <div class="page-sub">Resumen financiero del mes — excluye grupos Sabatino</div>
+      </div>
+      <div class="page-actions mes-ctrl">
+        <label><i class="fas fa-calendar-days"></i> Mes:</label>
+        <input type="month" id="sel-mes" onchange="cargarDatos()">
+      </div>
+    </div>
+
+    <div id="fin-print">
+    <div class="print-header" style="display:none;padding:0 22px 16px;border-bottom:2px solid #1b2a6e;margin-bottom:18px">
+      <div style="display:flex;align-items:center;gap:14px">
+        <img src="images/ecca_logo.png" style="width:52px;height:52px;object-fit:contain">
+        <div>
+          <div style="font-size:15px;font-weight:800;color:#1b2a6e">ECCA Preparatoria de León</div>
+          <div style="font-size:11px;color:#64748b" id="print-subtitulo">Resumen Financiero</div>
+        </div>
+        <div style="margin-left:auto;text-align:right;font-size:11px;color:#64748b" id="print-fecha"></div>
+      </div>
+    </div>
+
+    <div class="page-body">
+
+      <!-- KPI cards -->
+      <div class="fin-grid" id="kpi-grid">
+        <div class="fin-card gold">
+          <div class="fin-icon gold"><i class="fas fa-users"></i></div>
+          <div class="fin-val" id="kpi-activos">—</div>
+          <div class="fin-lbl">Alumnos activos</div>
+          <div class="fin-sub">Sin exalumnos ni grupos cerrados</div>
+        </div>
+        <div class="fin-card green">
+          <div class="fin-icon green"><i class="fas fa-circle-dollar-to-slot"></i></div>
+          <div class="fin-val" id="kpi-cobrado">—</div>
+          <div class="fin-lbl">Cobrado en el mes</div>
+          <div class="fin-sub" id="kpi-cobrado-sub">—</div>
+        </div>
+        <div class="fin-card red">
+          <div class="fin-icon red"><i class="fas fa-triangle-exclamation"></i></div>
+          <div class="fin-val" id="kpi-sinpagar">—</div>
+          <div class="fin-lbl">Sin pagar colegiatura</div>
+          <div class="fin-sub">Alumnos activos sin pago este mes</div>
+        </div>
+        <div class="fin-card navy">
+          <div class="fin-icon navy"><i class="fas fa-receipt"></i></div>
+          <div class="fin-val" id="kpi-gastos">—</div>
+          <div class="fin-lbl">Total gastos</div>
+          <div class="fin-sub" id="kpi-gastos-sub">—</div>
+        </div>
+      </div>
+
+      <!-- Saldo neto -->
+      <div class="saldo-box">
+        <div class="saldo-item">
+          <div class="s-lbl"><i class="fas fa-circle-dollar-to-slot"></i> Total cobrado</div>
+          <div class="s-val cobrado" id="saldo-cobrado">$0</div>
+        </div>
+        <div class="saldo-sep"></div>
+        <div class="saldo-item">
+          <div class="s-lbl"><i class="fas fa-minus"></i> Total gastos</div>
+          <div class="s-val gasto" id="saldo-gastos">$0</div>
+        </div>
+        <div class="saldo-sep"></div>
+        <div class="saldo-item">
+          <div class="s-lbl"><i class="fas fa-equals"></i> Saldo neto</div>
+          <div class="s-val saldo" id="saldo-neto">$0</div>
+        </div>
+      </div>
+
+      <!-- Formas de pago -->
+      <div class="card" style="margin-bottom:22px">
+        <div class="card-header" style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px">
+          <i class="fas fa-credit-card" style="color:var(--gold)"></i>
+          <span style="font-weight:700;font-size:14px">Por forma de pago</span>
+        </div>
+        <div class="card-body" style="padding:16px">
+          <div class="fpago-row" id="fpago-row">
+            <div style="text-align:center;color:var(--text-light);padding:20px;font-size:13px">Cargando...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dos columnas: gastos + sin pagar -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:0">
+
+        <!-- Gastos -->
+        <div class="card">
+          <div class="card-header" style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <i class="fas fa-file-invoice-dollar" style="color:#ef4444"></i>
+              <span style="font-weight:700;font-size:14px">Gastos</span>
+            </div>
+            <span style="font-size:11px;color:var(--text-muted)" id="gastos-total-hdr">Total: $0</span>
+          </div>
+          <div class="card-body" style="padding:14px 16px">
+            <!-- Formulario agregar gasto -->
+            <div class="gasto-form">
+              <input type="text"   id="g-concepto" placeholder="Concepto del gasto">
+              <input type="number" id="g-monto"    placeholder="$0.00" min="0" step="0.01">
+              <input type="date"   id="g-fecha">
+              <button class="btn btn-primary btn-sm" onclick="agregarGasto()">
+                <i class="fas fa-plus"></i> Agregar
+              </button>
+            </div>
+            <!-- Tabla gastos -->
+            <div style="overflow-x:auto">
+              <table class="gastos-tbl">
+                <thead>
+                  <tr>
+                    <th>Concepto</th>
+                    <th style="text-align:right">Monto</th>
+                    <th>Fecha</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="gastos-tbody">
+                  <tr><td colspan="4" class="gastos-empty">Sin gastos registrados</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sin pagar colegiatura -->
+        <div class="card">
+          <div class="card-header" style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <i class="fas fa-user-xmark" style="color:#ef4444"></i>
+              <span style="font-weight:700;font-size:14px">Sin pagar colegiatura</span>
+            </div>
+            <span style="font-size:11px;color:var(--text-muted)" id="sinpagar-hdr">0 alumnos</span>
+          </div>
+          <div class="sinpagar-list" id="sinpagar-list">
+            <div class="sinpagar-empty">Cargando...</div>
+          </div>
+        </div>
+
+      </div>
+
+    </div><!-- /page-body -->
+    </div><!-- /fin-print -->
+  </div><!-- /main-content -->
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script src="js/app.js"></script>
+<script>
+const $id = id => document.getElementById(id);
+
+/* ── Formato moneda ── */
+function fmx(n) {
+  return '$' + (parseFloat(n)||0).toLocaleString('es-MX', { minimumFractionDigits:2, maximumFractionDigits:2 });
+}
+
+/* ── Mes actual como "YYYY-MM" ── */
+function mesActual() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+}
+
+/* ── Nombre de mes legible ── */
+function nombreMes(ym) {
+  const [y,m] = ym.split('-');
+  return new Date(parseInt(y), parseInt(m)-1, 1)
+    .toLocaleDateString('es-MX', { month:'long', year:'numeric' });
+}
+
+/* ── Cargar todos los datos ── */
+async function cargarDatos() {
+  const mes = $id('sel-mes').value || mesActual();
+  const [y, m] = mes.split('-').map(Number);
+  const fechaIni = `${y}-${String(m).padStart(2,'0')}-01`;
+  const lastDay  = new Date(y, m, 0).getDate();
+  const fechaFin = `${y}-${String(m).padStart(2,'0')}-${String(lastDay).padStart(2,'0')}`;
+
+  // Indicar carga
+  ['kpi-activos','kpi-cobrado','kpi-sinpagar','kpi-gastos'].forEach(id => $id(id).textContent = '...');
+
+  try {
+    // 1. Grupos — identificar sabatinos
+    const { data: grupos = [] } = await _sb.from('grupos').select('id,nombre,sabatino');
+    const idsSabatino = new Set(
+      grupos.filter(g => g.sabatino === true || (g.nombre||'').toLowerCase().includes('sabat')).map(g => g.id)
+    );
+    // Mapa id → nombre
+    const grupoNombre = {};
+    grupos.forEach(g => { grupoNombre[g.id] = g.nombre; });
+
+    // 2. Inscripciones activas
+    const { data: inscrip = [] } = await _sb.from('inscripciones')
+      .select('folio,nombre,grupo_id').neq('exalumno', true);
+
+    const totalActivos = inscrip.length;
+    const folioGrupo = {};
+    inscrip.forEach(i => { folioGrupo[i.folio] = i.grupo_id; });
+    // Activos excluyendo sabatino
+    const activosNoSab = inscrip.filter(i => !idsSabatino.has(i.grupo_id));
+
+    $id('kpi-activos').textContent = totalActivos.toLocaleString();
+
+    // 3. Pagos del mes (excluye sabatino)
+    const { data: pagos = [] } = await _sb.from('pagos')
+      .select('folio,concepto,monto,forma_pago,fecha_pago,estado')
+      .eq('estado','confirmado')
+      .gte('fecha_pago', fechaIni)
+      .lte('fecha_pago', fechaFin);
+
+    const pagosFiltrados = pagos.filter(p => !idsSabatino.has(folioGrupo[p.folio]));
+
+    // 4. Total cobrado
+    const totalMes = pagosFiltrados.reduce((s,p) => s + (parseFloat(p.monto)||0), 0);
+    $id('kpi-cobrado').textContent = fmx(totalMes);
+    $id('kpi-cobrado-sub').textContent = `${pagosFiltrados.length} pagos · ${nombreMes(mes)}`;
+    $id('saldo-cobrado').textContent = fmx(totalMes);
+
+    // 5. Por forma de pago
+    const byForma = {};
+    pagosFiltrados.forEach(p => {
+      const f = (p.forma_pago||'Sin especificar').trim();
+      if (!byForma[f]) byForma[f] = { total:0, cnt:0 };
+      byForma[f].total += parseFloat(p.monto)||0;
+      byForma[f].cnt++;
+    });
+    renderFormas(byForma);
+
+    // 6. Sin pagar colegiatura
+    const foliosPagaron = new Set(
+      pagosFiltrados
+        .filter(p => (p.concepto||'').toLowerCase().includes('colegiatura'))
+        .map(p => p.folio)
+    );
+    const sinPagar = activosNoSab.filter(i => !foliosPagaron.has(i.folio));
+    $id('kpi-sinpagar').textContent = sinPagar.length.toLocaleString();
+    $id('sinpagar-hdr').textContent = `${sinPagar.length} alumnos`;
+    renderSinPagar(sinPagar, grupoNombre);
+
+    // 7. Gastos
+    await cargarGastos(totalMes);
+
+  } catch(e) {
+    console.error(e);
+    toast('Error al cargar datos: ' + e.message, 'err');
+  }
+}
+
+/* ── Renderizar formas de pago ── */
+function renderFormas(byForma) {
+  const iconos = {
+    'Efectivo':      { icon:'fas fa-money-bill-wave', cls:'efectivo' },
+    'Transferencia': { icon:'fas fa-building-columns', cls:'transferencia' },
+    'Depósito':      { icon:'fas fa-piggy-bank',       cls:'deposito' },
+    'Deposito':      { icon:'fas fa-piggy-bank',       cls:'deposito' },
+  };
+  const keys = Object.keys(byForma);
+  if (!keys.length) {
+    $id('fpago-row').innerHTML = '<div style="text-align:center;color:var(--text-light);padding:20px;font-size:13px">Sin pagos en este mes</div>';
+    return;
+  }
+  $id('fpago-row').innerHTML = keys.map(f => {
+    const { total, cnt } = byForma[f];
+    const ic = iconos[f] || { icon:'fas fa-credit-card', cls:'otro' };
+    return `<div class="fpago-card">
+      <div class="fpago-icon ${ic.cls}"><i class="${ic.icon}"></i></div>
+      <div class="fpago-val">${fmx(total)}</div>
+      <div class="fpago-lbl">${esc(f)}</div>
+      <div class="fpago-cnt">${cnt} pago${cnt!==1?'s':''}</div>
+    </div>`;
+  }).join('');
+}
+
+/* ── Renderizar sin pagar ── */
+function renderSinPagar(lista, grupoNombre) {
+  if (!lista.length) {
+    $id('sinpagar-list').innerHTML = '<div class="sinpagar-empty"><i class="fas fa-check-circle" style="color:#22c55e;font-size:20px;display:block;margin-bottom:6px"></i>Todos pagaron colegiatura</div>';
+    return;
+  }
+  $id('sinpagar-list').innerHTML = lista.map(i =>
+    `<div class="sinpagar-item">
+      <span class="sinpagar-nombre"><i class="fas fa-user" style="color:#ef4444;margin-right:6px;font-size:10px"></i>${esc(i.nombre||i.folio)}</span>
+      <span class="sinpagar-grupo">${esc(grupoNombre[i.grupo_id]||'Sin grupo')}</span>
+    </div>`
+  ).join('');
+}
+
+/* ── GASTOS ── */
+let _totalCobrado = 0;
+
+async function cargarGastos(totalMes) {
+  _totalCobrado = totalMes || 0;
+  const { data: gastos = [], error } = await _sb.from('gastos').select('*').order('fecha', { ascending:false });
+  if (error) { console.error('gastos:', error); }
+
+  const totalGastos = gastos.reduce((s,g) => s + (parseFloat(g.monto)||0), 0);
+  const saldo = _totalCobrado - totalGastos;
+
+  $id('kpi-gastos').textContent = fmx(totalGastos);
+  $id('kpi-gastos-sub').textContent = `${gastos.length} registro${gastos.length!==1?'s':''}`;
+  $id('gastos-total-hdr').textContent = `Total: ${fmx(totalGastos)}`;
+  $id('saldo-gastos').textContent = fmx(totalGastos);
+  $id('saldo-neto').textContent = fmx(saldo);
+  const elSaldo = $id('saldo-neto');
+  elSaldo.className = 's-val ' + (saldo >= 0 ? 'saldo' : 'negativo');
+
+  if (!gastos.length) {
+    $id('gastos-tbody').innerHTML = '<tr><td colspan="4" class="gastos-empty">Sin gastos registrados</td></tr>';
+    return;
+  }
+  $id('gastos-tbody').innerHTML = gastos.map(g => `
+    <tr>
+      <td>${esc(g.concepto)}</td>
+      <td class="td-monto" style="text-align:right">${fmx(g.monto)}</td>
+      <td class="td-fecha">${g.fecha ? g.fecha.substring(0,10) : '—'}</td>
+      <td style="text-align:center">
+        <button class="btn-sm-tbl bst-red" onclick="eliminarGasto(${g.id})" title="Eliminar">
+          <i class="fas fa-trash"></i>
+        </button>
+      </td>
+    </tr>`).join('');
+}
+
+async function agregarGasto() {
+  const concepto = $id('g-concepto').value.trim();
+  const monto    = parseFloat($id('g-monto').value);
+  const fecha    = $id('g-fecha').value || new Date().toISOString().substring(0,10);
+
+  if (!concepto) { toast('Escribe el concepto del gasto.', 'warn'); return; }
+  if (!monto || monto <= 0) { toast('Ingresa un monto válido.', 'warn'); return; }
+
+  try {
+    const { error } = await _sb.from('gastos').insert({ concepto, monto, fecha });
+    if (error) throw error;
+    $id('g-concepto').value = '';
+    $id('g-monto').value    = '';
+    await cargarGastos(_totalCobrado);
+    toast('Gasto registrado.', 'ok');
+  } catch(e) { toast('Error: ' + e.message, 'err'); }
+}
+
+async function eliminarGasto(id) {
+  if (!confirm('¿Eliminar este gasto?')) return;
+  try {
+    const { error } = await _sb.from('gastos').delete().eq('id', id);
+    if (error) throw error;
+    await cargarGastos(_totalCobrado);
+    toast('Gasto eliminado.', 'ok');
+  } catch(e) { toast('Error: ' + e.message, 'err'); }
+}
+
+/* ── Imprimir PDF ── */
+function imprimirFinanzas() {
+  const mes = $id('sel-mes').value || mesActual();
+  $id('print-subtitulo').textContent = 'Resumen Financiero · ' + nombreMes(mes);
+  $id('print-fecha').innerHTML = 'Generado: ' + new Date().toLocaleDateString('es-MX', { day:'2-digit', month:'long', year:'numeric' });
+  window.print();
+}
+
+/* ── Init ── */
+(async function() {
+  await (window._permisosListos || Promise.resolve());
+  // Solo admin/director
+  const rol = window._userRol;
+  const esAdmin = window._esAdmin !== false; // default true hasta que carguen permisos
+  const rolPermitido = esAdmin || rol === 'admin' || rol === 'director';
+  if (!rolPermitido) {
+    document.querySelector('.page-body').innerHTML =
+      '<div style="text-align:center;padding:60px;color:var(--text-muted)"><i class="fas fa-lock" style="font-size:32px;margin-bottom:12px;display:block;color:#ef4444"></i>Acceso restringido a administradores.</div>';
+    return;
+  }
+
+  // Poner mes actual
+  $id('sel-mes').value = mesActual();
+  // Fecha por defecto en el formulario de gasto
+  $id('g-fecha').value = new Date().toISOString().substring(0,10);
+
+  await cargarDatos();
+})();
+</script>
+</body>
+</html>
