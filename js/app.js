@@ -171,7 +171,8 @@ async function uploadFoto(file, folio) {
 async function refreshBadge() {
   const { count } = await _sb
     .from('inscripciones')
-    .select('*', { count: 'exact', head: true });
+    .select('*', { count: 'exact', head: true })
+    .neq('exalumno', true);
   document.querySelectorAll('.sb-badge').forEach(b => b.textContent = count ?? 0);
 }
 
