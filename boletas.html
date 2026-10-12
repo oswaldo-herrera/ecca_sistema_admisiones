@@ -481,6 +481,26 @@ async function generarBoletas() {
     ]);
     const cals = calsRaw || [];
 
+    // Calificaciones de Deportes (guardadas con grupo_id=null, por eso requieren consulta separada)
+    const _depMatBol = _materias.find(m => (m.nombre || '').toLowerCase() === 'deportes');
+    const _depMatIdBol = _depMatBol ? _depMatBol.id : null;
+    let depCalMap = {};  // folio → calificacion (simple) o folio → {periodo: cal} (general)
+    if (_depMatIdBol && alumnos.length) {
+      const folios = alumnos.map(a => a.folio);
+      const depQ = esGeneral
+        ? _sb.from('calificaciones').select('folio, calificacion, periodo').in('folio', folios).eq('materia_id', _depMatIdBol)
+        : _sb.from('calificaciones').select('folio, calificacion').in('folio', folios).eq('materia_id', _depMatIdBol).eq('periodo', periodo);
+      const { data: depRaw } = await depQ;
+      if (esGeneral) {
+        (depRaw || []).forEach(c => {
+          if (!depCalMap[c.folio]) depCalMap[c.folio] = {};
+          depCalMap[c.folio][c.periodo] = c.calificacion;
+        });
+      } else {
+        (depRaw || []).forEach(c => { depCalMap[c.folio] = c.calificacion; });
+      }
+    }
+
     if (!alumnos.length) {
       wrap.innerHTML = `<div style="text-align:center;padding:60px;color:var(--text-muted)">
         <i class="fas fa-user-slash" style="font-size:36px;opacity:.3;display:block;margin-bottom:12px"></i>
@@ -534,7 +554,19 @@ async function generarBoletas() {
           <td style="text-align:center;font-weight:700;${color}">${val !== null ? val.toFixed(1) : '—'}</td>
           <td>${est}</td>
         </tr>`;
-      }).join('');
+      }).join('') + (() => {
+        const dv = depCalMap[a.folio];
+        if (dv === undefined || dv === null) return '';
+        const dvf = parseFloat(dv);
+        const dc  = dvf < 6 ? 'color:#b91c1c' : '';
+        const de  = dvf >= 6 ? `<span class="badge-ap">Aprobado</span>` : `<span class="badge-rep">Reprobado</span>`;
+        return `<tr style="background:#f0fdf4">
+          <td style="color:#22c55e;text-align:center;width:28px"><i class="fas fa-futbol" style="font-size:10px"></i></td>
+          <td><strong>Deportes</strong></td>
+          <td style="text-align:center;font-weight:700;${dc}">${dvf.toFixed(1)}</td>
+          <td>${de}</td>
+        </tr>`;
+      })();
 
       const promColor = prom === null ? 'nd' : parseFloat(prom) >= 6 ? 'ap' : 'rep';
       const estGeneral = aprobado === null ? '—' : aprobado ? 'APROBADO' : 'REPROBADO';
@@ -586,7 +618,25 @@ async function generarBoletas() {
           ${cols}
           <td style="text-align:center;font-weight:700;${promColor}">${promM !== null ? promM.toFixed(1) : '—'}</td>
         </tr>`;
-      }).join('');
+      }).join('') + (() => {
+        const depPeriodos = depCalMap[a.folio];
+        if (!depPeriodos || typeof depPeriodos !== 'object') return '';
+        const depCols = PERIODOS_GENERAL.map(p => {
+          const v = depPeriodos[p];
+          const val = (v !== null && v !== undefined) ? parseFloat(v) : null;
+          const dc = val !== null && val < 6 ? 'color:#b91c1c;' : '';
+          return `<td style="text-align:center;font-weight:600;${dc}">${val !== null ? val.toFixed(1) : '—'}</td>`;
+        }).join('');
+        const vals = PERIODOS_GENERAL.map(p => depPeriodos[p]).filter(v => v !== null && v !== undefined).map(v => parseFloat(v));
+        const promDep = vals.length ? vals.reduce((s, v) => s + v, 0) / vals.length : null;
+        const pdc = promDep === null ? 'color:#aaa' : promDep >= 6 ? 'color:#15803d' : 'color:#b91c1c';
+        return `<tr style="background:#f0fdf4">
+          <td style="color:#22c55e;text-align:center;width:24px"><i class="fas fa-futbol" style="font-size:10px"></i></td>
+          <td><strong>Deportes</strong></td>
+          ${depCols}
+          <td style="text-align:center;font-weight:700;${pdc}">${promDep !== null ? promDep.toFixed(1) : '—'}</td>
+        </tr>`;
+      })();
 
       const prom = cntProm ? (sumaProm / cntProm).toFixed(1) : null;
       const aprobado = prom !== null ? parseFloat(prom) >= 6 : null;

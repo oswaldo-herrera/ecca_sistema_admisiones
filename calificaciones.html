@@ -211,6 +211,9 @@
       <div class="cal-tab" id="tab-btn-grupo" onclick="setTab('grupo')">
         <i class="fas fa-people-group"></i> Por Grupo
       </div>
+      <div class="cal-tab" id="tab-btn-deportes" onclick="setTab('deportes')">
+        <i class="fas fa-futbol"></i> Deportes
+      </div>
     </div>
     <script>
     (function(){
@@ -219,8 +222,9 @@
         if (cp && cp !== '__admin__') {
           var p = JSON.parse(cp);
           if (p.indexOf('cal-solo-captura') !== -1) {
-            document.getElementById('tab-btn-alumno').style.display = 'none';
-            document.getElementById('tab-btn-grupo').style.display  = 'none';
+            document.getElementById('tab-btn-alumno').style.display   = 'none';
+            document.getElementById('tab-btn-grupo').style.display    = 'none';
+            document.getElementById('tab-btn-deportes').style.display = 'none';
           }
         }
       } catch(e) {}
@@ -333,6 +337,48 @@
 
     </div><!-- /tab-grupo -->
 
+    <!-- ==================== TAB: DEPORTES ==================== -->
+    <div id="tab-deportes" style="display:none">
+
+      <div class="cal-filters">
+        <div class="field">
+          <label>Disciplina / Grupo Deportivo</label>
+          <select id="dep-grupo" onchange="onDepGrupoChange()">
+            <option value="">— Seleccione disciplina —</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Período</label>
+          <select id="dep-periodo">
+            <option value="1er Parcial">1er Parcial</option>
+            <option value="2do Parcial">2do Parcial</option>
+            <option value="3er Parcial">3er Parcial</option>
+            <option value="Final">Final</option>
+            <option value="Extraordinario">Extraordinario</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Maestro (opcional)</label>
+          <select id="dep-maestro">
+            <option value="">— Sin asignar —</option>
+          </select>
+        </div>
+        <div class="field" style="justify-content:flex-end">
+          <button class="btn btn-primary btn-sm" onclick="cargarCapturaDep()">
+            <i class="fas fa-list"></i> Cargar Lista
+          </button>
+        </div>
+      </div>
+
+      <div id="dep-resultado">
+        <div class="cal-empty">
+          <i class="fas fa-futbol"></i>
+          <p>Seleccione una disciplina deportiva y período para cargar la lista.</p>
+        </div>
+      </div>
+
+    </div><!-- /tab-deportes -->
+
   </div><!-- /main-content -->
 </div><!-- /layout -->
 
@@ -352,12 +398,15 @@ let _capGrupoId  = null;
 let _capAlumnos  = [];     // alumnos + calificaciones cargados en captura
 let _gvGrupoId   = null;
 let _alumnoSel   = null;   // alumno seleccionado en tab alumno
+let _depAlumnos  = [];
+let _depGrupos   = [];
+let _deportesMateriaId = null;
 
 /* ────────────────────────────────────────────
    TABS
 ──────────────────────────────────────────── */
 function setTab(tab) {
-  ['captura','alumno','grupo'].forEach(t => {
+  ['captura','alumno','grupo','deportes'].forEach(t => {
     $('tab-' + t).style.display = t === tab ? '' : 'none';
     $('tab-btn-' + t).classList.toggle('active', t === tab);
   });
@@ -388,6 +437,18 @@ function setTab(tab) {
     `<option value="${m.id}">${esc(m.nombre)}</option>`
   ).join('');
   $('cap-maestro').innerHTML = '<option value="">— Sin asignar —</option>' + maeOpts;
+  $('dep-maestro').innerHTML = '<option value="">— Sin asignar —</option>' + maeOpts;
+
+  // Poblar grupos deportivos
+  _depGrupos = await getGruposDeporte();
+  const depOpts = _depGrupos.map(g =>
+    `<option value="${g.id}">${esc(g.nombre)}${g.deporte ? ' — ' + esc(g.deporte) : ''}</option>`
+  ).join('');
+  $('dep-grupo').innerHTML = '<option value="">— Seleccione disciplina —</option>' + depOpts;
+
+  // Guardar id de la materia Deportes para calificaciones
+  const _depMatObj = _materias.find(m => (m.nombre || '').toLowerCase() === 'deportes');
+  _deportesMateriaId = _depMatObj ? _depMatObj.id : null;
 
   refreshBadge();
 })();
@@ -396,6 +457,141 @@ function onCapGrupoChange() {
   _capGrupoId = gv('cap-grupo') || null;
   $('cap-resultado').innerHTML = `<div class="cal-empty"><i class="fas fa-list"></i><p>Pulse "Cargar Lista" para ver los alumnos del grupo.</p></div>`;
   _filtrarMateriasPorGrupo();
+}
+
+/* ────────────────────────────────────────────
+   TAB DEPORTES
+──────────────────────────────────────────── */
+function onDepGrupoChange() {
+  $('dep-resultado').innerHTML = `<div class="cal-empty"><i class="fas fa-futbol"></i><p>Pulse "Cargar Lista" para ver los alumnos de esta disciplina.</p></div>`;
+}
+
+async function cargarCapturaDep() {
+  const grupoId = parseInt(gv('dep-grupo'));
+  const periodo = gv('dep-periodo');
+  if (!grupoId) { toast('Seleccione una disciplina deportiva.', 'warn'); return; }
+  if (!_deportesMateriaId) {
+    toast('La materia "Deportes" no existe en el catálogo. Agrégala primero en la sección de materias.', 'warn');
+    return;
+  }
+  const res = $('dep-resultado');
+  res.innerHTML = '<div class="cal-empty"><i class="fas fa-spinner fa-spin"></i><p>Cargando...</p></div>';
+
+  const alumnos = await getAlumnosByGrupoDeporte(grupoId);
+  const { data: calsRaw } = await _sb.from('calificaciones').select('*')
+    .eq('materia_id', _deportesMateriaId).eq('periodo', periodo);
+
+  _depAlumnos = (alumnos || [])
+    .filter(a => !a.exalumno)
+    .sort((a, b) => (a.nombre || '').localeCompare(b.nombre || '', 'es', { sensitivity: 'base' }));
+
+  if (!_depAlumnos.length) {
+    res.innerHTML = '<div class="cal-empty"><i class="fas fa-user-slash"></i><p>No hay alumnos asignados a esta disciplina.</p></div>';
+    return;
+  }
+
+  const calMap = {};
+  (calsRaw || []).forEach(c => { calMap[c.folio] = c; });
+
+  const rows = _depAlumnos.map((a, i) => {
+    const cal  = calMap[a.folio];
+    const val  = cal ? (cal.calificacion !== null ? cal.calificacion : '') : '';
+    const obs  = cal ? (cal.observaciones || '') : '';
+    const ap   = val !== '' ? (parseFloat(val) >= 6 ? 'aprobado' : 'reprobado') : '';
+    const estHtml = val !== ''
+      ? (parseFloat(val) >= 6
+        ? `<span class="badge-saved">Aprobado</span>`
+        : `<span class="badge-saved" style="background:#fee2e2;color:#b91c1c">Reprobado</span>`)
+      : `<span class="badge-empty">Sin calificación</span>`;
+    const grupoAcad = _grupos.find(g => g.id === parseInt(a.grupoId));
+    return `<tr>
+      <td class="td-num">${i + 1}</td>
+      <td class="td-folio">${esc(a.folio)}</td>
+      <td class="td-nombre">${esc(a.nombre || '')}</td>
+      <td style="font-size:11px;color:var(--text-muted)">${esc(grupoAcad ? grupoAcad.nombre : '—')}</td>
+      <td class="th-c">
+        <input type="number" class="grade-input ${ap}" id="dep-gi-${i}"
+          data-dep-idx="${i}" data-folio="${esc(a.folio)}"
+          min="0" max="10" step="0.1" value="${esc(String(val))}" placeholder="—"
+          oninput="onDepGradeInput(this)">
+      </td>
+      <td><input type="text" class="obs-input" id="dep-oi-${i}" value="${esc(obs)}" placeholder="Observaciones..."></td>
+      <td id="dep-est-${i}">${estHtml}</td>
+    </tr>`;
+  }).join('');
+
+  res.innerHTML = `
+    <div style="display:flex;justify-content:flex-end;margin-bottom:10px">
+      <button class="btn btn-primary btn-sm" onclick="guardarTodasDep()">
+        <i class="fas fa-floppy-disk"></i> Guardar Todo
+      </button>
+    </div>
+    <div style="overflow-x:auto">
+      <table class="cap-table">
+        <thead><tr>
+          <th class="th-c">#</th>
+          <th>Folio</th>
+          <th>Nombre</th>
+          <th>Grupo Académico</th>
+          <th class="th-c" style="width:120px">Calificación (0–10)</th>
+          <th>Observaciones</th>
+          <th class="th-c" style="width:110px">Estado</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+}
+
+function onDepGradeInput(el) {
+  const v = parseFloat(el.value);
+  el.classList.remove('aprobado', 'reprobado');
+  if (!isNaN(v)) {
+    if (v > 10) el.value = 10;
+    if (v < 0)  el.value = 0;
+    el.classList.add(parseFloat(el.value) >= 6 ? 'aprobado' : 'reprobado');
+  }
+  const idx = el.dataset.depIdx;
+  const est = $('dep-est-' + idx);
+  if (!est) return;
+  const vf = parseFloat(el.value);
+  if (isNaN(vf) || el.value === '') {
+    est.innerHTML = '<span class="badge-empty">Sin calificación</span>';
+  } else if (vf >= 6) {
+    est.innerHTML = '<span class="badge-saved">Aprobado</span>';
+  } else {
+    est.innerHTML = '<span class="badge-saved" style="background:#fee2e2;color:#b91c1c">Reprobado</span>';
+  }
+}
+
+async function guardarTodasDep() {
+  if (!_deportesMateriaId) { toast('La materia "Deportes" no existe.', 'err'); return; }
+  const maestroId = parseInt(gv('dep-maestro')) || null;
+  const filas = _depAlumnos.map((a, i) => {
+    const calEl = document.getElementById(`dep-gi-${i}`);
+    const obsEl = document.getElementById(`dep-oi-${i}`);
+    const calVal = calEl && calEl.value !== '' ? parseFloat(calEl.value) : null;
+    return { folio: a.folio, materiaId: _deportesMateriaId, grupoId: null,
+             maestroId, periodo: gv('dep-periodo'), calificacion: calVal,
+             observaciones: obsEl ? obsEl.value : '' };
+  }).filter(f => f.calificacion !== null);
+
+  if (!filas.length) { toast('No hay calificaciones para guardar.', 'warn'); return; }
+
+  try {
+    await Promise.all(filas.map(f => saveCalificacion(f)));
+    // Actualizar badges de estado
+    _depAlumnos.forEach((_, i) => {
+      const calEl = document.getElementById(`dep-gi-${i}`);
+      if (!calEl || calEl.value === '') return;
+      const est = $('dep-est-' + i);
+      if (!est) return;
+      const vf = parseFloat(calEl.value);
+      est.innerHTML = vf >= 6
+        ? '<span class="badge-saved">Aprobado</span>'
+        : '<span class="badge-saved" style="background:#fee2e2;color:#b91c1c">Reprobado</span>';
+    });
+    toast(`${filas.length} calificaciones de deportes guardadas.`, 'ok');
+  } catch(e) { toast('Error al guardar: ' + e.message, 'err'); }
 }
 
 function _filtrarMateriasPorGrupo() {
@@ -962,8 +1158,9 @@ let _maestroNoEditar  = false;
     _maestroNoEditar = true;
   }
   if (!window._esAdmin && typeof tienePermiso === 'function' && tienePermiso('cal-solo-captura')) {
-    document.getElementById('tab-btn-alumno').style.display = 'none';
-    document.getElementById('tab-btn-grupo').style.display  = 'none';
+    document.getElementById('tab-btn-alumno').style.display   = 'none';
+    document.getElementById('tab-btn-grupo').style.display    = 'none';
+    document.getElementById('tab-btn-deportes').style.display = 'none';
     _esMaestro = true;
     _maestroNoEditar = true; // cal-solo-captura siempre implica no-editar
 
