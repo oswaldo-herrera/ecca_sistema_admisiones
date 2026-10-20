@@ -356,7 +356,7 @@ async function cargarDatos() {
     // 1. Grupos — identificar sabatinos
     const { data: grupos = [] } = await _sb.from('grupos').select('id,nombre,sabatino');
     const idsSabatino = new Set(
-      grupos.filter(g => g.sabatino === true || (g.nombre||'').toLowerCase().includes('sabat')).map(g => g.id)
+      grupos.filter(g => g.sabatino === true || (g.nombre||'').toLowerCase().includes('sab')).map(g => g.id)
     );
     // Mapa id → nombre
     const grupoNombre = {};
