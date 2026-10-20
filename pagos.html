@@ -82,6 +82,7 @@
         <button class="btn btn-primary btn-sm" id="tab-alumno" onclick="cambiarTab('alumno')"><i class="fas fa-user"></i> Por Alumno</button>
         <button class="btn btn-secondary btn-sm" id="tab-grupo" onclick="cambiarTab('grupo')"><i class="fas fa-people-group"></i> Por Grupo</button>
         <button class="btn btn-secondary btn-sm" id="tab-corte" onclick="cambiarTab('corte')"><i class="fas fa-chart-bar"></i> Corte de Pagos</button>
+        <button class="btn btn-secondary btn-sm" id="tab-corte-diario" onclick="abrirCorteDiario()" style="display:none"><i class="fas fa-calendar-day"></i> Corte Diario</button>
       </div>
 
       <!-- ===== TAB: POR ALUMNO ===== -->
@@ -568,8 +569,21 @@ function cambiarTab(t) {
     $('panel-' + k).style.display = k === t ? 'block' : 'none';
     $('tab-' + k).className = 'btn btn-sm ' + (k === t ? 'btn-primary' : 'btn-secondary');
   });
+  const btnCD = $('tab-corte-diario');
+  if (btnCD) btnCD.className = 'btn btn-sm btn-secondary';
   if (t === 'grupo') cargarGruposSelect();
   if (t === 'corte') iniciarCorte();
+}
+
+function abrirCorteDiario() {
+  ['alumno','grupo','corte'].forEach(k => {
+    $('panel-' + k).style.display = k === 'corte' ? 'block' : 'none';
+    $('tab-' + k).className = 'btn btn-sm btn-secondary';
+  });
+  const btnCD = $('tab-corte-diario');
+  if (btnCD) btnCD.className = 'btn btn-sm btn-primary';
+  iniciarCorte();
+  setCorteType('diario');
 }
 
 /* ========== CORTE DE PAGOS ========== */
@@ -1966,8 +1980,16 @@ function descargarReciboCargo(cargoId) {
 cambiarTab('alumno');
 (window._permisosListos || Promise.resolve()).then(() => {
   if (window._soloSabatino) {
-    const btn = document.getElementById('tab-corte');
-    if (btn) btn.style.display = 'none';
+    // Ocultar corte completo, mostrar solo botón de Corte Diario
+    const btnCorte = document.getElementById('tab-corte');
+    if (btnCorte) btnCorte.style.display = 'none';
+    const btnCD = document.getElementById('tab-corte-diario');
+    if (btnCD) btnCD.style.display = '';
+    // Ocultar sub-tipos mensual y concentrado dentro del panel
+    const btnM = document.getElementById('ct-tipo-mensual');
+    if (btnM) btnM.style.display = 'none';
+    const btnConc = document.getElementById('ct-tipo-concentrado');
+    if (btnConc) btnConc.style.display = 'none';
   }
 });
 
