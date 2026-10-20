@@ -963,6 +963,8 @@ async function generarCorteDiario() {
         const g = _ctGrupos.find(x => x.id === a.grupo_id);
         if (g) { grupoNomMap[a.folio] = g.nombre; folioModalidadMap[a.folio] = g.modalidad || ''; }
       });
+      // Para sabatino: restringir el query de pagos solo a sus alumnos
+      if (window._soloSabatino) folios = Object.keys(alumnosMap);
     }
 
     // Obtener pagos en el rango exacto de fechas
