@@ -336,18 +336,24 @@ const CURRICULUM = {
 function ordenarMaterias(materias, grupo) {
   const mod = (grupo.modalidad || '').toLowerCase();
   const isCuatri = mod.includes('cuatri') || mod.includes('sab');
-  const modStr = isCuatri ? 'cuatri' : 'sem';
+  const modStr     = isCuatri ? 'cuatri' : 'sem';
+  const otroModStr = isCuatri ? 'sem'    : 'cuatri';
   const m = (grupo.nombre || '').match(/^(\d)/);
   const grado = m ? m[1] : null;
   if (!grado) return materias;
-  const order = CURRICULUM[`${grado}${modStr}`];
+  const order     = CURRICULUM[`${grado}${modStr}`];
+  const otroOrder = CURRICULUM[`${grado}${otroModStr}`];
   if (!order) return materias;
   const orderMap = Object.fromEntries(order.map((n,i) => [n, i]));
-  return [...materias].sort((a, b) => {
-    const ia = orderMap[NORM(a.nombre)] ?? 999;
-    const ib = orderMap[NORM(b.nombre)] ?? 999;
-    return ia !== ib ? ia - ib : (a.nombre||'').localeCompare(b.nombre||'', 'es');
-  });
+  // Nombres que SOLO existen en el plan de la otra modalidad (no en el nuestro)
+  const soloEnOtro = new Set((otroOrder || []).filter(n => orderMap[n] === undefined));
+  return [...materias]
+    .filter(mat => !soloEnOtro.has(NORM(mat.nombre)))
+    .sort((a, b) => {
+      const ia = orderMap[NORM(a.nombre)] ?? 999;
+      const ib = orderMap[NORM(b.nombre)] ?? 999;
+      return ia !== ib ? ia - ib : (a.nombre||'').localeCompare(b.nombre||'', 'es');
+    });
 }
 
 function filtrarBoletas() {
@@ -514,8 +520,19 @@ async function generarBoletas() {
       materiasActivas = materiasGrupo.filter(m => !m.inactiva);
     } else {
       const matIdsConCal = [...new Set(cals.map(c => c.materia_id))];
-      materiasActivas = _materias.filter(m => !m.inactiva && matIdsConCal.includes(m.id))
-        .sort((a, b) => (a.nombre || '').localeCompare(b.nombre || '', 'es'));
+      // Determinar modalidad del grupo para excluir materias de la otra
+      const _bMod     = (grupo.modalidad || '').toLowerCase();
+      const _bCuatri  = _bMod.includes('cuatri') || _bMod.includes('sab');
+      const _bOtroMod = _bCuatri ? 'Semestral' : 'Cuatrimestral';
+      const _bGradoM  = (grupo.nombre || '').match(/^(\d)/);
+      const _bGradoN  = _bGradoM ? _bGradoM[1] : null;
+      materiasActivas = _materias.filter(m => {
+        if (m.inactiva) return false;
+        if (!matIdsConCal.includes(m.id)) return false;
+        // Excluir si el campo grado de la materia pertenece a la otra modalidad
+        if (_bGradoN && m.grado && m.grado === `${_bGradoN}° ${_bOtroMod}`) return false;
+        return true;
+      }).sort((a, b) => (a.nombre || '').localeCompare(b.nombre || '', 'es'));
     }
     // Ordenar según plan de estudios
     materiasActivas = ordenarMaterias(materiasActivas, grupo);
