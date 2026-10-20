@@ -574,6 +574,8 @@ async function generarBoletas() {
       }).join('') + (() => {
         const dv = depCalMap[a.folio];
         if (dv === undefined || dv === null) return '';
+        // No duplicar si Deportes ya aparece en materiasActivas
+        if (materiasActivas.some(m => NORM(m.nombre) === 'deportes')) return '';
         const dvf = parseFloat(dv);
         const dc  = dvf < 6 ? 'color:#b91c1c' : '';
         const de  = dvf >= 6 ? `<span class="badge-ap">Aprobado</span>` : `<span class="badge-rep">Reprobado</span>`;
@@ -638,6 +640,8 @@ async function generarBoletas() {
       }).join('') + (() => {
         const depPeriodos = depCalMap[a.folio];
         if (!depPeriodos || typeof depPeriodos !== 'object') return '';
+        // No duplicar si Deportes ya aparece en materiasActivas
+        if (materiasActivas.some(m => NORM(m.nombre) === 'deportes')) return '';
         const depCols = PERIODOS_GENERAL.map(p => {
           const v = depPeriodos[p];
           const val = (v !== null && v !== undefined) ? parseFloat(v) : null;
