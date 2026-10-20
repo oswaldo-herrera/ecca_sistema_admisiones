@@ -622,9 +622,34 @@ function _filtrarMateriasPorGrupo() {
   const modStr = mod.includes('sem') ? 'Semestral' : 'Cuatrimestral';
   const gradoStr = grado ? `${grado}° ${modStr}` : null;
 
-  const filtradas = gradoStr
+  let filtradas = gradoStr
     ? _materias.filter(m => m.grado === gradoStr)
     : _materias;
+
+  // Para 5° y 6° cuatrimestral con especialidad: filtrar por plan de la especialidad
+  const esp = grupo.especialidad || null;
+  const isCuatri = mod.includes('cuatri') || mod.includes('sab');
+  if (esp && isCuatri && (grado === 5 || grado === 6)) {
+    const ESP_MATERIAS = {
+      humanidades: {
+        5: ['sociologia','psicologia','derecho','historia universal','literatura universal','ingles','informatica','deportes'],
+        6: ['sociologia','psicologia','derecho','historia del arte','literatura mexicana','ingles','informatica','deportes'],
+      },
+      economico: {
+        5: ['matematicas financieras','administracion','contabilidad','economia','problemas sociales','ingles','informatica','deportes'],
+        6: ['probabilidad','administracion','contabilidad','economia','problemas sociales','ingles','informatica','deportes'],
+      },
+      fisico: {
+        5: ['calculo diferencial','fisica','dibujo','estadistica','mecanica','ingles','informatica','deportes'],
+        6: ['calculo integral','fisica','diseno grafico','estadistica','calor','ingles','informatica','deportes'],
+      },
+    };
+    const claves = (ESP_MATERIAS[esp] || {})[grado] || [];
+    if (claves.length) {
+      const NORM = s => (s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
+      filtradas = filtradas.filter(m => claves.some(c => NORM(m.nombre).includes(c)));
+    }
+  }
 
   const prevVal = sel.value;
   sel.innerHTML = '<option value="">— Seleccione materia —</option>' +

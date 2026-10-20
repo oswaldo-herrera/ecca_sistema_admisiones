@@ -111,17 +111,26 @@
     <div class="modal-body">
       <div class="field" style="margin-bottom:12px">
         <label class="field-label">Nombre del grupo <span class="req">*</span></label>
-        <input class="field-input" id="gf-nombre" type="text" placeholder="Ej. 1A Cuatrimestral">
+        <input class="field-input" id="gf-nombre" type="text" placeholder="Ej. 1A Cuatrimestral" oninput="_mostrarEspecialidad()">
       </div>
       <div class="field" style="margin-bottom:12px">
         <label class="field-label">Modalidad</label>
-        <select class="field-select" id="gf-modalidad">
+        <select class="field-select" id="gf-modalidad" onchange="onGfModalidadChange()">
           <option value="">— Seleccionar —</option>
           <option>Cuatrimestral</option>
           <option>Semestral</option>
           <option>Escolarizado</option>
           <option>Abierto</option>
           <option>En línea</option>
+        </select>
+      </div>
+      <div class="field" style="margin-bottom:12px" id="gf-especialidad-wrap" style="display:none">
+        <label class="field-label">Área de especialidad <span style="font-size:11px;color:var(--text-muted)">(solo 5° y 6°)</span></label>
+        <select class="field-select" id="gf-especialidad">
+          <option value="">— Sin especialidad —</option>
+          <option value="humanidades">Humanidades</option>
+          <option value="economico">Económico Administrativo</option>
+          <option value="fisico">Físico Matemático</option>
         </select>
       </div>
       <div class="field" style="margin-bottom:12px">
@@ -335,8 +344,21 @@ function abrirNuevoGrupo() {
   $('gf-titulo').textContent = 'Nuevo Grupo';
   sv('gf-nombre', ''); sv('gf-modalidad', ''); sv('gf-ciclo', ''); sv('gf-cupo', '');
   sv('gf-monto-insc', ''); sv('gf-monto-cole', ''); sv('gf-num-cole', '');
+  sv('gf-especialidad', '');
+  document.getElementById('gf-especialidad-wrap').style.display = 'none';
   openModal('modal-grupo-form');
 }
+
+function _mostrarEspecialidad() {
+  const nombre = (gv('gf-nombre') || '').trim();
+  const modal  = (gv('gf-modalidad') || '').toLowerCase();
+  const esCuatri = modal.includes('cuatri') || modal.includes('sab');
+  const grado  = (nombre.match(/^(\d)/) || [])[1];
+  const mostrar = esCuatri && (grado === '5' || grado === '6');
+  document.getElementById('gf-especialidad-wrap').style.display = mostrar ? '' : 'none';
+}
+
+function onGfModalidadChange() { _mostrarEspecialidad(); }
 
 function abrirEditarGrupo(id) {
   const g = _grupos.find(x => x.id === id);
@@ -345,6 +367,8 @@ function abrirEditarGrupo(id) {
   $('gf-titulo').textContent = 'Editar Grupo';
   sv('gf-nombre', g.nombre); sv('gf-modalidad', g.modalidad || ''); sv('gf-ciclo', g.ciclo || ''); sv('gf-cupo', g.cupo || '');
   sv('gf-monto-insc', g.monto_inscripcion || ''); sv('gf-monto-cole', g.monto_colegiatura || ''); sv('gf-num-cole', g.num_colegiaturas || '');
+  sv('gf-especialidad', g.especialidad || '');
+  _mostrarEspecialidad();
   openModal('modal-grupo-form');
 }
 
@@ -355,6 +379,7 @@ async function guardarGrupoForm() {
     await saveGrupo({
       id: _editingGrupoId, nombre, modalidad: gv('gf-modalidad'), ciclo: gv('gf-ciclo'), cupo: gv('gf-cupo'),
       montoInscripcion: gv('gf-monto-insc'), montoColegiatura: gv('gf-monto-cole'), numColegiaturas: gv('gf-num-cole'),
+      especialidad: gv('gf-especialidad') || null,
     });
     closeModal('modal-grupo-form');
     toast('Grupo guardado correctamente.', 'ok');

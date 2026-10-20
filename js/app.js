@@ -232,12 +232,13 @@ async function getGrupo(id) {
 async function saveGrupo(g) {
   const payload = {
     nombre:             g.nombre,
-    modalidad:          g.modalidad || null,
-    ciclo:              g.ciclo     || null,
-    cupo:               g.cupo      ? parseInt(g.cupo) : null,
+    modalidad:          g.modalidad    || null,
+    ciclo:              g.ciclo        || null,
+    cupo:               g.cupo         ? parseInt(g.cupo) : null,
     monto_inscripcion:  g.montoInscripcion ? parseFloat(g.montoInscripcion) : null,
     monto_colegiatura:  g.montoColegiatura ? parseFloat(g.montoColegiatura) : null,
     num_colegiaturas:   g.numColegiaturas  ? parseInt(g.numColegiaturas)    : null,
+    especialidad:       g.especialidad || null,
   };
   if (g.id) payload.id = parseInt(g.id);
   const { data, error } = await _sb.from('grupos').upsert(payload).select();

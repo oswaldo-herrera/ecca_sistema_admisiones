@@ -325,12 +325,26 @@ const CURRICULUM = {
     'economia i','estadistica i','literatura universal',
     'problemas sociales politicos y economicos de mexico i','mecanica',
     'ingles v','informatica i','deportes'],
+  '5cuatri-humanidades': ['sociologia i','temas selectos de psicologia i','temas selectos de derecho i',
+    'historia universal','literatura universal','ingles v','informatica i','deportes'],
+  '5cuatri-economico': ['matematicas financieras','administracion i','contabilidad i',
+    'economia i','problemas sociales politicos y economicos de mexico i',
+    'ingles v','informatica i','deportes'],
+  '5cuatri-fisico': ['calculo diferencial','temas selectos de fisica i','dibujo tecnico',
+    'estadistica i','mecanica','ingles v','informatica i','deportes'],
   '6cuatri': ['sociologia ii','probabilidad y estadistica','calculo integral',
     'temas selectos de psicologia ii','administracion ii','temas selectos de fisica ii',
     'temas selectos de derecho ii','contabilidad ii','diseno grafico','historia del arte',
     'economia ii','estadistica ii','literatura mexicana',
     'problemas sociales politicos y economicos de mexico ii','calor y electricidad',
     'ingles vi','informatica ii','deportes'],
+  '6cuatri-humanidades': ['sociologia ii','temas selectos de psicologia ii','temas selectos de derecho ii',
+    'historia del arte','literatura mexicana','ingles vi','informatica ii','deportes'],
+  '6cuatri-economico': ['probabilidad y estadistica','administracion ii','contabilidad ii',
+    'economia ii','problemas sociales politicos y economicos de mexico ii',
+    'ingles vi','informatica ii','deportes'],
+  '6cuatri-fisico': ['calculo integral','temas selectos de fisica ii','diseno grafico',
+    'estadistica ii','calor y electricidad','ingles vi','informatica ii','deportes'],
 };
 
 function ordenarMaterias(materias, grupo) {
@@ -341,9 +355,17 @@ function ordenarMaterias(materias, grupo) {
   const m = (grupo.nombre || '').match(/^(\d)/);
   const grado = m ? m[1] : null;
   if (!grado) return materias;
-  const order     = CURRICULUM[`${grado}${modStr}`];
+
+  // Para 5° y 6° cuatrimestral, usar curriculum de especialidad si está asignada
+  const esp = grupo.especialidad || null;
+  const currKey = (esp && isCuatri && (grado === '5' || grado === '6'))
+    ? `${grado}${modStr}-${esp}`
+    : `${grado}${modStr}`;
+
+  const order     = CURRICULUM[currKey] || CURRICULUM[`${grado}${modStr}`];
   const otroOrder = CURRICULUM[`${grado}${otroModStr}`];
   if (!order) return materias;
+
   const orderMap = Object.fromEntries(order.map((n,i) => [n, i]));
   // Nombres que SOLO existen en el plan de la otra modalidad (no en el nuestro)
   const soloEnOtro = new Set((otroOrder || []).filter(n => orderMap[n] === undefined));
