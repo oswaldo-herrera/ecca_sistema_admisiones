@@ -203,7 +203,7 @@
     <!-- Tabs -->
     <div class="cal-tabs">
       <div class="cal-tab active" id="tab-btn-captura" onclick="setTab('captura')">
-        <i class="fas fa-pen-to-square"></i> Captura
+        <i class="fas fa-pen-to-square"></i> Calificaciones Académicas
       </div>
       <div class="cal-tab" id="tab-btn-alumno" onclick="setTab('alumno')">
         <i class="fas fa-user"></i> Por Alumno
@@ -212,7 +212,7 @@
         <i class="fas fa-people-group"></i> Por Grupo
       </div>
       <div class="cal-tab" id="tab-btn-deportes" onclick="setTab('deportes')">
-        <i class="fas fa-futbol"></i> Deportes
+        <i class="fas fa-futbol"></i> Calificaciones Deportes
       </div>
     </div>
     <script>
@@ -222,9 +222,9 @@
         if (cp && cp !== '__admin__') {
           var p = JSON.parse(cp);
           if (p.indexOf('cal-solo-captura') !== -1) {
-            document.getElementById('tab-btn-alumno').style.display   = 'none';
-            document.getElementById('tab-btn-grupo').style.display    = 'none';
-            document.getElementById('tab-btn-deportes').style.display = 'none';
+            // Profesores: ocultar Por Alumno y Por Grupo, pero SÍ pueden ver Deportes
+            document.getElementById('tab-btn-alumno').style.display = 'none';
+            document.getElementById('tab-btn-grupo').style.display  = 'none';
           }
         }
       } catch(e) {}
@@ -1183,9 +1183,9 @@ let _maestroNoEditar  = false;
     _maestroNoEditar = true;
   }
   if (!window._esAdmin && typeof tienePermiso === 'function' && tienePermiso('cal-solo-captura')) {
-    document.getElementById('tab-btn-alumno').style.display   = 'none';
-    document.getElementById('tab-btn-grupo').style.display    = 'none';
-    document.getElementById('tab-btn-deportes').style.display = 'none';
+    // Profesores: ocultar Por Alumno y Por Grupo, pero SÍ pueden ver Deportes
+    document.getElementById('tab-btn-alumno').style.display = 'none';
+    document.getElementById('tab-btn-grupo').style.display  = 'none';
     _esMaestro = true;
     _maestroNoEditar = true; // cal-solo-captura siempre implica no-editar
 
