@@ -424,7 +424,7 @@ async function abrirBuscarParaDeporte() {
 function buscarAlumnoDeporte() {
   const q = ($('db-q').value || '').toLowerCase();
   if (!q) { $('db-list').innerHTML = '<div style="text-align:center;padding:24px;color:var(--text-light)">Escriba para buscar...</div>'; return; }
-  // Excluir los que ya están en este grupo
+  // Excluir los que ya están en este grupo (incluidos los extras de localStorage)
   const yaAsignados = new Set(_detalleAlumnosD.map(a => a.folio));
   const res = _todosAlumnos.filter(r =>
     !yaAsignados.has(r.folio) && (
