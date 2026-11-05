@@ -392,11 +392,13 @@ async function cargar() {
   });
 
   // Build combinado: one entry per professor (case-insensitive dedup)
+  const _OCULTOS = ['oswaldo herrera']; // temporal: ocultar de la vista admin
   const seen = new Set(); // lowercase keys
   _combinado = [];
 
   _maestros.forEach(m => {
     const key = (m.nombre || '').toLowerCase();
+    if (_OCULTOS.some(o => key.includes(o))) return;
     seen.add(key);
     _combinado.push({ maestro: m, avances: avMap[key] || [] });
   });
