@@ -1,0 +1,1092 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ECCA — Avance Mensual</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="css/styles.css">
+<style>
+/* ── Barra de acción sticky ── */
+.am-bar {
+  position:sticky; top:0; z-index:20;
+  background:var(--bg-card); border-bottom:1px solid var(--border);
+  padding:10px 20px; display:flex; align-items:center; gap:10px;
+  flex-wrap:wrap; box-shadow:0 2px 8px rgba(0,0,0,.07);
+}
+.am-bar-mes { display:flex; align-items:center; gap:7px; }
+.am-bar-mes label { font-size:12px; font-weight:700; color:var(--text-muted); }
+.am-bar input[type=month] {
+  height:38px; border:1px solid var(--border); border-radius:var(--r-sm);
+  padding:0 10px; font-size:14px; background:var(--bg-card); color:var(--text);
+}
+.am-bar input[type=month]:focus { outline:none; border-color:var(--gold); }
+.am-badge {
+  padding:4px 12px; border-radius:20px; font-size:11px; font-weight:700;
+}
+.am-badge-vacio    { background:#f1f5f9; color:#94a3b8; }
+.am-badge-borrador { background:#fef3c7; color:#92400e; }
+.am-badge-enviado  { background:#dcfce7; color:#15803d; }
+.am-last { font-size:11px; color:var(--text-muted); }
+.am-sp { flex:1; }
+.am-btn {
+  display:inline-flex; align-items:center; gap:7px;
+  height:40px; padding:0 18px; border-radius:var(--r-sm);
+  font-size:13px; font-weight:600; cursor:pointer; border:none; transition:.15s;
+  white-space:nowrap;
+}
+.am-btn:disabled { opacity:.4; cursor:not-allowed; }
+.am-btn-draft  { background:#fff; border:1.5px solid var(--border); color:var(--text); }
+.am-btn-draft:not(:disabled):hover  { border-color:var(--navy); color:var(--navy); }
+.am-btn-send   { background:var(--navy); color:#fff; }
+.am-btn-send:not(:disabled):hover   { opacity:.85; }
+.am-btn-reopen { background:#fff; border:1.5px solid #f59e0b; color:#92400e; }
+.am-btn-reopen:hover { background:#fef3c7; }
+.am-btn-del { background:#fff; border:1.5px solid #fca5a5; color:#b91c1c; }
+.am-btn-del:hover { background:#fee2e2; border-color:#ef4444; }
+
+/* ── Tabs modo ── */
+.am-mode-row { padding:14px 20px 0; display:flex; gap:0; }
+.am-mode-tabs {
+  display:inline-flex; border:1.5px solid var(--border);
+  border-radius:var(--r-sm); overflow:hidden;
+}
+.am-mode-tab {
+  padding:9px 18px; font-size:13px; font-weight:600;
+  cursor:pointer; color:var(--text-muted); background:var(--bg-card);
+  border:none; display:flex; align-items:center; gap:7px; transition:.15s;
+}
+.am-mode-tab.on { background:var(--navy); color:#fff; }
+.am-mode-tab:not(.on):hover { background:var(--bg-hover); color:var(--text); }
+
+/* ── Secciones ── */
+.am-wrap { padding:0 20px 60px; }
+.am-sec {
+  background:var(--bg-card); border:1px solid var(--border);
+  border-radius:var(--r-lg); margin-bottom:18px; overflow:hidden;
+}
+.am-sec-h {
+  background:var(--navy); color:#fff;
+  padding:12px 18px; display:flex; align-items:center; gap:10px;
+}
+.am-snum {
+  width:24px; height:24px; border-radius:50%; background:var(--gold);
+  color:var(--navy); display:flex; align-items:center; justify-content:center;
+  font-size:12px; font-weight:800; flex-shrink:0;
+}
+.am-stitle { font-size:13px; font-weight:700; letter-spacing:.5px; text-transform:uppercase; }
+.am-ssub   { font-size:11px; color:rgba(255,255,255,.6); margin-left:auto; text-align:right; }
+.am-body { padding:18px; }
+
+/* ── Campos generales ── */
+.am-g2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.am-g3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px; }
+.f { display:flex; flex-direction:column; gap:5px; }
+.f label { font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:.4px; }
+.f input, .f select, .f textarea {
+  height:42px; border:1.5px solid var(--border); border-radius:var(--r-sm);
+  padding:0 12px; font-size:15px; background:var(--bg-card); color:var(--text);
+  -webkit-appearance:none; appearance:none;
+}
+.f select { padding-right:30px; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath fill='%23666' d='M7 7l3 3 3-3'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 10px center; background-size:16px; }
+.f input:focus, .f select:focus, .f textarea:focus { outline:none; border-color:var(--gold); }
+.f input[readonly] { background:var(--bg-hover); color:var(--text-muted); cursor:not-allowed; }
+.f textarea { height:auto; min-height:90px; padding:10px 12px; resize:vertical; line-height:1.5; }
+
+/* ── Tabla temas / metas ── */
+.am-tbl-scroll { overflow-x:auto; }
+.am-tbl { width:100%; border-collapse:collapse; font-size:13px; }
+.am-tbl th {
+  background:var(--navy); color:#fff; padding:9px 10px;
+  text-align:left; font-size:11px; letter-spacing:.3px; white-space:nowrap;
+}
+.am-tbl td {
+  padding:7px 8px; border-bottom:1px solid var(--border); vertical-align:middle;
+}
+.am-tbl tr:last-child td { border-bottom:none; }
+.am-tbl tr:hover td { background:var(--bg-hover); }
+.am-tbl .num-c {
+  width:28px; height:28px; border-radius:50%; background:var(--gold);
+  color:var(--navy); display:flex; align-items:center; justify-content:center;
+  font-size:12px; font-weight:800;
+}
+.ti { /* table input */
+  width:100%; height:36px; border:1.5px solid var(--border); border-radius:6px;
+  padding:0 8px; font-size:14px; background:var(--bg-card); color:var(--text);
+  box-sizing:border-box;
+}
+.ti:focus { outline:none; border-color:var(--gold); }
+.ts { /* table select */
+  width:100%; height:36px; border:1.5px solid var(--border); border-radius:6px;
+  padding:0 6px; font-size:13px; background:var(--bg-card); color:var(--text);
+  min-width:130px;
+}
+.ts:focus { outline:none; border-color:var(--gold); }
+/* % radio pills */
+.pct-row { display:flex; gap:5px; flex-wrap:wrap; }
+.pct-pill {
+  padding:5px 10px; border:1.5px solid var(--border); border-radius:20px;
+  font-size:12px; font-weight:600; color:var(--text-muted);
+  cursor:pointer; transition:.15s; user-select:none; white-space:nowrap;
+}
+.pct-pill:hover { border-color:var(--gold); color:var(--navy); }
+.pct-pill.on { background:var(--gold); color:var(--navy); border-color:var(--gold); }
+
+/* ── Alertas ── */
+.am-al-grid { display:grid; grid-template-columns:160px 1fr 1fr; gap:16px; }
+.am-rbox {
+  background:#fef2f2; border:1.5px solid #fca5a5; border-radius:var(--r-lg);
+  padding:16px; display:flex; flex-direction:column; align-items:center;
+  gap:8px; text-align:center;
+}
+.am-rbox label { font-size:11px; font-weight:700; color:#b91c1c; text-transform:uppercase; }
+#am-riesgo {
+  width:72px; text-align:center; border:2px solid #fca5a5; border-radius:var(--r-sm);
+  padding:6px; font-size:28px; font-weight:800; color:#b91c1c; background:#fff;
+}
+#am-riesgo:focus { outline:none; border-color:#b91c1c; }
+
+/* ── Banner enviado ── */
+.am-envbanner {
+  display:none; background:#dcfce7; border:1px solid #86efac;
+  border-radius:var(--r-sm); padding:10px 16px; margin-bottom:14px;
+  font-size:13px; color:#15803d; align-items:center; gap:8px;
+}
+.am-envbanner.show { display:flex; }
+
+/* ── Estado congelado (enviado) ── */
+.am-frozen .ti, .am-frozen .ts, .am-frozen .pct-pill,
+.am-frozen .f input:not([readonly]), .am-frozen .f select,
+.am-frozen .f textarea, .am-frozen #am-riesgo {
+  background:var(--bg-hover) !important; pointer-events:none;
+  color:var(--text-muted) !important;
+}
+
+/* ── Upload imagen ── */
+.am-drop {
+  border:2px dashed var(--border); border-radius:var(--r-lg);
+  padding:40px 20px; text-align:center; cursor:pointer;
+  transition:.15s; background:var(--bg-hover);
+}
+.am-drop:hover, .am-drop.drag { border-color:var(--gold); background:#fefce8; }
+.am-drop i { font-size:36px; color:var(--gold); display:block; margin-bottom:10px; }
+.am-drop p  { font-size:13px; color:var(--text-muted); margin:4px 0; }
+.am-drop small { font-size:12px; color:var(--text-light); }
+#img-preview {
+  display:none; max-width:100%; max-height:460px;
+  border-radius:var(--r-sm); border:1px solid var(--border);
+  margin-top:14px; box-shadow:0 2px 8px rgba(0,0,0,.08);
+}
+.img-actions { display:none; gap:10px; align-items:center; margin-top:12px; flex-wrap:wrap; }
+.img-actions.show { display:flex; }
+.am-saved-img-wrap {
+  background:#dcfce7; border:1px solid #86efac; border-radius:var(--r-sm);
+  padding:10px 14px; display:flex; align-items:center; gap:10px;
+  font-size:13px; color:#15803d;
+}
+
+/* ── Compacto en PC (simula 85% zoom) ── */
+@media (min-width:901px) {
+  .main-content { overflow-x:hidden; }
+  .am-bar { padding:7px 16px; gap:7px; }
+  .am-btn { height:34px; padding:0 14px; font-size:12px; gap:5px; }
+  .am-bar input[type=month] { height:32px; font-size:13px; padding:0 8px; }
+  .am-badge { padding:3px 10px; font-size:10px; }
+  .am-last { font-size:10px; }
+  .am-mode-row { padding:10px 16px 0; }
+  .am-mode-tab { padding:7px 14px; font-size:12px; }
+  .am-wrap { padding:0 16px 40px; }
+  .am-sec { margin-bottom:14px; border-radius:var(--r-sm); }
+  .am-sec-h { padding:9px 14px; }
+  .am-snum { width:20px; height:20px; font-size:9px; }
+  .am-stitle { font-size:11px; }
+  .am-ssub { font-size:10px; }
+  .am-body { padding:14px; }
+  .am-g2 { gap:10px; }
+  .am-g3 { gap:10px; }
+  .f label { font-size:10px; letter-spacing:.3px; }
+  .f input, .f select { font-size:12px; height:32px; }
+  .f textarea { font-size:12px; }
+  .ti { font-size:12px; height:34px; }
+  .ts { font-size:12px; height:34px; }
+  .pct-pill { padding:4px 8px; font-size:11px; height:30px; }
+  .am-tbl { font-size:11px; }
+  .am-tbl th, .am-tbl td { padding:5px 7px; }
+  .am-al-grid { gap:12px; }
+  #am-riesgo { font-size:26px; }
+}
+
+/* ── Responsive TABLET/PC con sidebar ── */
+@media (max-width:900px) {
+  .am-g2 { grid-template-columns:1fr; }
+  .am-g3 { grid-template-columns:1fr 1fr; }
+  .am-al-grid { grid-template-columns:120px 1fr; }
+}
+
+/* ── Responsive MÓVIL ── */
+@media (max-width:680px) {
+  /* Action bar */
+  .am-bar { gap:8px; }
+  .am-bar-mes { width:100%; }
+  .am-bar input[type=month] { flex:1; }
+  .am-sp { display:none; }
+  .am-btn { flex:1; justify-content:center; height:44px; font-size:14px; }
+
+  /* Tabs */
+  .am-mode-tabs { width:100%; }
+  .am-mode-tab { flex:1; justify-content:center; }
+
+  /* 2-col grid → 1 col */
+  .am-g2 { grid-template-columns:1fr; }
+  .am-g3 { grid-template-columns:1fr; }
+  .am-al-grid { grid-template-columns:1fr; }
+
+  /* Inputs más grandes para tocar */
+  .f input, .f select, .f textarea { font-size:16px; height:46px; }
+  .f textarea { height:auto; }
+  .ti { font-size:16px; height:42px; }
+  .ts { font-size:15px; height:42px; }
+  .pct-pill { padding:8px 12px; font-size:13px; }
+  #am-riesgo { font-size:30px; }
+
+  /* Tabla → tarjetas en móvil */
+  .am-tbl thead { display:none; }
+  .am-tbl, .am-tbl tbody, .am-tbl tr, .am-tbl td { display:block; width:100%; }
+  .am-tbl tr {
+    border:1.5px solid var(--border); border-radius:var(--r-lg);
+    margin-bottom:12px; overflow:hidden;
+  }
+  .am-tbl td {
+    padding:10px 14px; border-bottom:1px solid var(--border);
+    display:flex; flex-direction:column; gap:6px;
+  }
+  .am-tbl td:last-child { border-bottom:none; }
+  .am-tbl td::before {
+    content:attr(data-label);
+    font-size:10px; font-weight:700; color:var(--text-muted);
+    text-transform:uppercase; letter-spacing:.4px;
+  }
+  .am-tbl td:first-child { flex-direction:row; align-items:center; background:var(--bg-hover); }
+  .am-tbl td:first-child::before { display:none; }
+  .ts { min-width:0; }
+}
+</style>
+</head>
+<body data-modulo="avance-mensual">
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-brand">
+      <div class="sb-logo" style="background:#fff;padding:3px">
+        <img src="images/ecca_logo.png" alt="ECCA" style="width:100%;height:100%;object-fit:contain">
+      </div>
+      <div>
+        <div class="sb-brand-name">ECCA Prepa León</div>
+        <div class="sb-brand-sub">Sistema de Admisiones</div>
+      </div>
+    </div>
+    <nav class="sb-nav">
+      <div class="sb-group-label">Principal</div>
+      <a href="index.html" class="sb-item"><i class="fas fa-house"></i><span>Inicio</span></a>
+      <a href="formulario.html" class="sb-item"><i class="fas fa-user-plus"></i><span>Nueva Inscripción</span></a>
+      <div class="sb-group-label">Gestión</div>
+      <a href="base-datos.html" class="sb-item"><i class="fas fa-table-list"></i><span>Base de Datos</span><span class="sb-badge" id="sb-badge">0</span></a>
+      <a href="grupos.html" class="sb-item"><i class="fas fa-people-group"></i><span>Grupos</span></a>
+      <a href="deportes.html" class="sb-item"><i class="fas fa-futbol"></i><span>Deportes</span></a>
+      <a href="horarios.html" class="sb-item"><i class="fas fa-calendar-week"></i><span>Horarios</span></a>
+      <a href="calificaciones.html" class="sb-item"><i class="fas fa-star-half-stroke"></i><span>Calificaciones</span></a>
+      <a href="avance-mensual.html" class="sb-item active"><i class="fas fa-chart-gantt"></i><span>Avance Mensual</span></a>
+      <a href="boletas.html" class="sb-item"><i class="fas fa-file-lines"></i><span>Boletas</span></a>
+      <a href="documentos.html" class="sb-item"><i class="fas fa-folder-open"></i><span>Documentos</span></a>
+      <a href="pagos.html" class="sb-item"><i class="fas fa-circle-dollar-to-slot"></i><span>Pagos</span></a>
+      <a href="adeudos.html" class="sb-item"><i class="fas fa-triangle-exclamation"></i><span>Adeudos</span></a>
+      <a href="recibo.html" class="sb-item"><i class="fas fa-file-invoice"></i><span>Recibo</span></a>
+      <a href="credencial.html" class="sb-item"><i class="fas fa-id-card"></i><span>Credencial</span></a>
+      <a href="cumpleanos.html" class="sb-item"><i class="fas fa-cake-candles"></i><span>Cumpleaños</span></a>
+      <div class="sb-group-label">Administración</div>
+      <a href="avances-admin.html" id="sb-link-admin" class="sb-item" style="display:none"><i class="fas fa-chart-bar"></i><span>Avances Mensuales Profesores</span></a>
+      <a href="finanzas.html" class="sb-item"><i class="fas fa-chart-line"></i><span>Finanzas</span></a>
+      <a href="bitacora.html" class="sb-item"><i class="fas fa-clipboard-list"></i><span>Bitácora</span></a>
+      <a href="usuarios.html" class="sb-item"><i class="fas fa-users-gear"></i><span>Usuarios</span></a>
+    </nav>
+    <div class="sb-footer">
+      <i class="fas fa-location-dot"></i> 5 de Febrero 634, San Juan de Dios, 37000 León de los Aldama, Gto.<br>Tel. 479 153 4007
+    </div>
+  </aside>
+  <div class="sidebar-overlay"></div>
+
+  <div class="main-content">
+
+    <!-- Topbar -->
+    <header class="topbar">
+      <button class="topbar-hamburger" aria-label="Menú"><i class="fas fa-bars"></i></button>
+      <nav class="topbar-breadcrumb">
+        <a href="index.html"><i class="fas fa-house"></i></a>
+        <span class="sep">›</span>
+        <span class="current">Avance Mensual</span>
+      </nav>
+      <div class="topbar-right">
+        <a href="avances-admin.html" id="btn-admin"
+           style="display:none;align-items:center;gap:6px;text-decoration:none"
+           class="btn btn-primary btn-sm">
+          <i class="fas fa-chart-bar"></i> Ver todos
+        </a>
+      </div>
+    </header>
+
+    <!-- Barra sticky -->
+    <div class="am-bar">
+      <div class="am-bar-mes">
+        <label for="am-mes"><i class="fas fa-calendar-days"></i> Mes</label>
+        <input type="month" id="am-mes" onchange="cargarMes()">
+      </div>
+      <span class="am-badge am-badge-vacio" id="am-badge">Sin guardar</span>
+      <span class="am-last" id="am-last"></span>
+      <div class="am-sp"></div>
+      <button class="am-btn am-btn-draft" id="btn-draft" onclick="guardar('borrador')">
+        <i class="fas fa-floppy-disk"></i> Guardar
+      </button>
+      <button class="am-btn am-btn-send" id="btn-send" onclick="confirmarEnvio()">
+        <i class="fas fa-paper-plane"></i> Enviar
+      </button>
+      <button class="am-btn am-btn-reopen" id="btn-reopen" onclick="reabrir()" style="display:none">
+        <i class="fas fa-rotate-left"></i> Reabrir
+      </button>
+      <button class="am-btn am-btn-del" id="btn-del" onclick="eliminarAvance()" style="display:none">
+        <i class="fas fa-trash"></i> Eliminar
+      </button>
+    </div>
+
+    <!-- Page header -->
+    <div class="page-header">
+      <div>
+        <div class="page-title">Formato Mensual de Avance</div>
+        <div class="page-sub">Avance por tema y metas de enseñanza · Entregar a Coordinación el último viernes de cada mes</div>
+      </div>
+    </div>
+
+    <!-- Tabs modo -->
+    <div class="am-mode-row">
+      <div class="am-mode-tabs">
+        <button class="am-mode-tab on" id="tab-dig" onclick="setModo('digital')">
+          <i class="fas fa-pen-to-square"></i> Llenar en línea
+        </button>
+        <button class="am-mode-tab" id="tab-img" onclick="setModo('imagen')">
+          <i class="fas fa-image"></i> Subir imagen
+        </button>
+      </div>
+    </div>
+
+    <!-- ===== FORMULARIO DIGITAL ===== -->
+    <div class="am-wrap" id="wrap-digital">
+
+      <div class="am-envbanner" id="am-banner">
+        <i class="fas fa-circle-check"></i>
+        <span>Formato <strong>enviado</strong> a Coordinación. Para modificar usa "Reabrir".</span>
+      </div>
+
+      <!-- 1 Datos generales -->
+      <div class="am-sec">
+        <div class="am-sec-h">
+          <div class="am-snum">1</div>
+          <div class="am-stitle">Datos Generales</div>
+        </div>
+        <div class="am-body">
+          <div class="am-g2" style="margin-bottom:14px">
+            <div class="f">
+              <label>Profesor(a)</label>
+              <input type="text" id="am-profesor" placeholder="Tu nombre completo">
+            </div>
+            <div class="f">
+              <label>Grupo</label>
+              <select id="am-grupo" onchange="onGrupoChange()">
+                <option value="">— Seleccione grupo —</option>
+              </select>
+            </div>
+          </div>
+          <div class="am-g3">
+            <div class="f">
+              <label>Materia</label>
+              <select id="am-materia">
+                <option value="">— Seleccione materia —</option>
+              </select>
+            </div>
+            <div class="f">
+              <label>Semestre / Cuatrimestre</label>
+              <input type="text" id="am-semestre" placeholder="Ej. 1er Semestre">
+            </div>
+            <div class="f">
+              <label>Otros grupos</label>
+              <input type="text" id="am-grupos-extra" placeholder="Ej. 2B, 3C (opcional)">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2 Avance por tema -->
+      <div class="am-sec">
+        <div class="am-sec-h">
+          <div class="am-snum">2</div>
+          <div class="am-stitle">Avance por Tema</div>
+          <span class="am-ssub">Una fila por tema</span>
+        </div>
+        <div class="am-tbl-scroll">
+          <table class="am-tbl" id="tbl-temas">
+            <thead>
+              <tr>
+                <th style="width:32px">#</th>
+                <th style="min-width:140px">Tema / Unidad</th>
+                <th style="min-width:200px">% de Avance</th>
+                <th style="min-width:120px">Estatus</th>
+                <th style="min-width:100px">Evidencia</th>
+                <th style="min-width:130px">Comentario breve</th>
+              </tr>
+            </thead>
+            <tbody id="temas-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 3 Metas -->
+      <div class="am-sec">
+        <div class="am-sec-h">
+          <div class="am-snum">3</div>
+          <div class="am-stitle">Metas de Enseñanza</div>
+          <span class="am-ssub">Máx. 3, concretas y medibles</span>
+        </div>
+        <div class="am-tbl-scroll">
+          <table class="am-tbl" id="tbl-metas">
+            <thead>
+              <tr>
+                <th style="width:36px">#</th>
+                <th>Meta para el próximo mes</th>
+                <th style="min-width:200px">¿Cómo se va a medir?</th>
+                <th style="min-width:140px">Fecha compromiso</th>
+              </tr>
+            </thead>
+            <tbody id="metas-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 4 Alertas -->
+      <div class="am-sec">
+        <div class="am-sec-h">
+          <div class="am-snum">4</div>
+          <div class="am-stitle">Alertas y Apoyo</div>
+        </div>
+        <div class="am-body">
+          <div class="am-al-grid">
+            <div class="am-rbox">
+              <label>Alumnos en riesgo</label>
+              <input type="number" id="am-riesgo" value="0" min="0" max="999">
+              <span style="font-size:11px;color:#b91c1c;font-weight:600">alumnos</span>
+            </div>
+            <div class="f">
+              <label>Principal dificultad del mes</label>
+              <textarea id="am-dificultad" placeholder="Contenido, grupo, asistencia, materiales..."></textarea>
+            </div>
+            <div class="f">
+              <label>Apoyo que necesito de coordinación</label>
+              <textarea id="am-apoyo" placeholder="Material, tiempo, seguimiento a alumnos..."></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /wrap-digital -->
+
+    <!-- ===== SUBIR IMAGEN ===== -->
+    <div class="am-wrap" id="wrap-imagen" style="display:none">
+      <div class="am-sec">
+        <div class="am-sec-h">
+          <div class="am-snum"><i class="fas fa-image" style="font-size:11px"></i></div>
+          <div class="am-stitle">Imagen del Formato Físico</div>
+        </div>
+        <div class="am-body">
+          <p style="font-size:13px;color:var(--text-muted);margin:0 0 16px">
+            Si llenaste el formato impreso, toma una foto clara o escanéalo y súbelo aquí.<br>
+            Quedará asociado al mes seleccionado y visible para Coordinación.
+          </p>
+          <div class="am-drop" id="am-drop"
+               onclick="document.getElementById('file-in').click()"
+               ondragover="onDO(event)" ondragleave="onDL()" ondrop="onDP(event)">
+            <i class="fas fa-cloud-arrow-up"></i>
+            <p><strong>Haz clic aquí</strong> o arrastra la imagen</p>
+            <small>JPG, PNG, WEBP · Máximo 5 MB</small>
+          </div>
+          <input type="file" id="file-in" accept="image/*" style="display:none" onchange="onFS(event)">
+          <img id="img-preview" alt="Vista previa">
+          <div class="img-actions" id="img-acts">
+            <span id="img-fname" style="font-size:12px;color:var(--text-muted);flex:1"></span>
+            <button class="am-btn am-btn-send" onclick="subirImagen()" id="btn-subir">
+              <i class="fas fa-cloud-arrow-up"></i> Subir imagen
+            </button>
+            <button class="am-btn am-btn-draft" onclick="clearImg()">
+              <i class="fas fa-xmark"></i> Cancelar
+            </button>
+          </div>
+          <div id="img-saved" style="display:none;margin-top:16px">
+            <div class="am-saved-img-wrap">
+              <i class="fas fa-circle-check"></i>
+              <span>Imagen guardada para <strong id="img-mes-lbl"></strong></span>
+              <a id="img-link" href="#" target="_blank" style="margin-left:auto;color:#15803d;font-weight:600;text-decoration:none">
+                <i class="fas fa-external-link-alt"></i> Ver
+              </a>
+              <button onclick="eliminarImagen()" title="Eliminar"
+                      style="background:none;border:none;color:#b91c1c;cursor:pointer;font-size:14px;margin-left:4px">
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
+            <img id="img-saved-prev" alt="Formato subido"
+                 style="max-width:100%;max-height:420px;border-radius:var(--r-sm);border:1px solid var(--border);margin-top:12px;box-shadow:0 2px 8px rgba(0,0,0,.08)">
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /main-content -->
+</div><!-- /layout -->
+
+<!-- Modal confirmación (requerido por confirm2 de app.js) -->
+<div class="modal-ov" id="modal-confirm">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 id="mc-title">Confirmar</h3>
+      <button class="modal-close" onclick="closeModal('modal-confirm')">&#10005;</button>
+    </div>
+    <div class="modal-body"><p id="mc-msg"></p></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary btn-sm" onclick="closeModal('modal-confirm')">Cancelar</button>
+      <button class="btn btn-danger btn-sm" id="mc-ok">Aceptar</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script src="js/app.js"></script>
+<script>
+/* ═══════════════════════════════════════════════════════════
+   CONSTANTES Y ESTADO
+══════════════════════════════════════════════════════════════ */
+const N_TEMAS = 6, N_METAS = 3;
+let _modo     = 'digital';
+let _frozen   = false;
+let _estado   = 'vacio';
+let _recId    = null;
+let _imgFile  = null;
+let _grupos   = [];
+let _materias = [];
+
+function g(id) { return document.getElementById(id); }
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+/* ═══════════════════════════════════════════════════════════
+   RENDERIZADO DE TABLAS
+══════════════════════════════════════════════════════════════ */
+function renderTemas(data) {
+  const opts = {completado:'Completado',en_curso:'En curso',atrasado:'Atrasado',no_iniciado:'No iniciado'};
+  g('temas-body').innerHTML = Array.from({length:N_TEMAS}, (_,i) => {
+    const d  = (data||[])[i] || {};
+    const pv = d.avance !== undefined && d.avance !== '' ? String(d.avance) : '';
+    const pills = [0,25,50,75,100].map(p =>
+      `<span class="pct-pill${pv==p?' on':''}" data-v="${p}" data-row="${i}" onclick="setPct(this)">${p}%</span>`
+    ).join('');
+    const selOpts = Object.entries(opts).map(([v,l]) =>
+      `<option value="${v}"${d.estatus===v?' selected':''}>${l}</option>`
+    ).join('');
+    return `<tr>
+      <td data-label="#"><div class="num-c">${i+1}</div></td>
+      <td data-label="Tema / Unidad">
+        <input class="ti" id="tt${i}" value="${esc(d.tema||'')}" placeholder="Tema ${i+1}...">
+      </td>
+      <td data-label="% de Avance">
+        <div class="pct-row" id="pr${i}">${pills}</div>
+        <input type="hidden" id="tp${i}" value="${pv}">
+      </td>
+      <td data-label="Estatus">
+        <select class="ts" id="te${i}">${selOpts}</select>
+      </td>
+      <td data-label="Evidencia">
+        <input class="ti" id="tev${i}" value="${esc(d.evidencia||'')}" placeholder="Tipo de evidencia">
+      </td>
+      <td data-label="Comentario">
+        <input class="ti" id="tc${i}" value="${esc(d.comentario||'')}" placeholder="Breve comentario">
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function renderMetas(data) {
+  g('metas-body').innerHTML = Array.from({length:N_METAS}, (_,i) => {
+    const d = (data||[])[i] || {};
+    return `<tr>
+      <td data-label="#"><div class="num-c">${i+1}</div></td>
+      <td data-label="Meta">
+        <input class="ti" id="mm${i}" value="${esc(d.meta||'')}" placeholder="Meta para el próximo mes...">
+      </td>
+      <td data-label="¿Cómo medir?">
+        <input class="ti" id="mh${i}" value="${esc(d.medicion||'')}" placeholder="Indicador medible...">
+      </td>
+      <td data-label="Fecha compromiso">
+        <input class="ti" type="date" id="mf${i}" value="${d.fecha||''}">
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function setPct(el) {
+  if (_frozen) return;
+  const row = el.dataset.row;
+  document.querySelectorAll(`#pr${row} .pct-pill`).forEach(p => p.classList.remove('on'));
+  el.classList.add('on');
+  g('tp'+row).value = el.dataset.v;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   DATOS DEL FORMULARIO
+══════════════════════════════════════════════════════════════ */
+function getDatos() {
+  const temas = Array.from({length:N_TEMAS}, (_,i) => ({
+    tema:       (g('tt'+i)?.value  || '').trim(),
+    avance:     g('tp'+i)?.value  || '',
+    estatus:    g('te'+i)?.value  || '',
+    evidencia:  (g('tev'+i)?.value || '').trim(),
+    comentario: (g('tc'+i)?.value  || '').trim(),
+  }));
+  const metas = Array.from({length:N_METAS}, (_,i) => ({
+    meta:     (g('mm'+i)?.value || '').trim(),
+    medicion: (g('mh'+i)?.value || '').trim(),
+    fecha:    g('mf'+i)?.value  || '',
+  }));
+  const grupoSel = g('am-grupo').value;
+  const grupoNom = grupoSel ? (_grupos.find(x=>String(x.id)===grupoSel)?.nombre || grupoSel) : '';
+  const extra    = (g('am-grupos-extra')?.value||'').trim();
+  const grupos   = [grupoNom, extra].filter(Boolean).join(', ');
+  // Nombre de materia desde el select
+  const matSel   = g('am-materia');
+  const matNom   = matSel?.selectedOptions?.[0]?.text || '';
+  const matFinal = matNom && matNom !== '— Seleccione materia —' ? matNom : '';
+  return {
+    maestro_nombre: g('am-profesor').value.trim(),
+    mes:            g('am-mes').value,
+    materia:        matFinal,
+    grupos,
+    semestre:       (g('am-semestre')?.value||'').trim(),
+    temas, metas,
+    alumnos_riesgo: parseInt(g('am-riesgo')?.value)||0,
+    dificultad_mes: (g('am-dificultad')?.value||'').trim(),
+    apoyo_coordinacion: (g('am-apoyo')?.value||'').trim(),
+  };
+}
+
+function rellenarForm(d) {
+  // Grupo
+  const gruposArr = (d.grupos||'').split(',').map(s=>s.trim()).filter(Boolean);
+  // Buscar si el primer grupo coincide con alguno en el select
+  const grupoMatch = _grupos.find(x => gruposArr.some(n => n === x.nombre || n === String(x.id)));
+  if (grupoMatch) {
+    g('am-grupo').value = String(grupoMatch.id);
+    const resto = gruposArr.filter(n => n !== grupoMatch.nombre).join(', ');
+    if (g('am-grupos-extra')) g('am-grupos-extra').value = resto;
+  } else {
+    g('am-grupo').value = '';
+    if (g('am-grupos-extra')) g('am-grupos-extra').value = d.grupos || '';
+  }
+  // Restaurar materia: buscar en el select por texto visible
+  if (g('am-materia') && d.materia) {
+    const matSel = g('am-materia');
+    // Primero filtrar el select al grupo cargado, luego seleccionar
+    const grupoId = g('am-grupo').value ? parseInt(g('am-grupo').value) : 0;
+    _filtrarMaterias(grupoId, d.materia);
+  }
+  if (g('am-semestre')) g('am-semestre').value = d.semestre || '';
+  renderTemas(d.temas || []);
+  renderMetas(d.metas || []);
+  if (g('am-riesgo'))    g('am-riesgo').value    = d.alumnos_riesgo ?? 0;
+  if (g('am-dificultad'))g('am-dificultad').value= d.dificultad_mes || '';
+  if (g('am-apoyo'))     g('am-apoyo').value      = d.apoyo_coordinacion || '';
+}
+
+/* ═══════════════════════════════════════════════════════════
+   CARGA Y GUARDADO (Supabase)
+══════════════════════════════════════════════════════════════ */
+async function cargarMes() {
+  const mes    = g('am-mes').value;
+  const nombre = g('am-profesor').value.trim();
+  if (!mes || !nombre) { renderTemas([]); renderMetas([]); setEstado('vacio',null); return; }
+
+  const { data, error } = await _sb.from('avances_mensuales')
+    .select('*').eq('maestro_nombre',nombre).eq('mes',mes).maybeSingle();
+
+  if (error) { console.error('cargarMes:', error); renderTemas([]); renderMetas([]); setEstado('vacio',null); return; }
+
+  if (data) {
+    _recId = data.id;
+    rellenarForm(data);
+    setEstado(data.estado || 'borrador', data.updated_at);
+    if (data.imagen_url) cargarImgGuardada(data.imagen_url);
+    else { g('img-saved').style.display='none'; }
+  } else {
+    _recId = null;
+    rellenarForm({});
+    setEstado('vacio', null);
+    g('img-saved').style.display='none';
+  }
+}
+
+async function guardar(nuevoEst) {
+  const d = getDatos();
+  if (!d.maestro_nombre || !d.mes) { toast('Sesión no encontrada. Recarga la página.','warn'); return; }
+  const btn = g(nuevoEst==='borrador' ? 'btn-draft' : 'btn-send');
+  if (btn) btn.disabled = true;
+
+  const payload = { ...d, estado: nuevoEst, updated_at: new Date().toISOString() };
+  const { data, error } = await _sb.from('avances_mensuales')
+    .upsert(payload, { onConflict: 'maestro_nombre,mes' })
+    .select().single();
+
+  if (btn) btn.disabled = false;
+  if (error) { toast('Error al guardar: ' + error.message, 'err'); return; }
+  _recId = data.id;
+  setEstado(nuevoEst, data.updated_at);
+  toast(nuevoEst==='enviado' ? '¡Avance enviado a Coordinación! ✓' : 'Avance guardado.', 'ok');
+}
+
+function confirmarEnvio() {
+  confirm2('Enviar a Coordinación',
+    '¿Deseas enviar este formato? Quedará visible para Coordinación Académica.',
+    () => guardar('enviado'),
+    'Enviar', 'btn-primary');
+}
+
+async function reabrir() {
+  if (!_recId) { setEstado('borrador',null); return; }
+  const { error } = await _sb.from('avances_mensuales')
+    .update({ estado:'borrador', updated_at: new Date().toISOString() }).eq('id',_recId);
+  if (error) { toast('Error: '+error.message,'err'); return; }
+  setEstado('borrador', new Date().toISOString());
+  toast('Formato reabierto. Ya puedes editar.','ok');
+}
+
+async function eliminarAvance() {
+  confirm2('Eliminar avance',
+    'Se eliminará el registro completo de este mes, incluyendo la imagen si existe. Esta acción no se puede deshacer.',
+    async () => {
+      if (!_recId) { toast('No hay registro que eliminar.','warn'); return; }
+      // Obtener imagen_url antes de borrar
+      const { data: rec } = await _sb.from('avances_mensuales').select('imagen_url').eq('id',_recId).maybeSingle();
+      const { error } = await _sb.from('avances_mensuales').delete().eq('id',_recId);
+      if (error) { toast('Error al eliminar: '+error.message,'err'); return; }
+      // Borrar imagen del storage si existe
+      if (rec?.imagen_url) {
+        const match = rec.imagen_url.match(/avances-imagenes\/(.+)$/);
+        if (match) await _sb.storage.from('avances-imagenes').remove([decodeURIComponent(match[1])]);
+      }
+      _recId = null;
+      rellenarForm({});
+      setEstado('vacio', null);
+      g('img-saved').style.display = 'none';
+      toast('Avance eliminado.','ok');
+    },
+    'Eliminar', 'btn-danger');
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ESTADO (badge + frozen)
+══════════════════════════════════════════════════════════════ */
+function setEstado(estado, updatedAt) {
+  _estado = estado;
+  _frozen = estado === 'enviado';
+  const badge = g('am-badge');
+  badge.className = 'am-badge';
+  if (estado==='vacio')    { badge.classList.add('am-badge-vacio');    badge.textContent = 'Sin guardar'; }
+  if (estado==='borrador') { badge.classList.add('am-badge-borrador'); badge.textContent = 'Borrador'; }
+  if (estado==='enviado')  { badge.classList.add('am-badge-enviado');  badge.textContent = 'Enviado ✓'; }
+
+  g('am-last').textContent = updatedAt
+    ? 'Guardado: ' + new Date(updatedAt).toLocaleString('es-MX',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})
+    : '';
+
+  const form = g('wrap-digital');
+  const tieneRegistro = estado === 'borrador' || estado === 'enviado';
+  if (_frozen) {
+    form.classList.add('am-frozen');
+    g('am-banner').classList.add('show');
+    g('btn-draft').style.display  = 'none';
+    g('btn-send').style.display   = 'none';
+    g('btn-reopen').style.display = '';
+  } else {
+    form.classList.remove('am-frozen');
+    g('am-banner').classList.remove('show');
+    g('btn-draft').style.display  = '';
+    g('btn-send').style.display   = '';
+    g('btn-reopen').style.display = 'none';
+  }
+  g('btn-del').style.display = tieneRegistro ? '' : 'none';
+}
+
+/* ═══════════════════════════════════════════════════════════
+   GRUPOS
+══════════════════════════════════════════════════════════════ */
+async function cargarGrupos() {
+  try {
+    [_grupos, _materias] = await Promise.all([getGrupos(), getMaterias()]);
+  } catch(e) {
+    console.error('[cargarGrupos]', e);
+    _grupos = []; _materias = [];
+  }
+  g('am-grupo').innerHTML = '<option value="">— Seleccione grupo —</option>' +
+    _grupos.map(gr => `<option value="${gr.id}">${esc(gr.nombre)}${gr.modalidad ? ' · ' + esc(gr.modalidad) : ''}</option>`).join('');
+  _filtrarMaterias(0, '');
+}
+
+function _filtrarMaterias(grupoId, selectNombre) {
+  const sel = g('am-materia');
+  if (!sel) return;
+  if (!grupoId) {
+    sel.innerHTML = '<option value="">— Seleccione materia —</option>' +
+      _materias.map(m => `<option value="${m.id}">${esc(m.nombre)}${m.grado?' ('+esc(m.grado)+')':''}</option>`).join('');
+    if (selectNombre) _setMateriaPorNombre(sel, selectNombre);
+    return;
+  }
+  const grupo = _grupos.find(gr => gr.id === grupoId);
+  if (!grupo) return;
+
+  // Detectar grado desde nombre del grupo (igual que calificaciones)
+  const nom = (grupo.nombre || '').toUpperCase();
+  let grado = null;
+  if (/^6|6[A°]|SEXTO/.test(nom))               grado = 6;
+  else if (/5TO|5[A°]|QUINTO/.test(nom))         grado = 5;
+  else if (/4[A°]|CUARTO/.test(nom))             grado = 4;
+  else if (/3[°A]|TERCERO/.test(nom))            grado = 3;
+  else if (/2[A°]|SEGUNDO/.test(nom))            grado = 2;
+  else if (/^1[\s_]|1[A°\s]|PRIMERO/.test(nom)) grado = 1;
+  else { const m2 = nom.match(/^(\d)/); if (m2) grado = parseInt(m2[1]); }
+
+  const mod    = (grupo.modalidad || '').toLowerCase();
+  const modStr = mod.includes('sem') ? 'Semestral' : 'Cuatrimestral';
+  const gradoStr = grado ? `${grado}° ${modStr}` : null;
+
+  let filtradas = gradoStr ? _materias.filter(m => m.grado === gradoStr) : _materias;
+
+  // Especialidad para 5°/6° cuatrimestral
+  const esp = grupo.especialidad || null;
+  const isCuatri = mod.includes('cuatri') || mod.includes('sab');
+  if (esp && isCuatri && (grado === 5 || grado === 6)) {
+    const ESP_MATERIAS = {
+      humanidades: {
+        5: ['sociologia','psicologia','derecho','historia universal','literatura universal','ingles','informatica','deportes'],
+        6: ['sociologia','psicologia','derecho','historia del arte','literatura mexicana','ingles','informatica','deportes'],
+      },
+      economico: {
+        5: ['matematicas financieras','administracion','contabilidad','economia','problemas sociales','ingles','informatica','deportes'],
+        6: ['probabilidad','administracion','contabilidad','economia','problemas sociales','ingles','informatica','deportes'],
+      },
+      fisico: {
+        5: ['calculo diferencial','fisica','dibujo','estadistica','mecanica','ingles','informatica','deportes'],
+        6: ['calculo integral','fisica','diseno grafico','estadistica','calor','ingles','informatica','deportes'],
+      },
+    };
+    const NORM = s => (s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
+    const claves = (ESP_MATERIAS[esp] || {})[grado] || [];
+    if (claves.length) filtradas = filtradas.filter(m => claves.some(c => NORM(m.nombre).includes(c)));
+  }
+
+  sel.innerHTML = '<option value="">— Seleccione materia —</option>' +
+    filtradas.map(m => `<option value="${m.id}">${esc(m.nombre)}</option>`).join('');
+  if (selectNombre) _setMateriaPorNombre(sel, selectNombre);
+
+  // Auto-sugerir semestre
+  if (gradoStr && !g('am-semestre').value) g('am-semestre').value = gradoStr;
+}
+
+function _setMateriaPorNombre(sel, nombre) {
+  const norm = s => (s||'').toLowerCase().trim();
+  const opt = Array.from(sel.options).find(o => norm(o.text) === norm(nombre));
+  if (opt) sel.value = opt.value;
+}
+
+function onGrupoChange() {
+  const id = parseInt(g('am-grupo').value) || 0;
+  _filtrarMaterias(id, '');
+  // Limpiar semestre para que se rellene solo con el nuevo grupo
+  g('am-semestre').value = '';
+  const grupo = _grupos.find(gr => gr.id === id);
+  if (grupo) {
+    const nom = (grupo.nombre||'').toUpperCase();
+    let grado = null;
+    if (/^6|6[A°]|SEXTO/.test(nom))               grado = 6;
+    else if (/5TO|5[A°]|QUINTO/.test(nom))         grado = 5;
+    else if (/4[A°]|CUARTO/.test(nom))             grado = 4;
+    else if (/3[°A]|TERCERO/.test(nom))            grado = 3;
+    else if (/2[A°]|SEGUNDO/.test(nom))            grado = 2;
+    else if (/^1[\s_]|1[A°\s]|PRIMERO/.test(nom)) grado = 1;
+    else { const m2 = nom.match(/^(\d)/); if (m2) grado = parseInt(m2[1]); }
+    const mod = (grupo.modalidad||'').toLowerCase();
+    if (grado) g('am-semestre').value = `${grado}° ${mod.includes('sem') ? 'Semestral' : 'Cuatrimestral'}`;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MODO digital / imagen
+══════════════════════════════════════════════════════════════ */
+function setModo(modo) {
+  _modo = modo;
+  g('tab-dig').classList.toggle('on', modo==='digital');
+  g('tab-img').classList.toggle('on', modo==='imagen');
+  g('wrap-digital').style.display = modo==='digital' ? '' : 'none';
+  g('wrap-imagen').style.display  = modo==='imagen'  ? '' : 'none';
+  if (modo==='imagen') cargarImgStatus();
+  // ocultar/mostrar botones según modo
+  const digi = modo==='digital';
+  const tieneRegistro = _estado === 'borrador' || _estado === 'enviado';
+  g('btn-draft').style.display  = digi && !_frozen ? '' : 'none';
+  g('btn-send').style.display   = digi && !_frozen ? '' : 'none';
+  g('btn-reopen').style.display = digi && _frozen  ? '' : 'none';
+  g('btn-del').style.display    = tieneRegistro    ? '' : 'none';
+}
+
+/* ═══════════════════════════════════════════════════════════
+   UPLOAD IMAGEN
+══════════════════════════════════════════════════════════════ */
+function onDO(e) { e.preventDefault(); g('am-drop').classList.add('drag'); }
+function onDL()  { g('am-drop').classList.remove('drag'); }
+function onDP(e) { e.preventDefault(); onDL(); const f=e.dataTransfer.files[0]; if(f) procImg(f); }
+function onFS(e) { const f=e.target.files[0]; if(f) procImg(f); }
+
+function procImg(file) {
+  if (!file.type.startsWith('image/')) { toast('Solo se aceptan imágenes.','warn'); return; }
+  if (file.size > 5*1024*1024) { toast('La imagen no debe superar 5 MB.','warn'); return; }
+  _imgFile = file;
+  const r = new FileReader();
+  r.onload = e => {
+    g('img-preview').src = e.target.result;
+    g('img-preview').style.display = 'block';
+    g('img-fname').textContent = file.name;
+    g('img-acts').classList.add('show');
+  };
+  r.readAsDataURL(file);
+}
+
+function clearImg() {
+  _imgFile = null;
+  g('img-preview').style.display = 'none';
+  g('img-acts').classList.remove('show');
+  g('file-in').value = '';
+}
+
+async function subirImagen() {
+  if (!_imgFile) return;
+  const nombre = g('am-profesor').value.trim();
+  const mes    = g('am-mes').value;
+  if (!nombre||!mes) { toast('Selecciona un mes y espera a que cargue tu nombre.','warn'); return; }
+  const btn = g('btn-subir'); btn.disabled=true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Subiendo...';
+  const ext  = _imgFile.name.split('.').pop().toLowerCase() || 'jpg';
+  const pathNombre = nombre.normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-zA-Z0-9_\-]/g,'_');
+  const path = pathNombre + '/' + mes + '.' + ext;
+  const { error:upE } = await _sb.storage.from('avances-imagenes').upload(path, _imgFile, { upsert:true, contentType:_imgFile.type });
+  if (upE) { toast('Error al subir: '+upE.message,'err'); btn.disabled=false; btn.innerHTML='<i class="fas fa-cloud-arrow-up"></i> Subir imagen'; return; }
+  const { data:{ publicUrl } } = _sb.storage.from('avances-imagenes').getPublicUrl(path);
+  const { error:dbE } = await _sb.from('avances_mensuales')
+    .upsert({ maestro_nombre:nombre, mes, imagen_url:publicUrl, estado:'borrador', updated_at:new Date().toISOString() }, { onConflict:'maestro_nombre,mes' });
+  btn.disabled=false; btn.innerHTML='<i class="fas fa-cloud-arrow-up"></i> Subir imagen';
+  if (dbE) { toast('Error al guardar: '+dbE.message,'err'); return; }
+  toast('Imagen subida correctamente.','ok');
+  clearImg();
+  cargarImgGuardada(publicUrl);
+}
+
+async function cargarImgStatus() {
+  const nombre = g('am-profesor').value.trim();
+  const mes    = g('am-mes').value;
+  if (!nombre||!mes) return;
+  const { data } = await _sb.from('avances_mensuales')
+    .select('imagen_url').eq('maestro_nombre',nombre).eq('mes',mes).maybeSingle();
+  if (data?.imagen_url) cargarImgGuardada(data.imagen_url);
+  else g('img-saved').style.display='none';
+}
+
+function cargarImgGuardada(url) {
+  const mes = g('am-mes').value;
+  const [y,m] = (mes||'').split('-');
+  const nMes = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  g('img-mes-lbl').textContent = y ? nMes[parseInt(m)]+' '+y : mes;
+  g('img-link').href = url;
+  g('img-saved-prev').src = url;
+  g('img-saved').style.display = '';
+}
+
+async function eliminarImagen() {
+  const nombre = g('am-profesor').value.trim();
+  const mes    = g('am-mes').value;
+  confirm2('Eliminar imagen','¿Deseas eliminar la imagen guardada para este mes?', async () => {
+    // Obtener URL antes de limpiar
+    const { data: rec } = await _sb.from('avances_mensuales').select('imagen_url').eq('maestro_nombre',nombre).eq('mes',mes).maybeSingle();
+    await _sb.from('avances_mensuales')
+      .update({ imagen_url:null, updated_at:new Date().toISOString() })
+      .eq('maestro_nombre',nombre).eq('mes',mes);
+    // Borrar del storage
+    if (rec?.imagen_url) {
+      const match = rec.imagen_url.match(/avances-imagenes\/(.+)$/);
+      if (match) await _sb.storage.from('avances-imagenes').remove([decodeURIComponent(match[1])]);
+    }
+    g('img-saved').style.display='none';
+    toast('Imagen eliminada.','ok');
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MES ACTUAL
+══════════════════════════════════════════════════════════════ */
+function mesActual() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   INIT
+══════════════════════════════════════════════════════════════ */
+async function init() {
+  try {
+    // Renderizar tablas vacías para que el DOM tenga los elementos listos
+    renderTemas([]);
+    renderMetas([]);
+
+    // Lanzar carga de grupos sin bloquear (en paralelo con auth)
+    const pGrupos = cargarGrupos();
+
+    // Esperar auth
+    await _permisosListos;
+
+    // Nombre: desde sessionStorage o del DOM del sidebar
+    let nombre = sessionStorage.getItem('ecca_nombre') || '';
+    if (!nombre) nombre = document.querySelector('.sb-user-name')?.textContent?.trim() || '';
+    g('am-profesor').value = nombre;
+
+    // Mostrar link admin si es admin
+    if (window._esAdmin) {
+      g('btn-admin').style.display = 'inline-flex';
+      g('sb-link-admin').style.display = '';
+    }
+
+    // Esperar que terminen los grupos (si aún no han cargado)
+    await pGrupos;
+
+    // Mes actual y cargar datos guardados
+    g('am-mes').value = mesActual();
+    await cargarMes();
+  } catch(err) {
+    console.error('[avance-mensual] init error:', err);
+    // Intentar al menos poner el mes aunque haya error
+    try { g('am-mes').value = mesActual(); } catch(_) {}
+  }
+}
+
+init();
+</script>
+</body>
+</html>

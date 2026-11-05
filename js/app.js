@@ -521,7 +521,7 @@ const _PERMISOS = {
   admin:           null,
   director:        null,
   asesor:          ['formulario.html','base-datos.html','pagos.html','recibo.html','credencial.html'],
-  profesor:        ['base-datos.html','credencial.html'],
+  profesor:        ['base-datos.html','credencial.html','avance-mensual.html'],
   control_escolar: ['base-datos.html','grupos.html','pagos.html','recibo.html','credencial.html'],
   ventas:          ['formulario.html'],
 };
@@ -556,13 +556,25 @@ function _aplicarPermisos(rol, nombre) {
     sbFooter.parentNode.insertBefore(el, sbFooter);
   }
 
+  // Inject avances-admin link for admin/director if not already present
+  if ((rol === 'admin' || rol === 'director') && !document.querySelector('.sb-item[href="avances-admin.html"]')) {
+    const usrLink = document.querySelector('.sb-item[href="usuarios.html"]');
+    if (usrLink) {
+      const a = document.createElement('a');
+      a.href = 'avances-admin.html';
+      a.className = 'sb-item';
+      a.innerHTML = '<i class="fas fa-chart-bar"></i><span>Avances Mensuales</span>';
+      usrLink.parentNode.insertBefore(a, usrLink);
+    }
+  }
+
   // Mostrar / ocultar links según rol
   const perms = _PERMISOS[rol];
   document.querySelectorAll('.sb-item[href]').forEach(el => {
     const href = el.getAttribute('href');
     if (!href) return;
     const visible = !perms || perms.includes(href);
-    const esUsuarios = href === 'usuarios.html';
+    const esUsuarios = href === 'usuarios.html' || href === 'avances-admin.html';
     el.style.display = (visible && (!esUsuarios || rol === 'admin' || rol === 'director')) ? '' : 'none';
   });
 
@@ -912,6 +924,19 @@ async function aplicarPermisosSistema() {
       sessionStorage.setItem('ecca_solo_sabatino', 'false');
       sessionStorage.setItem('ecca_permisos', '__admin__');
       document.querySelectorAll('.sb-item[href="usuarios.html"]').forEach(el => el.style.display = '');
+      // Inject avances-admin link if not already in sidebar
+      if (!document.querySelector('.sb-item[href="avances-admin.html"]')) {
+        const usrLink = document.querySelector('.sb-item[href="usuarios.html"]');
+        if (usrLink) {
+          const a = document.createElement('a');
+          a.href = 'avances-admin.html';
+          a.className = 'sb-item';
+          a.innerHTML = '<i class="fas fa-chart-bar"></i><span>Avances Mensuales</span>';
+          usrLink.parentNode.insertBefore(a, usrLink);
+        }
+      } else {
+        document.querySelectorAll('.sb-item[href="avances-admin.html"]').forEach(el => el.style.display = '');
+      }
     } else {
       _permisosActivos = permisos || [];
       window._esAdmin = false;
@@ -928,14 +953,23 @@ async function aplicarPermisosSistema() {
 function _ocultarModulos(permisos) {
   const esMaestro = permisos.includes('cal-solo-captura');
 
-  // Maestros siempre van directo a calificaciones, sin importar otros módulos
+  // Maestros: solo muestran Calificaciones y Avance Mensual en el sidebar
   if (esMaestro) {
     const page = window.location.pathname.split('/').pop() || 'index.html';
-    // Ocultar todo el sidebar excepto calificaciones (solo el link exacto, no boletas)
-    document.querySelectorAll('.sb-item[data-modulo]').forEach(el => {
-      el.style.display = el.getAttribute('href') === 'calificaciones.html' ? '' : 'none';
+    document.querySelectorAll('.sb-item').forEach(el => {
+      const href = el.getAttribute('href');
+      el.style.display = (href === 'calificaciones.html' || href === 'avance-mensual.html') ? '' : 'none';
     });
-    if (page !== 'calificaciones.html') {
+    document.querySelectorAll('.sb-group-label').forEach(lbl => {
+      let next = lbl.nextElementSibling;
+      let tieneVisible = false;
+      while (next && !next.classList.contains('sb-group-label')) {
+        if (next.classList.contains('sb-item') && next.style.display !== 'none') tieneVisible = true;
+        next = next.nextElementSibling;
+      }
+      lbl.style.display = tieneVisible ? '' : 'none';
+    });
+    if (page !== 'calificaciones.html' && page !== 'avance-mensual.html') {
       window.location.replace('calificaciones.html');
     }
     return;
@@ -945,7 +979,7 @@ function _ocultarModulos(permisos) {
     if (!permisos.includes(el.dataset.modulo)) el.style.display = 'none';
   });
   const mod = document.body.dataset.modulo;
-  if (mod && !permisos.includes(mod)) {
+  if (mod && !permisos.includes(mod) && mod !== 'avance-mensual') {
     // Redirigir a la primera página del rol que sí está permitida
     // Excluir index.html (splash sin app.js) como destino
     const items = document.querySelectorAll('.sb-item[href][data-modulo]');

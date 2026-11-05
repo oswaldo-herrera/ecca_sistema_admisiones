@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ECCA — Avances Mensuales</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="css/styles.css">
+<style>
+/* ── Filtro bar ── */
+.av-filter-bar {
+  display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap;
+  padding:16px 22px; background:var(--bg-card); border-bottom:1px solid var(--border);
+  position:sticky; top:0; z-index:10; box-shadow:0 2px 8px rgba(0,0,0,.05);
+}
+.av-filter-field { display:flex; flex-direction:column; gap:4px; }
+.av-filter-field label { font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:.4px; }
+.av-filter-field select, .av-filter-field input[type=month] {
+  height:36px; border:1px solid var(--border); border-radius:var(--r-sm);
+  padding:0 10px; font-size:13px; background:var(--bg-card); color:var(--text);
+  min-width:160px;
+}
+.av-filter-field select:focus, .av-filter-field input:focus { outline:none; border-color:var(--gold); }
+
+/* ── Stats ── */
+.av-stats { display:flex; gap:12px; flex-wrap:wrap; padding:16px 22px 0; }
+.av-stat-card {
+  flex:1; min-width:120px; background:var(--bg-card); border:1px solid var(--border);
+  border-radius:var(--r-lg); padding:14px 18px;
+  display:flex; align-items:center; gap:12px;
+}
+.av-stat-icon {
+  width:40px; height:40px; border-radius:var(--r-sm);
+  display:flex; align-items:center; justify-content:center;
+  font-size:17px; flex-shrink:0;
+}
+.av-stat-val { font-size:24px; font-weight:800; color:var(--text); line-height:1; }
+.av-stat-lbl { font-size:11px; color:var(--text-muted); margin-top:2px; }
+
+/* ── Grid de profesores ── */
+.av-grid {
+  display:grid;
+  grid-template-columns:repeat(auto-fill, minmax(280px,1fr));
+  gap:14px;
+  padding:16px 22px 40px;
+}
+.av-prof-card {
+  background:var(--bg-card); border:1px solid var(--border);
+  border-radius:var(--r-lg); overflow:hidden; transition:.15s;
+  display:flex; flex-direction:column;
+}
+.av-prof-card:hover { box-shadow:0 4px 16px rgba(0,0,0,.1); transform:translateY(-1px); }
+.av-card-top { padding:16px; display:flex; align-items:center; gap:12px; }
+.av-avatar {
+  width:46px; height:46px; border-radius:50%; background:var(--navy);
+  display:flex; align-items:center; justify-content:center;
+  font-size:17px; font-weight:800; color:var(--gold); flex-shrink:0;
+}
+.av-prof-name { font-size:14px; font-weight:700; color:var(--text); line-height:1.3; }
+.av-prof-meta { font-size:12px; color:var(--text-muted); margin-top:2px; }
+.av-card-body { padding:0 16px 12px; flex:1; }
+.av-materia-tag {
+  display:inline-block; padding:2px 10px; border-radius:20px;
+  background:var(--bg-hover); color:var(--text-muted);
+  font-size:11px; font-weight:600; margin-bottom:8px;
+}
+.av-temas-preview { font-size:12px; color:var(--text-muted); line-height:1.6; }
+.av-card-footer {
+  padding:10px 16px;
+  border-top:1px solid var(--border);
+  display:flex; align-items:center; justify-content:space-between;
+  gap:8px;
+}
+.av-badge {
+  padding:3px 10px; border-radius:20px; font-size:11px; font-weight:700; letter-spacing:.3px;
+}
+.av-badge-pendiente { background:#f1f5f9; color:#64748b; }
+.av-badge-borrador  { background:#fef3c7; color:#92400e; }
+.av-badge-enviado   { background:#dcfce7; color:#15803d; }
+.av-badge-imagen    { background:#ede9fe; color:#6d28d9; }
+.av-btn-ver {
+  display:inline-flex; align-items:center; gap:6px;
+  height:30px; padding:0 12px; border-radius:var(--r-sm);
+  font-size:12px; font-weight:600; cursor:pointer; border:none;
+  background:var(--navy); color:#fff; transition:.15s;
+}
+.av-btn-ver:hover { opacity:.85; }
+.av-btn-ver.disabled { opacity:.3; cursor:not-allowed; }
+.av-last-update { font-size:11px; color:var(--text-muted); }
+
+/* ── Month chips ── */
+.av-meses-row {
+  padding:4px 16px 12px; display:flex; flex-wrap:wrap; gap:6px;
+}
+.av-mes-chip {
+  display:inline-flex; align-items:center; gap:5px;
+  padding:4px 11px; border-radius:20px; font-size:11px; font-weight:700;
+  cursor:pointer; border:none; transition:.15s; letter-spacing:.2px;
+}
+.av-mes-chip:hover { opacity:.8; transform:translateY(-1px); }
+.av-mes-chip-enviado  { background:#dcfce7; color:#15803d; }
+.av-mes-chip-borrador { background:#fef3c7; color:#92400e; }
+.av-mes-chip-imagen   { background:#ede9fe; color:#6d28d9; }
+.av-mes-chip-ref      { box-shadow:0 0 0 2px var(--gold); }
+
+/* ── Empty state ── */
+.av-empty {
+  grid-column:1/-1; text-align:center; padding:60px 20px; color:var(--text-muted);
+}
+.av-empty i { font-size:40px; display:block; margin-bottom:12px; opacity:.25; }
+.av-empty p { font-size:14px; }
+
+/* ── Modal detalle ── */
+#modal-av-detalle .modal-box {
+  max-width:860px; width:95vw; max-height:90vh; overflow-y:auto;
+}
+.avd-header {
+  background:var(--navy); color:#fff; padding:20px 24px;
+  display:flex; align-items:flex-start; justify-content:space-between; gap:14px;
+}
+.avd-title  { font-size:17px; font-weight:700; }
+.avd-meta   { font-size:12px; color:rgba(255,255,255,.65); margin-top:4px; }
+.avd-badges { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+.avd-badge  {
+  padding:3px 10px; border-radius:20px; font-size:11px; font-weight:700;
+  background:rgba(255,255,255,.12); color:#fff;
+}
+.avd-body { padding:20px 24px; }
+
+.avd-section { margin-bottom:22px; }
+.avd-sec-title {
+  font-size:12px; font-weight:700; color:var(--text-muted);
+  text-transform:uppercase; letter-spacing:.5px;
+  display:flex; align-items:center; gap:8px;
+  border-bottom:1px solid var(--border); padding-bottom:8px; margin-bottom:14px;
+}
+.avd-sec-num {
+  width:20px; height:20px; border-radius:50%; background:var(--gold);
+  color:var(--navy); display:flex; align-items:center; justify-content:center;
+  font-size:10px; font-weight:800;
+}
+.avd-grid2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.avd-field { display:flex; flex-direction:column; gap:3px; }
+.avd-field label { font-size:10px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:.4px; }
+.avd-field span { font-size:13px; color:var(--text); font-weight:500; }
+
+.avd-tbl { width:100%; border-collapse:collapse; font-size:12px; }
+.avd-tbl th {
+  background:var(--navy); color:#fff; padding:7px 10px;
+  text-align:left; font-size:10px; letter-spacing:.3px;
+}
+.avd-tbl td { padding:7px 10px; border-bottom:1px solid var(--border); vertical-align:top; }
+.avd-tbl tr:last-child td { border-bottom:none; }
+.avd-tbl tr:nth-child(even) td { background:var(--bg-hover); }
+.avd-pct-bar {
+  display:inline-flex; align-items:center; gap:6px;
+  font-size:12px; font-weight:700;
+}
+.avd-pct-track {
+  width:60px; height:6px; background:var(--border); border-radius:3px; overflow:hidden;
+}
+.avd-pct-fill { height:100%; border-radius:3px; background:var(--gold); }
+
+.avd-est-badge { padding:2px 8px; border-radius:10px; font-size:10px; font-weight:700; }
+.avd-est-completado { background:#dcfce7; color:#15803d; }
+.avd-est-en_curso   { background:#fef3c7; color:#92400e; }
+.avd-est-atrasado   { background:#fee2e2; color:#b91c1c; }
+.avd-est-no_iniciado{ background:#f1f5f9; color:#64748b; }
+
+.avd-alertas-row { display:grid; grid-template-columns:120px 1fr 1fr; gap:14px; }
+.avd-riesgo-box {
+  background:#fef2f2; border:1.5px solid #fca5a5; border-radius:var(--r-lg);
+  padding:14px; text-align:center;
+}
+.avd-riesgo-num { font-size:28px; font-weight:800; color:#b91c1c; display:block; }
+.avd-riesgo-lbl { font-size:10px; color:#b91c1c; font-weight:700; text-transform:uppercase; margin-top:4px; display:block; }
+.avd-txt-box {
+  background:var(--bg-hover); border-radius:var(--r-sm); padding:10px 14px;
+  font-size:12px; color:var(--text); line-height:1.6;
+}
+.avd-txt-lbl { font-size:10px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:.4px; margin-bottom:4px; display:block; }
+
+.avd-img-preview { max-width:100%; border-radius:var(--r-sm); border:1px solid var(--border); box-shadow:0 2px 8px rgba(0,0,0,.08); }
+
+.avd-actions {
+  padding:16px 24px; border-top:1px solid var(--border);
+  display:flex; gap:10px; align-items:center; justify-content:flex-end; flex-wrap:wrap;
+}
+
+@media (max-width:600px) {
+  .avd-grid2 { grid-template-columns:1fr; }
+  .avd-alertas-row { grid-template-columns:1fr; }
+  .avd-tbl { font-size:11px; }
+}
+</style>
+</head>
+<body data-modulo="avances-admin">
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-brand">
+      <div class="sb-logo" style="background:#fff;padding:3px">
+        <img src="images/ecca_logo.png" alt="Logo ECCA" style="width:100%;height:100%;object-fit:contain;display:block">
+      </div>
+      <div>
+        <div class="sb-brand-name">ECCA Prepa León</div>
+        <div class="sb-brand-sub">Sistema de Admisiones</div>
+      </div>
+    </div>
+    <nav class="sb-nav">
+      <div class="sb-group-label">Principal</div>
+      <a href="index.html" class="sb-item"><i class="fas fa-house"></i><span>Inicio</span></a>
+      <a href="formulario.html" class="sb-item"><i class="fas fa-user-plus"></i><span>Nueva Inscripción</span></a>
+      <div class="sb-group-label">Gestión</div>
+      <a href="base-datos.html" class="sb-item"><i class="fas fa-table-list"></i><span>Base de Datos</span><span class="sb-badge" id="sb-badge">0</span></a>
+      <a href="grupos.html" class="sb-item"><i class="fas fa-people-group"></i><span>Grupos</span></a>
+      <a href="deportes.html" class="sb-item"><i class="fas fa-futbol"></i><span>Deportes</span></a>
+      <a href="horarios.html" class="sb-item"><i class="fas fa-calendar-week"></i><span>Horarios</span></a>
+      <a href="calificaciones.html" class="sb-item"><i class="fas fa-star-half-stroke"></i><span>Calificaciones</span></a>
+      <a href="avance-mensual.html" class="sb-item"><i class="fas fa-chart-gantt"></i><span>Avance Mensual</span></a>
+      <a href="boletas.html" class="sb-item"><i class="fas fa-file-lines"></i><span>Boletas</span></a>
+      <a href="documentos.html" class="sb-item"><i class="fas fa-folder-open"></i><span>Documentos</span></a>
+      <a href="pagos.html" class="sb-item"><i class="fas fa-circle-dollar-to-slot"></i><span>Pagos</span></a>
+      <a href="adeudos.html" class="sb-item"><i class="fas fa-triangle-exclamation"></i><span>Adeudos</span></a>
+      <a href="recibo.html" class="sb-item"><i class="fas fa-file-invoice"></i><span>Recibo</span></a>
+      <a href="credencial.html" class="sb-item"><i class="fas fa-id-card"></i><span>Credencial</span></a>
+      <a href="cumpleanos.html" class="sb-item"><i class="fas fa-cake-candles"></i><span>Cumpleaños</span></a>
+      <div class="sb-group-label">Administración</div>
+      <a href="avances-admin.html" class="sb-item active"><i class="fas fa-chart-bar"></i><span>Avances Mensuales</span></a>
+      <a href="finanzas.html" class="sb-item"><i class="fas fa-chart-line"></i><span>Finanzas</span></a>
+      <a href="bitacora.html" class="sb-item"><i class="fas fa-clipboard-list"></i><span>Bitácora</span></a>
+      <a href="usuarios.html" class="sb-item"><i class="fas fa-users-gear"></i><span>Usuarios</span></a>
+    </nav>
+    <div class="sb-footer">
+      <i class="fas fa-location-dot"></i> 5 de Febrero 634, San Juan de Dios, 37000 León de los Aldama, Gto.<br>
+      Tel. 479 153 4007
+    </div>
+  </aside>
+  <div class="sidebar-overlay"></div>
+
+  <!-- MAIN -->
+  <div class="main-content">
+
+    <!-- Topbar -->
+    <header class="topbar">
+      <button class="topbar-hamburger" aria-label="Menú"><i class="fas fa-bars"></i></button>
+      <nav class="topbar-breadcrumb">
+        <a href="index.html"><i class="fas fa-house"></i></a>
+        <span class="sep">›</span>
+        <span class="current">Avances Mensuales</span>
+      </nav>
+    </header>
+
+    <!-- Filter bar -->
+    <div class="av-filter-bar">
+      <div class="av-filter-field">
+        <label>Mes de referencia (estadísticas)</label>
+        <input type="month" id="av-mes" onchange="actualizarVista()">
+      </div>
+      <div class="av-filter-field">
+        <label>Buscar profesor</label>
+        <input type="text" id="av-buscar" placeholder="Nombre..." oninput="filtrar()"
+               style="height:36px;border:1px solid var(--border);border-radius:var(--r-sm);padding:0 10px;font-size:13px;background:var(--bg-card);color:var(--text);min-width:200px">
+      </div>
+      <div class="av-filter-field">
+        <label>Estatus</label>
+        <select id="av-estatus" onchange="filtrar()">
+          <option value="">Todos</option>
+          <option value="enviado">Enviado</option>
+          <option value="borrador">Borrador</option>
+          <option value="pendiente">Pendiente</option>
+        </select>
+      </div>
+      <div style="margin-left:auto;display:flex;align-items:flex-end">
+        <button class="btn btn-primary btn-sm" onclick="generarResumenPDF()" id="btn-pdf-resumen">
+          <i class="fas fa-file-pdf"></i> Exportar resumen PDF
+        </button>
+      </div>
+    </div>
+
+    <!-- Page header -->
+    <div class="page-header" style="border-bottom:1px solid var(--border)">
+      <div>
+        <div class="page-title">Avances Mensuales</div>
+        <div class="page-sub" id="av-sub">Seguimiento de reportes de avance académico por profesor</div>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="av-stats">
+      <div class="av-stat-card">
+        <div class="av-stat-icon" style="background:#eff6ff"><i class="fas fa-users" style="color:#1d4ed8"></i></div>
+        <div><div class="av-stat-val" id="stat-total">—</div><div class="av-stat-lbl">Total profesores</div></div>
+      </div>
+      <div class="av-stat-card">
+        <div class="av-stat-icon" style="background:#dcfce7"><i class="fas fa-circle-check" style="color:#15803d"></i></div>
+        <div><div class="av-stat-val" id="stat-enviados">—</div><div class="av-stat-lbl">Enviados</div></div>
+      </div>
+      <div class="av-stat-card">
+        <div class="av-stat-icon" style="background:#fef3c7"><i class="fas fa-pen" style="color:#92400e"></i></div>
+        <div><div class="av-stat-val" id="stat-borrador">—</div><div class="av-stat-lbl">En borrador</div></div>
+      </div>
+      <div class="av-stat-card">
+        <div class="av-stat-icon" style="background:#f1f5f9"><i class="fas fa-clock" style="color:#64748b"></i></div>
+        <div><div class="av-stat-val" id="stat-pendiente">—</div><div class="av-stat-lbl">Pendientes</div></div>
+      </div>
+    </div>
+
+    <!-- Grid -->
+    <div class="av-grid" id="av-grid">
+      <div class="av-empty"><i class="fas fa-spinner fa-spin"></i><p>Cargando...</p></div>
+    </div>
+
+  </div><!-- /main-content -->
+</div><!-- /layout -->
+
+<!-- Modal detalle -->
+<div class="modal-ov" id="modal-av-detalle" onclick="if(event.target===this)closeModal('modal-av-detalle')" style="z-index:1050">
+  <div class="modal-box" style="max-width:860px;width:95vw;max-height:90vh;overflow-y:auto;padding:0;border-radius:var(--r-lg)">
+    <div class="avd-header">
+      <div style="flex:1">
+        <div class="avd-title" id="avd-titulo">—</div>
+        <div class="avd-meta" id="avd-meta">—</div>
+        <div class="avd-badges" id="avd-badges"></div>
+      </div>
+      <button class="modal-close" onclick="closeModal('modal-av-detalle')" style="color:#fff;background:none;border:none;font-size:20px;cursor:pointer;padding:0">
+        <i class="fas fa-xmark"></i>
+      </button>
+    </div>
+    <div class="avd-body" id="avd-body">
+      <!-- Filled by JS -->
+    </div>
+    <div class="avd-actions">
+      <button class="btn btn-secondary btn-sm" onclick="closeModal('modal-av-detalle')">Cerrar</button>
+      <button class="btn btn-secondary btn-sm" id="btn-avd-img" onclick="descargarImagen()" style="display:none">
+        <i class="fas fa-image"></i> Descargar imagen
+      </button>
+      <button class="btn btn-primary btn-sm" id="btn-avd-pdf" onclick="descargarPDF()">
+        <i class="fas fa-file-pdf"></i> Descargar PDF
+      </button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="js/config.js"></script>
+<script src="js/app.js"></script>
+<script>
+let _maestros  = [];
+let _avances   = [];
+// _combinado: [{maestro:{id,nombre}, avances:[...all months...]}]
+let _combinado = [];
+let _filtrado  = [];
+let _avanceActual = null;
+
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function formatoMes(mes) {
+  if (!mes) return '';
+  const [y,m] = mes.split('-');
+  const n = ['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  return `${n[parseInt(m)]} ${y}`;
+}
+function formatoMesLargo(mes) {
+  if (!mes) return '';
+  const [y,m] = mes.split('-');
+  const n = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  return `${n[parseInt(m)]} ${y}`;
+}
+function mesActual() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+}
+
+async function cargar() {
+  document.getElementById('av-sub').textContent = 'Seguimiento de reportes de avance académico por profesor';
+
+  const [{ data: maestros }, { data: avances }] = await Promise.all([
+    _sb.from('maestros').select('id, nombre').order('nombre'),
+    _sb.from('avances_mensuales').select('*').order('mes', { ascending: false }),
+  ]);
+  _maestros = maestros || [];
+  _avances  = avances  || [];
+
+  // Group avances by professor name (case-insensitive key)
+  const avMap = {}; // nombre.toLowerCase() → [avances...]
+  _avances.forEach(a => {
+    const key = (a.maestro_nombre || '').toLowerCase();
+    if (!avMap[key]) avMap[key] = [];
+    avMap[key].push(a);
+  });
+
+  // Build combinado: one entry per professor (case-insensitive dedup)
+  const seen = new Set(); // lowercase keys
+  _combinado = [];
+
+  _maestros.forEach(m => {
+    const key = (m.nombre || '').toLowerCase();
+    seen.add(key);
+    _combinado.push({ maestro: m, avances: avMap[key] || [] });
+  });
+
+  // Include professors not in maestros table (e.g. admin who filled it)
+  _avances.forEach(a => {
+    const key = (a.maestro_nombre || '').toLowerCase();
+    if (!seen.has(key)) {
+      seen.add(key);
+      _combinado.push({ maestro: { id: null, nombre: a.maestro_nombre }, avances: avMap[key] });
+    }
+  });
+
+  actualizarStats();
+  filtrar();
+}
+
+function actualizarStats() {
+  const mes = document.getElementById('av-mes').value;
+  const total = _combinado.length;
+  let enviados = 0, borrador = 0;
+  _combinado.forEach(x => {
+    const av = mes ? x.avances.find(a => a.mes === mes) : null;
+    if (!mes) {
+      // Count based on most recent avance per professor
+      const last = x.avances[0];
+      if (last?.estado === 'enviado') enviados++;
+      else if (last?.estado === 'borrador') borrador++;
+    } else {
+      if (av?.estado === 'enviado') enviados++;
+      else if (av?.estado === 'borrador') borrador++;
+    }
+  });
+  const pendiente = total - enviados - borrador;
+  document.getElementById('stat-total').textContent    = total;
+  document.getElementById('stat-enviados').textContent = enviados;
+  document.getElementById('stat-borrador').textContent = borrador;
+  document.getElementById('stat-pendiente').textContent = pendiente;
+}
+
+function actualizarVista() {
+  actualizarStats();
+  renderGrid();
+}
+
+function filtrar() {
+  const q  = (document.getElementById('av-buscar').value || '').toLowerCase();
+  const st = document.getElementById('av-estatus').value;
+  const mes = document.getElementById('av-mes').value;
+  _filtrado = _combinado.filter(x => {
+    if (q && !x.maestro.nombre.toLowerCase().includes(q)) return false;
+    if (st && mes) {
+      const av = x.avances.find(a => a.mes === mes);
+      const estado = av?.estado || 'pendiente';
+      if (estado !== st) return false;
+    } else if (st && !mes) {
+      // Filter by whether ANY avance matches the status
+      if (st === 'pendiente') {
+        if (x.avances.length > 0) return false;
+      } else {
+        if (!x.avances.some(a => a.estado === st)) return false;
+      }
+    }
+    return true;
+  });
+  renderGrid();
+}
+
+function chipBadge(avance) {
+  if (!avance) return '<span class="av-badge av-badge-pendiente">Pendiente</span>';
+  if (avance.imagen_url && avance.estado !== 'enviado') return '<span class="av-badge av-badge-imagen"><i class="fas fa-image"></i> Con imagen</span>';
+  if (avance.estado === 'enviado')  return '<span class="av-badge av-badge-enviado"><i class="fas fa-circle-check"></i> Enviado</span>';
+  if (avance.estado === 'borrador') return '<span class="av-badge av-badge-borrador"><i class="fas fa-pen"></i> Borrador</span>';
+  return '<span class="av-badge av-badge-pendiente">Pendiente</span>';
+}
+
+function chipClass(avance) {
+  if (!avance) return '';
+  if (avance.imagen_url && avance.estado !== 'enviado') return 'av-mes-chip-imagen';
+  if (avance.estado === 'enviado')  return 'av-mes-chip-enviado';
+  if (avance.estado === 'borrador') return 'av-mes-chip-borrador';
+  return '';
+}
+function chipIcon(avance) {
+  if (!avance) return '';
+  if (avance.imagen_url && avance.estado !== 'enviado') return '<i class="fas fa-image"></i> ';
+  if (avance.estado === 'enviado')  return '<i class="fas fa-circle-check"></i> ';
+  if (avance.estado === 'borrador') return '<i class="fas fa-pen"></i> ';
+  return '';
+}
+
+function renderGrid() {
+  const grid = document.getElementById('av-grid');
+  const mesFiltro = document.getElementById('av-mes').value;
+  if (!_filtrado.length) {
+    grid.innerHTML = '<div class="av-empty"><i class="fas fa-inbox"></i><p>No hay resultados.</p></div>';
+    return;
+  }
+  grid.innerHTML = _filtrado.map((x, profIdx) => {
+    const inicial = (x.maestro.nombre || '?')[0].toUpperCase();
+    // All groups this professor has taught (from all avances)
+    const grupos = [...new Set(x.avances.flatMap(a => (a.grupos||'').split(',').map(g=>g.trim())).filter(Boolean))].join(', ');
+    const totalMeses = x.avances.length;
+    const enviados = x.avances.filter(a => a.estado === 'enviado').length;
+
+    // Month chips sorted descending
+    const chips = x.avances.map((a, avIdx) => {
+      const cls = chipClass(a);
+      const isRef = mesFiltro && a.mes === mesFiltro;
+      return `<button class="av-mes-chip ${cls} ${isRef ? 'av-mes-chip-ref' : ''}"
+        onclick="verDetalleAvance(${profIdx},${avIdx})"
+        title="${esc(formatoMesLargo(a.mes))} · ${esc(a.materia||'—')}">
+        ${chipIcon(a)}${formatoMes(a.mes)}
+      </button>`;
+    }).join('');
+
+    const noMeses = totalMeses === 0
+      ? '<span style="color:var(--text-muted);font-size:12px;font-style:italic">Sin avances registrados</span>'
+      : chips;
+
+    return `
+    <div class="av-prof-card">
+      <div class="av-card-top">
+        <div class="av-avatar">${esc(inicial)}</div>
+        <div style="flex:1;min-width:0">
+          <div class="av-prof-name">${esc(x.maestro.nombre)}</div>
+          ${grupos ? `<div class="av-prof-meta">${esc(grupos)}</div>` : ''}
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-size:18px;font-weight:800;color:var(--navy);line-height:1">${totalMeses}</div>
+          <div style="font-size:10px;color:var(--text-muted)">${enviados} enviado${enviados!==1?'s':''}</div>
+        </div>
+      </div>
+      <div class="av-meses-row">${noMeses}</div>
+    </div>`;
+  }).join('');
+}
+
+function verDetalleAvance(profIdx, avIdx) {
+  const x = _filtrado[profIdx];
+  if (!x) return;
+  const a = x.avances[avIdx];
+  if (!a) return;
+  _avanceActual = a;
+  const mes = a.mes;
+
+  document.getElementById('avd-titulo').textContent = x.maestro.nombre;
+  document.getElementById('avd-meta').textContent = `${formatoMesLargo(mes)} · ${a.materia || '—'} · Grupos: ${a.grupos || '—'}`;
+  document.getElementById('avd-badges').innerHTML = chipBadge(a) +
+    (a.semestre ? `<span class="avd-badge">${esc(a.semestre)}</span>` : '') +
+    (a.alumnos_riesgo ? `<span class="avd-badge" style="background:#fee2e2;color:#b91c1c">${a.alumnos_riesgo} en riesgo</span>` : '');
+
+  // Build body
+  const temas  = a.temas  || [];
+  const metas  = a.metas  || [];
+  const opts = {completado:'Completado',en_curso:'En curso',atrasado:'Atrasado',no_iniciado:'No iniciado'};
+  const estClasses = {completado:'avd-est-completado',en_curso:'avd-est-en_curso',atrasado:'avd-est-atrasado',no_iniciado:'avd-est-no_iniciado'};
+
+  const temasRows = temas.map((t,i) => {
+    if (!t.tema) return '';
+    const pct = t.avance !== '' ? parseInt(t.avance) : null;
+    const pctBar = pct !== null
+      ? `<div class="avd-pct-bar"><div class="avd-pct-track"><div class="avd-pct-fill" style="width:${pct}%"></div></div> ${pct}%</div>`
+      : '—';
+    const estBadge = t.estatus
+      ? `<span class="avd-est-badge ${estClasses[t.estatus]||''}">${opts[t.estatus]||t.estatus}</span>`
+      : '—';
+    return `<tr>
+      <td style="color:var(--gold);font-weight:700">${i+1}</td>
+      <td>${esc(t.tema)}</td>
+      <td>${pctBar}</td>
+      <td>${estBadge}</td>
+      <td>${esc(t.evidencia||'—')}</td>
+      <td>${esc(t.comentario||'—')}</td>
+    </tr>`;
+  }).filter(Boolean).join('') || `<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:16px">Sin temas registrados</td></tr>`;
+
+  const metasRows = metas.map((m,i) => {
+    if (!m.meta) return '';
+    return `<tr>
+      <td style="color:var(--gold);font-weight:700">${i+1}</td>
+      <td>${esc(m.meta)}</td>
+      <td>${esc(m.medicion||'—')}</td>
+      <td>${m.fecha ? new Date(m.fecha+'T12:00').toLocaleDateString('es-MX',{day:'2-digit',month:'long',year:'numeric'}) : '—'}</td>
+    </tr>`;
+  }).filter(Boolean).join('') || `<tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:16px">Sin metas registradas</td></tr>`;
+
+  const imgSection = a.imagen_url ? `
+    <div class="avd-section">
+      <div class="avd-sec-title"><div class="avd-sec-num"><i class="fas fa-image" style="font-size:9px"></i></div> Imagen del formato físico</div>
+      <img src="${esc(a.imagen_url)}" class="avd-img-preview" alt="Formato físico">
+    </div>` : '';
+
+  document.getElementById('avd-body').innerHTML = `
+    <div class="avd-section">
+      <div class="avd-sec-title"><div class="avd-sec-num">2</div> Avance por Tema</div>
+      <div style="overflow-x:auto">
+        <table class="avd-tbl">
+          <thead><tr>
+            <th style="width:28px">#</th>
+            <th>Tema / Unidad</th>
+            <th style="min-width:100px">% Avance</th>
+            <th>Estatus</th>
+            <th>Evidencia</th>
+            <th>Comentario</th>
+          </tr></thead>
+          <tbody>${temasRows}</tbody>
+        </table>
+      </div>
+    </div>
+    <div class="avd-section">
+      <div class="avd-sec-title"><div class="avd-sec-num">3</div> Metas de Enseñanza</div>
+      <div style="overflow-x:auto">
+        <table class="avd-tbl">
+          <thead><tr>
+            <th style="width:28px">#</th>
+            <th>Meta para el próximo mes</th>
+            <th style="min-width:160px">¿Cómo se va a medir?</th>
+            <th style="min-width:120px">Fecha compromiso</th>
+          </tr></thead>
+          <tbody>${metasRows}</tbody>
+        </table>
+      </div>
+    </div>
+    <div class="avd-section">
+      <div class="avd-sec-title"><div class="avd-sec-num">4</div> Alertas y Apoyo</div>
+      <div class="avd-alertas-row">
+        <div class="avd-riesgo-box">
+          <span class="avd-riesgo-num">${a.alumnos_riesgo ?? 0}</span>
+          <span class="avd-riesgo-lbl">Alumnos en riesgo</span>
+        </div>
+        <div>
+          <span class="avd-txt-lbl">Principal dificultad del mes</span>
+          <div class="avd-txt-box">${esc(a.dificultad_mes) || '<em style="color:var(--text-light)">No registrado</em>'}</div>
+        </div>
+        <div>
+          <span class="avd-txt-lbl">Apoyo que necesita de coordinación</span>
+          <div class="avd-txt-box">${esc(a.apoyo_coordinacion) || '<em style="color:var(--text-light)">No registrado</em>'}</div>
+        </div>
+      </div>
+    </div>
+    ${imgSection}
+  `;
+
+  document.getElementById('btn-avd-img').style.display = a.imagen_url ? '' : 'none';
+  openModal('modal-av-detalle');
+}
+
+/* ---- Descargar imagen ---- */
+async function descargarImagen() {
+  if (!_avanceActual?.imagen_url) return;
+  try {
+    const res = await fetch(_avanceActual.imagen_url);
+    const blob = await res.blob();
+    const ext = blob.type.includes('png') ? 'png' : blob.type.includes('webp') ? 'webp' : 'jpg';
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Avance_${(_avanceActual.maestro_nombre||'').replace(/\s+/g,'_')}_${_avanceActual.mes}.${ext}`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  } catch(e) {
+    toast('Error al descargar la imagen.', 'err');
+  }
+}
+
+/* ---- PDF individual ---- */
+function descargarPDF() {
+  if (!_avanceActual) return;
+  const a   = _avanceActual;
+  const mes = a.mes || document.getElementById('av-mes').value;
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation:'portrait', unit:'mm', format:'letter' });
+  const W = 216, navy = [15,40,80], gold = [197,160,58], white = [255,255,255];
+
+  // ── Header ──
+  doc.setFillColor(...navy);
+  doc.rect(0, 0, W, 32, 'F');
+  doc.setFillColor(...gold);
+  doc.rect(0, 32, W, 1.5, 'F');
+  doc.setTextColor(...white);
+  doc.setFontSize(7.5); doc.setFont(undefined,'normal');
+  doc.text('ECCA PREPARATORIA DE ALTO RENDIMIENTO', 12, 10);
+  doc.setFontSize(14); doc.setFont(undefined,'bold');
+  doc.text('Formato Mensual de Avance por Tema y Metas de Enseñanza', 12, 21);
+  doc.setFontSize(10); doc.setFont(undefined,'normal');
+  doc.text(`MES: ${formatoMesLargo(mes).toUpperCase()}`, W - 12, 21, {align:'right'});
+
+  // ── Sección 1 ──
+  let y = 40;
+  doc.setTextColor(0,0,0);
+  doc.setFontSize(9); doc.setFont(undefined,'bold');
+  doc.setFillColor(...gold); doc.circle(14, y+2, 3.5, 'F');
+  doc.setTextColor(...white); doc.text('1', 14, y+3.3, {align:'center'});
+  doc.setTextColor(0,0,0);
+  doc.text('  DATOS GENERALES', 18, y+3);
+  y += 8;
+  doc.setFontSize(8); doc.setFont(undefined,'normal');
+  const cols = [['Profesor(a)', a.maestro_nombre], ['Materia', a.materia||'—'], ['Grupo(s)', a.grupos||'—'], ['Semestre', a.semestre||'—']];
+  cols.forEach(([lbl,val], idx) => {
+    const x = idx % 2 === 0 ? 12 : W/2 + 2;
+    if (idx % 2 === 0 && idx > 0) y += 8;
+    doc.setFillColor(240,245,255);
+    doc.roundedRect(x, y, W/2 - 16, 7, 1, 1, 'F');
+    doc.setFont(undefined,'bold'); doc.setTextColor(...navy);
+    doc.text(lbl.toUpperCase(), x+2, y+4.5);
+    doc.setFont(undefined,'normal'); doc.setTextColor(0,0,0);
+    doc.text(String(val||'—'), x+40, y+4.5);
+  });
+  y += 14;
+
+  // ── Sección 2 ──
+  doc.setFillColor(...navy); doc.rect(12, y, W-24, 6, 'F');
+  doc.setTextColor(...white); doc.setFontSize(7.5); doc.setFont(undefined,'bold');
+  doc.text('2  AVANCE POR TEMA', 16, y+4.2);
+  y += 6;
+  const thCols = [28, 68, 24, 24, 28, 24]; // relative widths in mm
+  const usable = W - 24;
+  const colW = thCols.map(c => c/196 * usable);
+  const headers = ['#','Tema / Unidad','%','Estatus','Evidencia','Comentario'];
+  let xc = 12;
+  doc.setFillColor(240,245,255);
+  doc.rect(12, y, usable, 5.5, 'F');
+  doc.setTextColor(...navy); doc.setFontSize(7);
+  headers.forEach((h,i) => { doc.text(h, xc+1.5, y+3.8); xc += colW[i]; });
+  y += 5.5;
+  const temas = a.temas || [];
+  temas.forEach((t, ri) => {
+    if (!t.tema) return;
+    if (y > 240) { doc.addPage(); y = 20; }
+    if (ri % 2 === 0) { doc.setFillColor(252,252,252); doc.rect(12, y, usable, 7, 'F'); }
+    doc.setDrawColor(220,220,220); doc.line(12, y+7, W-12, y+7);
+    doc.setTextColor(0,0,0); doc.setFont(undefined,'normal'); doc.setFontSize(7.5);
+    xc = 12;
+    const pct = t.avance !== '' ? t.avance + '%' : '—';
+    const estMap = {completado:'Completado',en_curso:'En curso',atrasado:'Atrasado',no_iniciado:'No iniciado'};
+    const vals = [String(ri+1), t.tema||'—', pct, estMap[t.estatus]||t.estatus||'—', t.evidencia||'—', t.comentario||'—'];
+    vals.forEach((v, ci) => {
+      const cut = doc.splitTextToSize(v, colW[ci]-2);
+      doc.text(cut[0]||'', xc+1.5, y+4.5);
+      xc += colW[ci];
+    });
+    y += 7;
+  });
+  y += 5;
+
+  // ── Sección 3 ──
+  if (y > 220) { doc.addPage(); y = 20; }
+  doc.setFillColor(...navy); doc.rect(12, y, W-24, 6, 'F');
+  doc.setTextColor(...white); doc.setFontSize(7.5); doc.setFont(undefined,'bold');
+  doc.text('3  METAS DE ENSEÑANZA', 16, y+4.2);
+  y += 6;
+  const mHeaders = ['#','Meta para el próximo mes','¿Cómo se va a medir?','Fecha compromiso'];
+  const mColW = [8, 68, 70, 46].map(c => c/192 * usable);
+  xc = 12;
+  doc.setFillColor(240,245,255); doc.rect(12, y, usable, 5.5, 'F');
+  doc.setTextColor(...navy); doc.setFontSize(7);
+  mHeaders.forEach((h,i) => { doc.text(h, xc+1.5, y+3.8); xc += mColW[i]; });
+  y += 5.5;
+  (a.metas||[]).forEach((m, ri) => {
+    if (!m.meta) return;
+    if (ri % 2 === 0) { doc.setFillColor(252,252,252); doc.rect(12, y, usable, 8, 'F'); }
+    doc.setDrawColor(220,220,220); doc.line(12, y+8, W-12, y+8);
+    doc.setTextColor(0,0,0); doc.setFont(undefined,'normal'); doc.setFontSize(7.5);
+    xc = 12;
+    const fechaStr = m.fecha ? new Date(m.fecha+'T12:00').toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'}) : '—';
+    [String(ri+1), m.meta||'—', m.medicion||'—', fechaStr].forEach((v, ci) => {
+      const lines = doc.splitTextToSize(v, mColW[ci]-2);
+      doc.text(lines[0]||'', xc+1.5, y+4.5);
+      xc += mColW[ci];
+    });
+    y += 8;
+  });
+  y += 5;
+
+  // ── Sección 4 ──
+  if (y > 220) { doc.addPage(); y = 20; }
+  doc.setFillColor(...navy); doc.rect(12, y, W-24, 6, 'F');
+  doc.setTextColor(...white); doc.setFontSize(7.5); doc.setFont(undefined,'bold');
+  doc.text('4  ALERTAS Y APOYO', 16, y+4.2);
+  y += 8;
+  const thirdW = (usable - 4) / 3;
+  [
+    ['Alumnos en riesgo de reprobar', String(a.alumnos_riesgo ?? 0) + ' alumnos'],
+    ['Principal dificultad del mes', a.dificultad_mes || '—'],
+    ['Apoyo que necesito de coordinación', a.apoyo_coordinacion || '—'],
+  ].forEach(([lbl, val], ci) => {
+    const xBox = 12 + ci * (thirdW + 2);
+    doc.setFillColor(240,245,255); doc.roundedRect(xBox, y, thirdW, 20, 1.5, 1.5, 'F');
+    doc.setFont(undefined,'bold'); doc.setFontSize(7); doc.setTextColor(...navy);
+    doc.text(lbl.toUpperCase(), xBox+3, y+5);
+    doc.setFont(undefined,'normal'); doc.setFontSize(8); doc.setTextColor(0,0,0);
+    const lines = doc.splitTextToSize(val, thirdW - 6);
+    doc.text(lines.slice(0,2), xBox+3, y+11);
+  });
+  y += 28;
+
+  // ── Footer ──
+  if (y > 240) { doc.addPage(); y = 20; }
+  doc.setDrawColor(220,220,220);
+  const fCol = (W-24)/3;
+  ['Nombre y firma del profesor(a)', 'Vo. Bo. Coordinación Académica', 'Fecha de entrega'].forEach((lbl, ci) => {
+    const xF = 12 + ci * (fCol+2);
+    doc.line(xF, y+14, xF + fCol - 2, y+14);
+    doc.setFontSize(7); doc.setTextColor(100,100,100); doc.setFont(undefined,'normal');
+    doc.text(lbl, xF + (fCol-2)/2, y+18.5, {align:'center'});
+  });
+  y += 24;
+  doc.setFillColor(240,245,250); doc.rect(0, y+2, W, 8, 'F');
+  doc.setFontSize(7); doc.setTextColor(...navy); doc.setFont(undefined,'bold');
+  doc.text('ECCA Preparatoria de Alto Rendimiento', W/2, y+6.5, {align:'center'});
+  doc.setFont(undefined,'normal'); doc.setTextColor(100,100,100);
+  doc.text('Por Dios · Por León · Por ECCA · Entregar a Coordinación Académica el último viernes de cada mes', W/2, y+10.5, {align:'center'});
+
+  doc.save(`Avance_${(a.maestro_nombre||'').replace(/\s+/g,'_')}_${mes}.pdf`);
+}
+
+/* ---- PDF resumen general ---- */
+function generarResumenPDF() {
+  const mes = document.getElementById('av-mes').value;
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation:'landscape', unit:'mm', format:'letter' });
+  const W = 280, navy = [15,40,80], gold = [197,160,58];
+
+  doc.setFillColor(...navy); doc.rect(0,0,W,22,'F');
+  doc.setTextColor(255,255,255); doc.setFontSize(14); doc.setFont(undefined,'bold');
+  doc.text('ECCA — Resumen de Avances Mensuales', 12, 14);
+  doc.setFontSize(10); doc.setFont(undefined,'normal');
+  doc.text(formatoMesLargo(mes), W-12, 14, {align:'right'});
+  doc.setFillColor(...gold); doc.rect(0,22,W,1.5,'F');
+
+  let y = 30;
+  const headers = ['Profesor(a)','Materia','Grupos','Estatus','Temas','Alumnos en riesgo','Enviado'];
+  const colW = [52,40,30,22,70,22,22];
+  let xc = 10;
+  doc.setFillColor(240,245,255); doc.rect(10,y,W-20,6,'F');
+  doc.setFont(undefined,'bold'); doc.setFontSize(7); doc.setTextColor(...navy);
+  headers.forEach((h,i) => { doc.text(h,xc+1.5,y+4.2); xc+=colW[i]; });
+  y+=6;
+
+  _combinado.forEach((x, ri) => {
+    if (y > 185) { doc.addPage(); y = 20; }
+    // Use avance for the reference month if set, otherwise most recent
+    const a = mes ? x.avances.find(av => av.mes === mes) : x.avances[0];
+    if (ri%2===0) { doc.setFillColor(252,252,252); doc.rect(10,y,W-20,7,'F'); }
+    doc.setDrawColor(220,220,220); doc.line(10,y+7,W-10,y+7);
+    doc.setFont(undefined,'normal'); doc.setFontSize(7.5); doc.setTextColor(0,0,0);
+    xc = 10;
+    const estMap = {enviado:'Enviado ✓',borrador:'Borrador',pendiente:'Pendiente'};
+    const estado = a?.estado || 'pendiente';
+    const temasList = (a?.temas||[]).filter(t=>t.tema).map(t=>t.tema).slice(0,3).join(', ');
+    const vals = [
+      x.maestro.nombre, a?.materia||'—', a?.grupos||'—',
+      estMap[estado]||estado, temasList||'—',
+      String(a?.alumnos_riesgo ?? '—'),
+      a?.updated_at ? new Date(a.updated_at).toLocaleDateString('es-MX',{day:'2-digit',month:'short'}) : '—'
+    ];
+    vals.forEach((v,ci) => {
+      const cut = doc.splitTextToSize(v,colW[ci]-2);
+      doc.text(cut[0],xc+1.5,y+4.5);
+      xc+=colW[ci];
+    });
+    y+=7;
+  });
+
+  doc.save(`Resumen_Avances_${mes}.pdf`);
+}
+
+/* ---- Init ---- */
+async function init() {
+  await _permisosListos;
+  if (!window._esAdmin) {
+    // Redirigir a la página del profesor si no es admin
+    window.location.href = 'avance-mensual.html';
+    return;
+  }
+  document.getElementById('av-mes').value = mesActual();
+  await cargar();
+}
+init();
+</script>
+</body>
+</html>
