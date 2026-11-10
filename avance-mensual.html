@@ -45,6 +45,38 @@
 .am-btn-del { background:#fff; border:1.5px solid #fca5a5; color:#b91c1c; }
 .am-btn-del:hover { background:#fee2e2; border-color:#ef4444; }
 
+/* ── Chips de materia ── */
+.am-mat-row {
+  padding:8px 20px 0;
+  display:flex; gap:8px; flex-wrap:wrap; align-items:center;
+}
+.am-mat-label {
+  font-size:11px; font-weight:700; color:var(--text-muted);
+  text-transform:uppercase; letter-spacing:.4px; white-space:nowrap;
+}
+.am-mat-chip {
+  display:inline-flex; align-items:center; gap:6px;
+  padding:6px 14px; border-radius:20px; border:none;
+  font-size:12px; font-weight:600; cursor:pointer;
+  border:1.5px solid var(--border); background:var(--bg-card); color:var(--text-muted);
+  transition:.15s; white-space:nowrap;
+}
+.am-mat-chip:hover { border-color:var(--gold); color:var(--navy); }
+.am-mat-chip.on { background:var(--navy); color:#fff; border-color:var(--navy); }
+.am-mat-dot {
+  width:8px; height:8px; border-radius:50%; flex-shrink:0;
+}
+.am-mat-dot.env { background:#22c55e; }
+.am-mat-dot.bor { background:#f59e0b; }
+.am-mat-new {
+  display:inline-flex; align-items:center; gap:5px;
+  padding:6px 14px; border-radius:20px;
+  font-size:12px; font-weight:600; cursor:pointer;
+  border:1.5px dashed var(--border); background:transparent; color:var(--text-muted);
+  transition:.15s;
+}
+.am-mat-new:hover { border-color:var(--gold); color:var(--navy); background:var(--bg-hover); }
+
 /* ── Tabs modo ── */
 .am-mode-row { padding:14px 20px 0; display:flex; gap:0; }
 .am-mode-tabs {
@@ -195,6 +227,9 @@
   .am-last { font-size:10px; }
   .am-mode-row { padding:10px 16px 0; }
   .am-mode-tab { padding:7px 14px; font-size:12px; }
+  .am-mat-row { padding:5px 16px 0; gap:5px; }
+  .am-mat-chip { padding:4px 10px; font-size:11px; }
+  .am-mat-new { padding:4px 10px; font-size:11px; }
   .am-wrap { padding:0 16px 40px; }
   .am-sec { margin-bottom:14px; border-radius:var(--r-sm); }
   .am-sec-h { padding:9px 14px; }
@@ -376,6 +411,15 @@
           <i class="fas fa-image"></i> Subir imagen
         </button>
       </div>
+    </div>
+
+    <!-- Chips de materia -->
+    <div class="am-mat-row" id="am-mat-row" style="display:none">
+      <span class="am-mat-label"><i class="fas fa-book"></i> Materia:</span>
+      <div id="am-mat-chips" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+      <button class="am-mat-new" id="btn-nueva-mat" onclick="nuevoAvance()">
+        <i class="fas fa-plus"></i> Nuevo
+      </button>
     </div>
 
     <!-- ===== FORMULARIO DIGITAL ===== -->
@@ -572,13 +616,15 @@
    CONSTANTES Y ESTADO
 ══════════════════════════════════════════════════════════════ */
 const N_TEMAS = 6, N_METAS = 3;
-let _modo     = 'digital';
-let _frozen   = false;
-let _estado   = 'vacio';
-let _recId    = null;
-let _imgFile  = null;
-let _grupos   = [];
-let _materias = [];
+let _modo       = 'digital';
+let _frozen     = false;
+let _estado     = 'vacio';
+let _recId      = null;
+let _imgFile    = null;
+let _grupos     = [];
+let _materias   = [];
+let _avancesMes = [];
+let _avanceIdx  = -1;
 
 function g(id) { return document.getElementById(id); }
 function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
@@ -713,44 +759,93 @@ function rellenarForm(d) {
 /* ═══════════════════════════════════════════════════════════
    CARGA Y GUARDADO (Supabase)
 ══════════════════════════════════════════════════════════════ */
+function renderMateriaTabs() {
+  const row  = g('am-mat-row');
+  const cont = g('am-mat-chips');
+  const nombre = g('am-profesor').value.trim();
+  const mes    = g('am-mes').value;
+  if (!nombre || !mes) { row.style.display = 'none'; return; }
+  row.style.display = '';
+  cont.innerHTML = _avancesMes.map((a, i) => {
+    const dotCls = a.estado === 'enviado' ? 'env' : 'bor';
+    const label  = a.materia || 'Sin materia';
+    return `<button class="am-mat-chip${_avanceIdx===i?' on':''}" onclick="seleccionarAvance(${i})">
+      <span class="am-mat-dot ${dotCls}"></span>${esc(label)}
+    </button>`;
+  }).join('');
+}
+
+function seleccionarAvance(idx) {
+  _avanceIdx = idx;
+  const a = _avancesMes[idx];
+  _recId = a.id;
+  rellenarForm(a);
+  setEstado(a.estado || 'borrador', a.updated_at);
+  if (a.imagen_url) cargarImgGuardada(a.imagen_url);
+  else g('img-saved').style.display = 'none';
+  renderMateriaTabs();
+}
+
+function nuevoAvance() {
+  _avanceIdx = -1;
+  _recId = null;
+  rellenarForm({});
+  setEstado('vacio', null);
+  g('img-saved').style.display = 'none';
+  renderMateriaTabs();
+}
+
 async function cargarMes() {
   const mes    = g('am-mes').value;
   const nombre = g('am-profesor').value.trim();
-  if (!mes || !nombre) { renderTemas([]); renderMetas([]); setEstado('vacio',null); return; }
+  if (!mes || !nombre) {
+    _avancesMes = []; _avanceIdx = -1; _recId = null;
+    renderTemas([]); renderMetas([]); setEstado('vacio',null);
+    renderMateriaTabs(); return;
+  }
 
   const { data, error } = await _sb.from('avances_mensuales')
-    .select('*').eq('maestro_nombre',nombre).eq('mes',mes).maybeSingle();
+    .select('*').eq('maestro_nombre',nombre).eq('mes',mes)
+    .order('created_at', { ascending: true });
 
-  if (error) { console.error('cargarMes:', error); renderTemas([]); renderMetas([]); setEstado('vacio',null); return; }
+  if (error) {
+    console.error('cargarMes:', error);
+    _avancesMes = []; _avanceIdx = -1; _recId = null;
+    renderTemas([]); renderMetas([]); setEstado('vacio',null);
+    renderMateriaTabs(); return;
+  }
 
-  if (data) {
-    _recId = data.id;
-    rellenarForm(data);
-    setEstado(data.estado || 'borrador', data.updated_at);
-    if (data.imagen_url) cargarImgGuardada(data.imagen_url);
-    else { g('img-saved').style.display='none'; }
+  _avancesMes = data || [];
+  if (_avancesMes.length) {
+    seleccionarAvance(0);
   } else {
-    _recId = null;
+    _avanceIdx = -1; _recId = null;
     rellenarForm({});
     setEstado('vacio', null);
-    g('img-saved').style.display='none';
+    g('img-saved').style.display = 'none';
+    renderMateriaTabs();
   }
 }
 
 async function guardar(nuevoEst) {
   const d = getDatos();
   if (!d.maestro_nombre || !d.mes) { toast('Sesión no encontrada. Recarga la página.','warn'); return; }
+  if (!d.materia) { toast('Selecciona una materia antes de guardar.','warn'); return; }
   const btn = g(nuevoEst==='borrador' ? 'btn-draft' : 'btn-send');
   if (btn) btn.disabled = true;
 
   const payload = { ...d, estado: nuevoEst, updated_at: new Date().toISOString() };
   const { data, error } = await _sb.from('avances_mensuales')
-    .upsert(payload, { onConflict: 'maestro_nombre,mes' })
+    .upsert(payload, { onConflict: 'maestro_nombre,mes,materia' })
     .select().single();
 
   if (btn) btn.disabled = false;
   if (error) { toast('Error al guardar: ' + error.message, 'err'); return; }
   _recId = data.id;
+  const existing = _avancesMes.findIndex(a => a.id === data.id);
+  if (existing >= 0) { _avancesMes[existing] = data; _avanceIdx = existing; }
+  else { _avancesMes.push(data); _avanceIdx = _avancesMes.length - 1; }
+  renderMateriaTabs();
   setEstado(nuevoEst, data.updated_at);
   toast(nuevoEst==='enviado' ? '¡Avance enviado a Coordinación! ✓' : 'Avance guardado.', 'ok');
 }
@@ -773,22 +868,28 @@ async function reabrir() {
 
 async function eliminarAvance() {
   confirm2('Eliminar avance',
-    'Se eliminará el registro completo de este mes, incluyendo la imagen si existe. Esta acción no se puede deshacer.',
+    'Se eliminará el registro de esta materia para este mes, incluyendo la imagen si existe. Esta acción no se puede deshacer.',
     async () => {
       if (!_recId) { toast('No hay registro que eliminar.','warn'); return; }
-      // Obtener imagen_url antes de borrar
       const { data: rec } = await _sb.from('avances_mensuales').select('imagen_url').eq('id',_recId).maybeSingle();
       const { error } = await _sb.from('avances_mensuales').delete().eq('id',_recId);
       if (error) { toast('Error al eliminar: '+error.message,'err'); return; }
-      // Borrar imagen del storage si existe
       if (rec?.imagen_url) {
         const match = rec.imagen_url.match(/avances-imagenes\/(.+)$/);
         if (match) await _sb.storage.from('avances-imagenes').remove([decodeURIComponent(match[1])]);
       }
+      _avancesMes = _avancesMes.filter(a => a.id !== _recId);
       _recId = null;
-      rellenarForm({});
-      setEstado('vacio', null);
-      g('img-saved').style.display = 'none';
+      if (_avancesMes.length) {
+        _avanceIdx = 0;
+        seleccionarAvance(0);
+      } else {
+        _avanceIdx = -1;
+        rellenarForm({});
+        setEstado('vacio', null);
+        g('img-saved').style.display = 'none';
+        renderMateriaTabs();
+      }
       toast('Avance eliminado.','ok');
     },
     'Eliminar', 'btn-danger');
@@ -980,32 +1081,44 @@ function clearImg() {
 
 async function subirImagen() {
   if (!_imgFile) return;
-  const nombre = g('am-profesor').value.trim();
-  const mes    = g('am-mes').value;
+  const nombre  = g('am-profesor').value.trim();
+  const mes     = g('am-mes').value;
+  const matSel  = g('am-materia');
+  const matNom  = matSel?.selectedOptions?.[0]?.text || '';
+  const matFinal = matNom && matNom !== '— Seleccione materia —' ? matNom : '';
   if (!nombre||!mes) { toast('Selecciona un mes y espera a que cargue tu nombre.','warn'); return; }
   const btn = g('btn-subir'); btn.disabled=true;
   btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Subiendo...';
   const ext  = _imgFile.name.split('.').pop().toLowerCase() || 'jpg';
   const pathNombre = nombre.normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-zA-Z0-9_\-]/g,'_');
-  const path = pathNombre + '/' + mes + '.' + ext;
+  const pathMat    = matFinal ? '_' + matFinal.normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-zA-Z0-9_\-]/g,'_') : '';
+  const path = pathNombre + '/' + mes + pathMat + '.' + ext;
   const { error:upE } = await _sb.storage.from('avances-imagenes').upload(path, _imgFile, { upsert:true, contentType:_imgFile.type });
   if (upE) { toast('Error al subir: '+upE.message,'err'); btn.disabled=false; btn.innerHTML='<i class="fas fa-cloud-arrow-up"></i> Subir imagen'; return; }
   const { data:{ publicUrl } } = _sb.storage.from('avances-imagenes').getPublicUrl(path);
-  const { error:dbE } = await _sb.from('avances_mensuales')
-    .upsert({ maestro_nombre:nombre, mes, imagen_url:publicUrl, estado:'borrador', updated_at:new Date().toISOString() }, { onConflict:'maestro_nombre,mes' });
+  const payload = { maestro_nombre:nombre, mes, imagen_url:publicUrl, estado:'borrador', updated_at:new Date().toISOString() };
+  if (matFinal) payload.materia = matFinal;
+  const conflictCol = matFinal ? 'maestro_nombre,mes,materia' : 'maestro_nombre,mes';
+  const { data:savedRec, error:dbE } = await _sb.from('avances_mensuales')
+    .upsert(payload, { onConflict: conflictCol }).select().maybeSingle();
   btn.disabled=false; btn.innerHTML='<i class="fas fa-cloud-arrow-up"></i> Subir imagen';
   if (dbE) { toast('Error al guardar: '+dbE.message,'err'); return; }
   toast('Imagen subida correctamente.','ok');
   clearImg();
   cargarImgGuardada(publicUrl);
+  if (savedRec) {
+    const existing = _avancesMes.findIndex(a => a.id === savedRec.id);
+    if (existing >= 0) { _avancesMes[existing] = savedRec; _avanceIdx = existing; }
+    else { _avancesMes.push(savedRec); _avanceIdx = _avancesMes.length - 1; }
+    renderMateriaTabs();
+  }
 }
 
 async function cargarImgStatus() {
-  const nombre = g('am-profesor').value.trim();
-  const mes    = g('am-mes').value;
-  if (!nombre||!mes) return;
-  const { data } = await _sb.from('avances_mensuales')
-    .select('imagen_url').eq('maestro_nombre',nombre).eq('mes',mes).maybeSingle();
+  if (!_recId) { g('img-saved').style.display='none'; return; }
+  const current = _avancesMes.find(a => a.id === _recId);
+  if (current?.imagen_url) { cargarImgGuardada(current.imagen_url); return; }
+  const { data } = await _sb.from('avances_mensuales').select('imagen_url').eq('id',_recId).maybeSingle();
   if (data?.imagen_url) cargarImgGuardada(data.imagen_url);
   else g('img-saved').style.display='none';
 }
@@ -1021,19 +1134,17 @@ function cargarImgGuardada(url) {
 }
 
 async function eliminarImagen() {
-  const nombre = g('am-profesor').value.trim();
-  const mes    = g('am-mes').value;
-  confirm2('Eliminar imagen','¿Deseas eliminar la imagen guardada para este mes?', async () => {
-    // Obtener URL antes de limpiar
-    const { data: rec } = await _sb.from('avances_mensuales').select('imagen_url').eq('maestro_nombre',nombre).eq('mes',mes).maybeSingle();
+  if (!_recId) return;
+  confirm2('Eliminar imagen','¿Deseas eliminar la imagen guardada?', async () => {
+    const { data: rec } = await _sb.from('avances_mensuales').select('imagen_url').eq('id',_recId).maybeSingle();
     await _sb.from('avances_mensuales')
-      .update({ imagen_url:null, updated_at:new Date().toISOString() })
-      .eq('maestro_nombre',nombre).eq('mes',mes);
-    // Borrar del storage
+      .update({ imagen_url:null, updated_at:new Date().toISOString() }).eq('id',_recId);
     if (rec?.imagen_url) {
       const match = rec.imagen_url.match(/avances-imagenes\/(.+)$/);
       if (match) await _sb.storage.from('avances-imagenes').remove([decodeURIComponent(match[1])]);
     }
+    const idx = _avancesMes.findIndex(a => a.id === _recId);
+    if (idx >= 0) _avancesMes[idx].imagen_url = null;
     g('img-saved').style.display='none';
     toast('Imagen eliminada.','ok');
   });
@@ -1079,6 +1190,7 @@ async function init() {
     // Mes actual y cargar datos guardados
     g('am-mes').value = mesActual();
     await cargarMes();
+    renderMateriaTabs();
   } catch(err) {
     console.error('[avance-mensual] init error:', err);
     // Intentar al menos poner el mes aunque haya error
