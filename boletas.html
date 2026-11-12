@@ -228,6 +228,13 @@
       </div>
     </div>
 
+    <!-- Modalidad -->
+    <div style="display:flex;align-items:center;gap:8px;padding:0 0 14px">
+      <span style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-right:4px"><i class="fas fa-graduation-cap" style="color:var(--gold)"></i> Modalidad:</span>
+      <button class="cal-mod-btn on" id="bol-mod-cuat" onclick="setBolModalidad('cuatrimestral')">Cuatrimestral</button>
+      <button class="cal-mod-btn" id="bol-mod-sem" onclick="setBolModalidad('semestral')">Semestral</button>
+    </div>
+
     <!-- Filtros -->
     <div class="bol-filters">
       <div class="field">
@@ -284,7 +291,33 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/config.js"></script>
 <script src="js/app.js"></script>
+<style>
+.cal-mod-btn{padding:5px 14px;border:1.5px solid var(--border);border-radius:20px;font-size:12px;font-weight:600;color:var(--text-muted);background:transparent;cursor:pointer;transition:.15s}
+.cal-mod-btn:hover{border-color:var(--navy);color:var(--navy)}
+.cal-mod-btn.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+</style>
 <script>
+/* ── Modalidad ── */
+const PERIODOS_MOD_BOL = {
+  semestral:     ['1er Parcial','2do Parcial','3er Parcial','4to Parcial','Final','Extraordinario'],
+  cuatrimestral: ['1er Parcial','2do Parcial','3er Parcial','Final','Extraordinario']
+};
+let _bolModalidad = localStorage.getItem('ecca_modalidad') || 'cuatrimestral';
+
+function setBolModalidad(mod) {
+  _bolModalidad = mod;
+  localStorage.setItem('ecca_modalidad', mod);
+  document.getElementById('bol-mod-sem').classList.toggle('on', mod === 'semestral');
+  document.getElementById('bol-mod-cuat').classList.toggle('on', mod === 'cuatrimestral');
+  const sel = document.getElementById('bol-periodo');
+  if (!sel) return;
+  const cur = sel.value;
+  const opts = '<option value="General">General (Todos los Parciales)</option>' +
+    PERIODOS_MOD_BOL[mod].map(p => `<option value="${p}">${p}</option>`).join('');
+  sel.innerHTML = opts;
+  if (cur === 'General' || PERIODOS_MOD_BOL[mod].includes(cur)) sel.value = cur;
+}
+
 // ── Orden del plan de estudios ─────────────────────────────────────────────
 const NORM = s => (s||'').toLowerCase().normalize('NFD')
   .replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9\s]/g,' ').replace(/\s+/g,' ').trim();
@@ -465,6 +498,7 @@ window.onload=function(){
 let _grupos = [], _materias = [];
 
 (async function init() {
+  setBolModalidad(_bolModalidad);
   try {
     [_grupos, _materias] = await Promise.all([getGrupos(), getMaterias()]);
     const sel = document.getElementById('bol-grupo');
@@ -494,7 +528,7 @@ async function generarBoletas() {
     const grupo = _grupos.find(g => g.id === grupoId);
     const ciclo = grupo ? [grupo.modalidad, grupo.ciclo].filter(Boolean).join(' · ') : '';
     const esGeneral = periodo === 'General';
-    const PERIODOS_GENERAL = ['1er Parcial', '2do Parcial', '3er Parcial', 'Final'];
+    const PERIODOS_GENERAL = PERIODOS_MOD_BOL[_bolModalidad] || PERIODOS_MOD_BOL.cuatrimestral;
 
     // Cargar alumnos, calificaciones y materias del grupo en paralelo
     const calQuery = esGeneral

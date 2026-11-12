@@ -129,6 +129,12 @@
 .stat-chip  { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--r-sm);
               padding:8px 16px; font-size:12px; color:var(--text-muted); }
 .stat-chip strong { font-size:18px; font-weight:700; color:var(--text); display:block; line-height:1.1; }
+/* ── Modalidad toggle ── */
+.cal-mod-bar{display:flex;align-items:center;gap:8px;padding:0 0 14px}
+.cal-mod-lbl{font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-right:4px}
+.cal-mod-btn{padding:5px 16px;border:1.5px solid var(--border);border-radius:20px;font-size:12px;font-weight:600;color:var(--text-muted);background:transparent;cursor:pointer;transition:.15s;line-height:1.4}
+.cal-mod-btn:hover{border-color:var(--navy);color:var(--navy)}
+.cal-mod-btn.on{background:var(--navy);color:#fff;border-color:var(--navy)}
 </style>
 </head>
 <body data-modulo="calificaciones">
@@ -230,6 +236,13 @@
           <i class="fas fa-file-pdf"></i> Formato en blanco
         </a>
       </div>
+    </div>
+
+    <!-- Modalidad -->
+    <div class="cal-mod-bar">
+      <span class="cal-mod-lbl"><i class="fas fa-graduation-cap" style="color:var(--gold)"></i> Modalidad:</span>
+      <button class="cal-mod-btn on" id="mod-btn-cuatrimestral" onclick="setModalidad('cuatrimestral')">Cuatrimestral</button>
+      <button class="cal-mod-btn" id="mod-btn-semestral" onclick="setModalidad('semestral')">Semestral</button>
     </div>
 
     <!-- Tabs -->
@@ -928,7 +941,7 @@ async function renderAlumnoCalif(rec) {
       byMateria[key].periodos[c.periodo] = c;
     });
 
-    const periodos = ['1er Parcial','2do Parcial','3er Parcial','Final','Extraordinario'];
+    const periodos = PERIODOS_MOD[_modalidad] || PERIODOS_MOD.cuatrimestral;
 
     const avatar = (rec.nombre || '?')[0].toUpperCase();
     cont.innerHTML = `
@@ -1203,6 +1216,30 @@ async function exportarGrupoExcel() {
     toast('Archivo Excel generado.', 'ok');
   } catch(e) { toast('Error al exportar: ' + e.message, 'err'); }
 }
+
+/* ── Modalidad (Semestral / Cuatrimestral) ── */
+const PERIODOS_MOD = {
+  semestral:     ['1er Parcial','2do Parcial','3er Parcial','4to Parcial','Final','Extraordinario'],
+  cuatrimestral: ['1er Parcial','2do Parcial','3er Parcial','Final','Extraordinario']
+};
+let _modalidad = localStorage.getItem('ecca_modalidad') || 'cuatrimestral';
+
+function setModalidad(mod) {
+  _modalidad = mod;
+  localStorage.setItem('ecca_modalidad', mod);
+  document.getElementById('mod-btn-semestral').classList.toggle('on', mod === 'semestral');
+  document.getElementById('mod-btn-cuatrimestral').classList.toggle('on', mod === 'cuatrimestral');
+  const opts = PERIODOS_MOD[mod].map(p => `<option value="${p}">${p}</option>`).join('');
+  ['cap-periodo','gv-periodo','dep-periodo'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    const cur = sel.value;
+    sel.innerHTML = opts;
+    if (PERIODOS_MOD[mod].includes(cur)) sel.value = cur;
+  });
+}
+// Aplicar modalidad al cargar
+setModalidad(_modalidad);
 
 /* ---- Init ---- */
 let _esMaestro = false;

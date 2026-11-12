@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ECCA — Portal de Padres</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+:root {
+  --navy:#1e2a4a; --gold:#f59e0b; --r:10px; --r-sm:6px;
+  --bg:#f1f5f9; --bg-card:#fff; --border:#e2e8f0;
+  --text:#1e293b; --text-muted:#64748b; --text-light:#94a3b8;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+button{cursor:pointer}
+a{color:var(--navy);text-decoration:none}
+
+/* ── LOGIN ── */
+.login-wrap{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 16px;background:linear-gradient(135deg,var(--navy) 0%,#2d3f6e 100%)}
+.login-card{background:#fff;border-radius:16px;padding:36px 32px;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.login-logo{text-align:center;margin-bottom:24px}
+.login-logo img{width:72px;height:72px;object-fit:contain;border-radius:10px;background:var(--navy);padding:4px}
+.login-title{font-size:20px;font-weight:800;color:var(--navy);text-align:center;margin-top:12px}
+.login-sub{font-size:12px;color:var(--text-muted);text-align:center;margin-top:4px}
+.lf{display:flex;flex-direction:column;gap:5px;margin-top:18px}
+.lf label{font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px}
+.lf input{height:46px;border:1.5px solid var(--border);border-radius:var(--r-sm);padding:0 14px;font-size:15px;color:var(--text);background:#fff;width:100%}
+.lf input:focus{outline:none;border-color:var(--gold)}
+.login-hint{font-size:11px;color:var(--text-light);margin-top:4px}
+.btn-login{width:100%;height:48px;background:var(--navy);color:#fff;border:none;border-radius:var(--r-sm);font-size:15px;font-weight:700;margin-top:22px;transition:.15s;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn-login:hover{opacity:.88}
+.btn-login:disabled{opacity:.5;cursor:not-allowed}
+.login-err{background:#fee2e2;border:1px solid #fca5a5;border-radius:var(--r-sm);padding:10px 14px;font-size:13px;color:#b91c1c;margin-top:14px;display:none;align-items:center;gap:8px}
+.login-err.show{display:flex}
+
+/* ── PORTAL ── */
+#v-portal{display:none;min-height:100vh;flex-direction:column}
+.pt-header{background:var(--navy);padding:14px 16px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:30}
+.pt-logo{width:36px;height:36px;background:#fff;border-radius:6px;overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.pt-logo img{width:100%;height:100%;object-fit:contain}
+.pt-brand{color:#fff;flex:1}
+.pt-brand-name{font-size:14px;font-weight:800;line-height:1.2}
+.pt-brand-sub{font-size:11px;opacity:.6}
+.pt-logout{background:rgba(255,255,255,.15);border:none;color:#fff;padding:7px 14px;border-radius:var(--r-sm);font-size:12px;font-weight:600;display:flex;align-items:center;gap:5px}
+.pt-logout:hover{background:rgba(255,255,255,.25)}
+
+.pt-alumno{background:var(--navy);padding:0 16px 16px;border-bottom:3px solid var(--gold)}
+.pt-av{width:48px;height:48px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;color:var(--navy);flex-shrink:0}
+.pt-av-row{display:flex;align-items:center;gap:14px}
+.pt-nombre{font-size:17px;font-weight:800;color:#fff}
+.pt-grupo{font-size:12px;color:rgba(255,255,255,.7);margin-top:2px}
+.pt-folio{font-size:11px;color:rgba(255,255,255,.5);margin-top:1px;font-family:monospace}
+
+/* ── TABS ── */
+.pt-tabs{background:#fff;border-bottom:2px solid var(--border);display:flex;overflow-x:auto;position:sticky;top:65px;z-index:20;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.pt-tabs::-webkit-scrollbar{display:none}
+.pt-tab{flex:1;min-width:80px;padding:12px 8px;text-align:center;font-size:12px;font-weight:600;color:var(--text-muted);border-bottom:3px solid transparent;margin-bottom:-2px;transition:.15s;white-space:nowrap;border:none;background:none;display:flex;flex-direction:column;align-items:center;gap:3px}
+.pt-tab i{font-size:16px}
+.pt-tab.on{color:var(--navy);border-bottom-color:var(--gold)}
+.pt-tab:hover{background:var(--bg);color:var(--text)}
+
+.pt-body{flex:1;padding:16px}
+
+/* ── SECCIONES ── */
+.pt-sec-title{font-size:16px;font-weight:800;color:var(--navy);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.pt-filter-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:flex-end}
+.pt-filter-row .pf{display:flex;flex-direction:column;gap:4px}
+.pt-filter-row label{font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.3px}
+.pt-filter-row select,.pt-filter-row input[type=month]{height:38px;border:1.5px solid var(--border);border-radius:var(--r-sm);padding:0 10px;font-size:13px;background:#fff;color:var(--text);min-width:160px}
+.pt-filter-row select:focus,.pt-filter-row input:focus{outline:none;border-color:var(--gold)}
+
+/* Stats chips */
+.pt-stats{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+.pt-stat{background:#fff;border:1px solid var(--border);border-radius:var(--r-sm);padding:10px 16px;text-align:center;flex:1;min-width:90px}
+.pt-stat-val{font-size:22px;font-weight:800;color:var(--navy);line-height:1.1}
+.pt-stat-lbl{font-size:10px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.3px;margin-top:2px}
+.pt-stat.verde .pt-stat-val{color:#15803d}
+.pt-stat.rojo .pt-stat-val{color:#b91c1c}
+.pt-stat.gold .pt-stat-val{color:#92400e}
+
+/* Tabla asistencia */
+.pt-tbl-wrap{background:#fff;border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.pt-tbl{width:100%;border-collapse:collapse;font-size:13px}
+.pt-tbl th{background:var(--navy);color:#fff;padding:9px 12px;text-align:left;font-size:11px;letter-spacing:.3px;white-space:nowrap}
+.pt-tbl td{padding:9px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
+.pt-tbl tr:last-child td{border-bottom:none}
+.pt-tbl tr:hover td{background:var(--bg)}
+.chip-p{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700}
+.chip-p.pres{background:#dcfce7;color:#15803d}
+.chip-p.aus{background:#fee2e2;color:#b91c1c}
+.chip-p.tard{background:#fef3c7;color:#92400e}
+
+/* Calificaciones */
+.cal-wrap{max-width:520px;margin:0 auto}
+.cal-periodo-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+.cal-ptab{padding:7px 16px;border-radius:20px;border:1.5px solid var(--border);background:#fff;font-size:12px;font-weight:700;color:var(--text-muted);cursor:pointer;transition:.15s}
+.cal-ptab:hover{border-color:var(--navy);color:var(--navy)}
+.cal-ptab.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+.cal-blk{background:#fff;border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:10px}
+.cal-blk-hdr{background:var(--navy);color:#fff;padding:8px 14px;font-size:12px;font-weight:700;display:flex;justify-content:space-between;align-items:center}
+.cal-blk-hdr .sub-tag{font-size:10px;color:rgba(255,255,255,.55);font-weight:400}
+.cal-nota-row{display:flex;align-items:center;justify-content:space-between;padding:10px 14px}
+.cal-nota-lbl{font-size:12px;color:var(--text-muted)}
+.cal-nota-val{font-size:22px;font-weight:800;line-height:1}
+.cal-nota-val.ap{color:#15803d}
+.cal-nota-val.rep{color:#b91c1c}
+.cal-nota-val.em{color:var(--text-light);font-size:16px}
+.cal-prom-global{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.cal-prom-num{font-size:32px;font-weight:900;color:var(--navy);line-height:1}
+.cal-prom-lbl{font-size:11px;color:var(--text-muted);margin-top:3px}
+.cal-prom-right{text-align:right}
+
+/* Conducta */
+.cd-blk{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:18px;margin-bottom:12px}
+.cd-row{margin-bottom:16px}
+.cd-row:last-child{margin-bottom:0}
+.cd-label-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.cd-label{font-size:13px;font-weight:600;color:var(--text)}
+.cd-pct{font-size:14px;font-weight:800;color:var(--navy)}
+.cd-bar-bg{height:12px;background:var(--border);border-radius:20px;overflow:hidden}
+.cd-bar-fill{height:100%;border-radius:20px;transition:width .6s ease}
+.cd-obs-box{background:var(--bg);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px;font-size:13px;color:var(--text);line-height:1.6;min-height:60px}
+.cd-obs-empty{color:var(--text-light);font-style:italic}
+
+/* Avisos */
+.av-card{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:12px;border-left:4px solid var(--gold)}
+.av-titulo{font-size:14px;font-weight:700;color:var(--navy);margin-bottom:4px}
+.av-fecha{font-size:11px;color:var(--text-muted);margin-bottom:8px}
+.av-contenido{font-size:13px;color:var(--text);line-height:1.6}
+
+/* Empty state */
+.pt-empty{text-align:center;padding:48px 20px;color:var(--text-muted)}
+.pt-empty i{font-size:36px;color:var(--border);display:block;margin-bottom:12px}
+.pt-empty p{font-size:14px}
+
+/* Spinner */
+.pt-spinner{text-align:center;padding:40px;color:var(--text-muted);font-size:13px}
+.pt-spinner i{display:block;font-size:28px;margin-bottom:8px;color:var(--gold)}
+
+/* Mobile table → cards */
+@media(max-width:600px){
+  .pt-tbl thead{display:none}
+  .pt-tbl,.pt-tbl tbody,.pt-tbl tr,.pt-tbl td{display:block;width:100%}
+  .pt-tbl tr{border:1px solid var(--border);border-radius:var(--r-sm);margin-bottom:8px;overflow:hidden}
+  .pt-tbl td{padding:8px 12px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+  .pt-tbl td:last-child{border-bottom:none}
+  .pt-tbl td::before{content:attr(data-label);font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.3px}
+  .login-card{padding:28px 20px}
+  .cal-periodos{flex-wrap:wrap}
+  .cal-p-cell{min-width:50%}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════ LOGIN ═══════════════ -->
+<div id="v-login" class="login-wrap">
+  <div class="login-card">
+    <div class="login-logo">
+      <img src="images/ecca_logo.png" alt="ECCA">
+    </div>
+    <div class="login-title">Portal de Padres</div>
+    <div class="login-sub">ECCA Prepa León — Sistema de Admisiones</div>
+
+    <div class="lf">
+      <label for="inp-folio"><i class="fas fa-id-badge"></i> Folio del alumno</label>
+      <input type="text" id="inp-folio" placeholder="Ej. ECF001" autocomplete="off" autocapitalize="characters">
+      <span class="login-hint">Folio asignado al momento de la inscripción</span>
+    </div>
+    <div class="lf">
+      <label for="inp-fnac"><i class="fas fa-calendar"></i> Fecha de nacimiento del alumno</label>
+      <input type="date" id="inp-fnac">
+    </div>
+    <button class="btn-login" id="btn-entrar" onclick="login()">
+      <i class="fas fa-right-to-bracket"></i> Entrar
+    </button>
+    <div class="login-err" id="login-err">
+      <i class="fas fa-circle-xmark"></i>
+      <span id="login-err-msg">Folio o fecha de nacimiento incorrectos.</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ PORTAL ═══════════════ -->
+<div id="v-portal" style="display:none;flex-direction:column">
+
+  <div class="pt-header">
+    <div class="pt-logo">
+      <img src="images/ecca_logo.png" alt="ECCA">
+    </div>
+    <div class="pt-brand">
+      <div class="pt-brand-name">ECCA Prepa León</div>
+      <div class="pt-brand-sub">Portal de Padres</div>
+    </div>
+    <button class="pt-logout" onclick="logout()">
+      <i class="fas fa-right-from-bracket"></i> Salir
+    </button>
+  </div>
+
+  <div class="pt-alumno">
+    <div class="pt-av-row">
+      <div class="pt-av" id="pt-av">?</div>
+      <div>
+        <div class="pt-nombre" id="pt-nombre">—</div>
+        <div class="pt-grupo" id="pt-grupo"></div>
+        <div class="pt-folio" id="pt-folio"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="pt-tabs">
+    <button class="pt-tab on" id="ptab-asistencia" onclick="setTab('asistencia')">
+      <i class="fas fa-clipboard-check"></i>Asistencia
+    </button>
+    <button class="pt-tab" id="ptab-calificaciones" onclick="setTab('calificaciones')">
+      <i class="fas fa-star-half-stroke"></i>Calificaciones
+    </button>
+    <button class="pt-tab" id="ptab-conducta" onclick="setTab('conducta')">
+      <i class="fas fa-award"></i>Conducta
+    </button>
+    <button class="pt-tab" id="ptab-avisos" onclick="setTab('avisos')">
+      <i class="fas fa-bell"></i>Avisos
+    </button>
+  </div>
+
+  <div class="pt-body">
+
+    <!-- ASISTENCIA -->
+    <div id="sec-asistencia">
+      <div class="pt-sec-title"><i class="fas fa-clipboard-check" style="color:var(--gold)"></i> Asistencia</div>
+      <div class="pt-filter-row">
+        <div class="pf">
+          <label>Mes</label>
+          <input type="month" id="as-mes" onchange="cargarAsistencia()">
+        </div>
+      </div>
+      <div class="pt-stats" id="as-stats"></div>
+      <div id="as-tabla"></div>
+    </div>
+
+    <!-- CALIFICACIONES -->
+    <div id="sec-calificaciones" style="display:none">
+      <div class="pt-sec-title"><i class="fas fa-star-half-stroke" style="color:var(--gold)"></i> Calificaciones</div>
+      <div class="cal-wrap">
+        <div class="cal-periodo-tabs" id="cal-tabs"></div>
+        <div id="cal-prom-wrap"></div>
+        <div id="cal-lista"></div>
+      </div>
+    </div>
+
+    <!-- CONDUCTA -->
+    <div id="sec-conducta" style="display:none">
+      <div class="pt-sec-title"><i class="fas fa-award" style="color:var(--gold)"></i> Conducta</div>
+      <div class="pt-filter-row">
+        <div class="pf">
+          <label>Periodo</label>
+          <select id="cd-periodo" onchange="cargarConducta()">
+            <option value="1er Periodo">1er Periodo</option>
+            <option value="2do Periodo">2do Periodo</option>
+            <option value="3er Periodo">3er Periodo</option>
+          </select>
+        </div>
+      </div>
+      <div id="cd-wrap"></div>
+    </div>
+
+    <!-- AVISOS -->
+    <div id="sec-avisos" style="display:none">
+      <div class="pt-sec-title"><i class="fas fa-bell" style="color:var(--gold)"></i> Avisos Generales</div>
+      <div id="av-lista"></div>
+    </div>
+
+  </div><!-- /pt-body -->
+</div><!-- /v-portal -->
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script>
+const _sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let _alumno  = null;  // { folio, nombre, grupoId, grupoNombre, modalidad }
+let _tabActivo = 'asistencia';
+let _calLoaded = false;
+let _avLoaded  = false;
+
+function g(id){ return document.getElementById(id); }
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+/* ═══ LOGIN ═══════════════════════════════════════════ */
+async function login() {
+  const folio = g('inp-folio').value.trim().toUpperCase();
+  const fnac  = g('inp-fnac').value;
+  if (!folio || !fnac) { mostrarErr('Ingresa el folio y la fecha de nacimiento.'); return; }
+
+  const btn = g('btn-entrar');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verificando...';
+  g('login-err').classList.remove('show');
+
+  try {
+    const { data, error } = await _sb.from('inscripciones')
+      .select('folio,nombre,fecha_nac,grupo_id,modalidad')
+      .eq('folio', folio)
+      .eq('fecha_nac', fnac)
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) { mostrarErr('Folio o fecha de nacimiento incorrectos.'); return; }
+
+    // Obtener nombre del grupo
+    let grupoNombre = '';
+    if (data.grupo_id) {
+      const { data: gr } = await _sb.from('grupos').select('nombre').eq('id', data.grupo_id).maybeSingle();
+      grupoNombre = gr?.nombre || '';
+    }
+
+    _alumno = {
+      folio:        data.folio,
+      nombre:       data.nombre || data.folio,
+      grupoId:      data.grupo_id,
+      grupoNombre,
+      modalidad:    data.modalidad || '',
+      fechaNac:     data.fecha_nac,
+    };
+    sessionStorage.setItem('ecca_padre', JSON.stringify(_alumno));
+    mostrarPortal();
+  } catch(e) {
+    mostrarErr('Error de conexión. Intenta de nuevo.');
+    console.error(e);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-right-to-bracket"></i> Entrar';
+  }
+}
+
+function mostrarErr(msg) {
+  g('login-err-msg').textContent = msg;
+  g('login-err').classList.add('show');
+}
+
+function logout() {
+  sessionStorage.removeItem('ecca_padre');
+  _alumno = null; _calLoaded = false; _avLoaded = false;
+  g('v-portal').style.display = 'none';
+  g('v-login').style.display  = 'flex';
+  g('inp-folio').value = '';
+  g('inp-fnac').value  = '';
+}
+
+/* ═══ PORTAL ══════════════════════════════════════════ */
+function mostrarPortal() {
+  g('v-login').style.display  = 'none';
+  g('v-portal').style.display = 'flex';
+
+  const initiales = (_alumno.nombre || '?').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
+  g('pt-av').textContent    = initiales;
+  g('pt-nombre').textContent = _alumno.nombre;
+  g('pt-grupo').textContent  = [_alumno.grupoNombre, _alumno.modalidad].filter(Boolean).join(' · ');
+  g('pt-folio').textContent  = 'Folio: ' + _alumno.folio;
+
+  // Mes actual
+  const hoy = new Date();
+  g('as-mes').value = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}`;
+
+  setTab('asistencia');
+}
+
+/* ═══ TABS ═════════════════════════════════════════════ */
+const TABS = ['asistencia','calificaciones','conducta','avisos'];
+function setTab(tab) {
+  _tabActivo = tab;
+  TABS.forEach(t => {
+    g('ptab-'+t).classList.toggle('on', t===tab);
+    g('sec-'+t).style.display = t===tab ? '' : 'none';
+  });
+  if (tab==='asistencia')    cargarAsistencia();
+  if (tab==='calificaciones' && !_calLoaded) cargarCalificaciones();
+  if (tab==='conducta')      cargarConducta();
+  if (tab==='avisos' && !_avLoaded) cargarAvisos();
+}
+
+/* ═══ ASISTENCIA ══════════════════════════════════════ */
+async function cargarAsistencia() {
+  if (!_alumno) return;
+  const mes    = g('as-mes').value;
+  const [y, m] = (mes||'').split('-');
+  if (!y||!m) return;
+
+  const desde = `${y}-${m}-01`;
+  const hasta = `${y}-${m}-${new Date(parseInt(y), parseInt(m), 0).getDate()}`;
+
+  g('as-stats').innerHTML  = '<div class="pt-spinner"><i class="fas fa-spinner fa-spin"></i>Cargando...</div>';
+  g('as-tabla').innerHTML  = '';
+
+  try {
+    // Sesiones del grupo en ese mes
+    const sesQuery = _sb.from('sesiones_qr').select('id,fecha,materia,grupo_nombre,grupo_id')
+      .gte('fecha', desde).lte('fecha', hasta).order('fecha');
+    if (_alumno.grupoId) sesQuery.eq('grupo_id', _alumno.grupoId);
+    const { data: sesiones } = await sesQuery;
+
+    // Asistencias del alumno en ese mes
+    const { data: presencias } = await _sb.from('asistencias')
+      .select('sesion_id,fecha,materia')
+      .eq('folio', _alumno.folio)
+      .gte('fecha', desde).lte('fecha', hasta);
+
+    const presSet = new Set((presencias||[]).map(p => p.sesion_id));
+    const totalSes = (sesiones||[]).length;
+    const nPresente = (sesiones||[]).filter(s => presSet.has(s.id)).length;
+    const nFalta    = totalSes - nPresente;
+    const pct       = totalSes ? Math.round(nPresente/totalSes*100) : 0;
+
+    g('as-stats').innerHTML = `
+      <div class="pt-stat verde"><div class="pt-stat-val">${nPresente}</div><div class="pt-stat-lbl">Presencias</div></div>
+      <div class="pt-stat rojo"><div class="pt-stat-val">${nFalta}</div><div class="pt-stat-lbl">Faltas</div></div>
+      <div class="pt-stat gold"><div class="pt-stat-val">${pct}%</div><div class="pt-stat-lbl">Asistencia</div></div>
+    `;
+
+    if (!totalSes) {
+      g('as-tabla').innerHTML = `<div class="pt-empty"><i class="fas fa-calendar-xmark"></i><p>No hay sesiones registradas para este mes.</p></div>`;
+      return;
+    }
+
+    const filas = (sesiones||[]).map(s => {
+      const pres = presSet.has(s.id);
+      const chip = pres
+        ? `<span class="chip-p pres"><i class="fas fa-check"></i> Presente</span>`
+        : `<span class="chip-p aus"><i class="fas fa-xmark"></i> Falta</span>`;
+      const fecha = new Date(s.fecha + 'T12:00:00').toLocaleDateString('es-MX',{weekday:'short',day:'2-digit',month:'short'});
+      return `<tr>
+        <td data-label="Fecha"><strong>${esc(fecha)}</strong></td>
+        <td data-label="Materia">${esc(s.materia||'—')}</td>
+        <td data-label="Grupo">${esc(s.grupo_nombre||_alumno.grupoNombre||'—')}</td>
+        <td data-label="Estado">${chip}</td>
+      </tr>`;
+    }).join('');
+
+    g('as-tabla').innerHTML = `
+      <div class="pt-tbl-wrap">
+        <table class="pt-tbl">
+          <thead><tr>
+            <th>Fecha</th><th>Materia</th><th>Grupo</th><th>Estado</th>
+          </tr></thead>
+          <tbody>${filas}</tbody>
+        </table>
+      </div>`;
+  } catch(e) {
+    console.error('asistencia:', e);
+    g('as-stats').innerHTML = '';
+    g('as-tabla').innerHTML = `<div class="pt-empty"><i class="fas fa-circle-exclamation"></i><p>Error al cargar asistencia.</p></div>`;
+  }
+}
+
+/* ═══ CALIFICACIONES ═══════════════════════════════════ */
+let _calData   = null;
+let _calMats   = {};
+let _calPeriodo = null;
+
+async function cargarCalificaciones() {
+  _calLoaded = true;
+  g('cal-prom-wrap').innerHTML = '<div class="pt-spinner"><i class="fas fa-spinner fa-spin"></i>Cargando...</div>';
+  g('cal-lista').innerHTML = '';
+  g('cal-tabs').innerHTML  = '';
+
+  try {
+    const [{ data: cals }, { data: mats }] = await Promise.all([
+      _sb.from('calificaciones').select('materia_id,periodo,calificacion').eq('folio', _alumno.folio),
+      _sb.from('materias').select('id,nombre,grado'),
+    ]);
+
+    _calMats = {};
+    (mats||[]).forEach(m => { _calMats[m.id] = m; });
+
+    if (!cals||!cals.length) {
+      g('cal-prom-wrap').innerHTML = '';
+      g('cal-lista').innerHTML = `<div class="pt-empty"><i class="fas fa-star-half-stroke"></i><p>Aún no hay calificaciones registradas.</p></div>`;
+      return;
+    }
+
+    _calData = cals;
+    const periodos = [...new Set(cals.map(c=>c.periodo))].sort();
+    _calPeriodo = periodos[0];
+
+    // Render tabs de periodo
+    g('cal-tabs').innerHTML = periodos.map(p =>
+      `<button class="cal-ptab${p===_calPeriodo?' on':''}" onclick="selPeriodo('${esc(p)}')">${esc(p)}</button>`
+    ).join('');
+
+    renderCalPeriodo();
+
+  } catch(e) {
+    console.error('calificaciones:', e);
+    g('cal-prom-wrap').innerHTML = '';
+    g('cal-lista').innerHTML = `<div class="pt-empty"><i class="fas fa-circle-exclamation"></i><p>Error al cargar calificaciones.</p></div>`;
+  }
+}
+
+function selPeriodo(p) {
+  _calPeriodo = p;
+  document.querySelectorAll('.cal-ptab').forEach(el => el.classList.toggle('on', el.textContent===p));
+  renderCalPeriodo();
+}
+
+function renderCalPeriodo() {
+  if (!_calData||!_calPeriodo) return;
+  const cals = _calData.filter(c => c.periodo === _calPeriodo);
+
+  const vals = cals.map(c=>parseFloat(c.calificacion)).filter(v=>!isNaN(v));
+  const promG = vals.length ? (vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(1) : '—';
+  const promColor = parseFloat(promG)>=6 ? 'var(--navy)' : '#b91c1c';
+  const aprobadas = vals.filter(v=>v>=6).length;
+
+  g('cal-prom-wrap').innerHTML = `
+    <div class="cal-prom-global">
+      <div>
+        <div class="cal-prom-num" style="color:${promColor}">${promG}</div>
+        <div class="cal-prom-lbl">Promedio del periodo</div>
+      </div>
+      <div class="cal-prom-right">
+        <div style="font-size:13px;font-weight:700;color:var(--text)">${aprobadas}/${vals.length}</div>
+        <div style="font-size:11px;color:var(--text-muted)">Materias aprobadas</div>
+      </div>
+    </div>`;
+
+  if (!cals.length) {
+    g('cal-lista').innerHTML = `<div class="pt-empty"><i class="fas fa-star-half-stroke"></i><p>Sin calificaciones en este periodo.</p></div>`;
+    return;
+  }
+
+  g('cal-lista').innerHTML = cals.map(c => {
+    const mat = _calMats[c.materia_id] || {};
+    const v   = c.calificacion;
+    const cls = v===undefined||v===null ? 'em' : parseFloat(v)>=6 ? 'ap' : 'rep';
+    const valTxt = v!==undefined&&v!==null ? v : '—';
+    return `<div class="cal-blk">
+      <div class="cal-blk-hdr">
+        <span>${esc(mat.nombre||'Materia '+c.materia_id)}</span>
+        <span class="sub-tag">${esc(mat.grado||'')}</span>
+      </div>
+      <div class="cal-nota-row">
+        <span class="cal-nota-lbl">${esc(_calPeriodo)}</span>
+        <span class="cal-nota-val ${cls}">${valTxt}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ═══ CONDUCTA ══════════════════════════════════════════ */
+async function cargarConducta() {
+  if (!_alumno) return;
+  const periodo = g('cd-periodo').value;
+
+  g('cd-wrap').innerHTML = '<div class="pt-spinner"><i class="fas fa-spinner fa-spin"></i>Cargando...</div>';
+
+  try {
+    const { data, error } = await _sb.from('conducta_alumno')
+      .select('*').eq('folio', _alumno.folio).eq('periodo', periodo).maybeSingle();
+
+    if (!data || error) {
+      g('cd-wrap').innerHTML = `<div class="pt-empty"><i class="fas fa-award"></i><p>Aún no hay evaluación de conducta para este periodo.</p></div>`;
+      return;
+    }
+
+    const items = [
+      { key:'conducta_pct',  label:'Conducta general',  icon:'fa-user-check'    },
+      { key:'uniforme_pct',  label:'Uniforme',           icon:'fa-shirt'         },
+      { key:'higiene_pct',   label:'Higiene',            icon:'fa-hand-sparkles' },
+      { key:'retardos_pct',  label:'Puntualidad',        icon:'fa-clock'         },
+      { key:'peleas_pct',    label:'Sin faltas graves',  icon:'fa-heart'         },
+    ];
+
+    function barColor(pct) {
+      if (pct >= 80) return '#22c55e';
+      if (pct >= 60) return '#f59e0b';
+      return '#ef4444';
+    }
+
+    const barras = items.map(it => {
+      const pct = data[it.key] ?? 0;
+      return `<div class="cd-row">
+        <div class="cd-label-row">
+          <span class="cd-label"><i class="fas ${it.icon}" style="color:var(--gold);margin-right:6px"></i>${esc(it.label)}</span>
+          <span class="cd-pct">${pct}%</span>
+        </div>
+        <div class="cd-bar-bg">
+          <div class="cd-bar-fill" style="width:${pct}%;background:${barColor(pct)}"></div>
+        </div>
+      </div>`;
+    }).join('');
+
+    const obs = data.observacion
+      ? `<p>${esc(data.observacion).replace(/\n/g,'<br>')}</p>`
+      : `<p class="cd-obs-empty">Sin observaciones adicionales.</p>`;
+
+    g('cd-wrap').innerHTML = `
+      <div class="cd-blk">${barras}</div>
+      <div class="cd-blk">
+        <div class="pt-sec-title" style="font-size:13px;margin-bottom:10px"><i class="fas fa-comment-dots" style="color:var(--gold)"></i> Observaciones</div>
+        <div class="cd-obs-box">${obs}</div>
+      </div>`;
+
+  } catch(e) {
+    console.error('conducta:', e);
+    g('cd-wrap').innerHTML = `<div class="pt-empty"><i class="fas fa-circle-exclamation"></i><p>Error al cargar conducta.</p></div>`;
+  }
+}
+
+/* ═══ AVISOS ════════════════════════════════════════════ */
+async function cargarAvisos() {
+  _avLoaded = true;
+  g('av-lista').innerHTML = '<div class="pt-spinner"><i class="fas fa-spinner fa-spin"></i>Cargando...</div>';
+
+  try {
+    const { data } = await _sb.from('avisos')
+      .select('*').eq('activo', true).order('fecha', { ascending: false });
+
+    if (!data||!data.length) {
+      g('av-lista').innerHTML = `<div class="pt-empty"><i class="fas fa-bell-slash"></i><p>No hay avisos en este momento.</p></div>`;
+      return;
+    }
+
+    const nMes = ['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+    g('av-lista').innerHTML = data.map(a => {
+      const f = new Date(a.fecha + 'T12:00:00');
+      const fStr = `${f.getDate()} ${nMes[f.getMonth()+1]} ${f.getFullYear()}`;
+      return `<div class="av-card">
+        <div class="av-titulo">${esc(a.titulo)}</div>
+        <div class="av-fecha"><i class="fas fa-calendar-day"></i> ${fStr}</div>
+        ${a.contenido ? `<div class="av-contenido">${esc(a.contenido).replace(/\n/g,'<br>')}</div>` : ''}
+      </div>`;
+    }).join('');
+  } catch(e) {
+    console.error('avisos:', e);
+    g('av-lista').innerHTML = `<div class="pt-empty"><i class="fas fa-circle-exclamation"></i><p>Error al cargar avisos.</p></div>`;
+  }
+}
+
+/* ═══ INIT ══════════════════════════════════════════════ */
+(function init() {
+  // Verificar sesión guardada
+  try {
+    const saved = sessionStorage.getItem('ecca_padre');
+    if (saved) {
+      _alumno = JSON.parse(saved);
+      mostrarPortal();
+      return;
+    }
+  } catch(_) {}
+  g('v-login').style.display = 'flex';
+
+  // Enter en inputs → login
+  ['inp-folio','inp-fnac'].forEach(id => {
+    g(id)?.addEventListener('keydown', e => { if (e.key==='Enter') login(); });
+  });
+})();
+</script>
+</body>
+</html>

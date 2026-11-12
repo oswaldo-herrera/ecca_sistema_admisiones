@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ECCA — Conducta de Alumnos</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="css/styles.css">
+<style>
+/* ── Buscador alumno ── */
+.cd-search-wrap{position:relative;max-width:420px}
+.cd-search-wrap input{width:100%;height:40px;border:1.5px solid var(--border);border-radius:var(--r-sm);padding:0 36px 0 12px;font-size:14px;background:var(--bg-card);color:var(--text)}
+.cd-search-wrap input:focus{outline:none;border-color:var(--gold)}
+.cd-search-wrap i{position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--text-muted)}
+.cd-dropdown{position:absolute;top:calc(100%+4px);left:0;right:0;background:#fff;border:1.5px solid var(--border);border-radius:var(--r-sm);box-shadow:0 8px 24px rgba(0,0,0,.12);z-index:50;max-height:260px;overflow-y:auto;display:none}
+.cd-dropdown.show{display:block}
+.cd-item{padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border)}
+.cd-item:last-child{border-bottom:none}
+.cd-item:hover{background:var(--bg-hover)}
+.cd-item-nom{font-weight:600;font-size:13px}
+.cd-item-meta{font-size:11px;color:var(--text-muted);margin-top:2px}
+
+/* ── Alumno seleccionado ── */
+.cd-alumno-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r);padding:14px 18px;display:flex;align-items:center;gap:14px;margin-bottom:20px}
+.cd-av{width:44px;height:44px;border-radius:50%;background:var(--navy);display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:800;color:var(--gold);flex-shrink:0}
+.cd-av-nom{font-size:15px;font-weight:700}
+.cd-av-meta{font-size:12px;color:var(--text-muted);margin-top:2px}
+
+/* ── Formulario conducta ── */
+.cd-form{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:16px}
+.cd-form-h{background:var(--navy);color:#fff;padding:12px 18px;font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px}
+.cd-form-body{padding:18px}
+.cd-row{margin-bottom:18px}
+.cd-row:last-child{margin-bottom:0}
+.cd-label-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.cd-label{font-size:13px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:6px}
+.cd-pct-num{font-size:14px;font-weight:800;color:var(--navy);min-width:36px;text-align:right}
+.cd-slider{-webkit-appearance:none;appearance:none;width:100%;height:8px;border-radius:20px;outline:none;cursor:pointer}
+.cd-slider::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:var(--navy);cursor:pointer;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.2)}
+.cd-obs textarea{width:100%;min-height:90px;border:1.5px solid var(--border);border-radius:var(--r-sm);padding:10px 12px;font-size:13px;resize:vertical;background:var(--bg-card);color:var(--text);font-family:inherit}
+.cd-obs textarea:focus{outline:none;border-color:var(--gold)}
+
+/* Pct pills */
+.cd-pills{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.cd-pill{padding:4px 10px;border:1.5px solid var(--border);border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;color:var(--text-muted);background:transparent;transition:.15s}
+.cd-pill:hover{border-color:var(--navy);color:var(--navy)}
+.cd-pill.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+
+/* Filter bar */
+.cd-filter{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:20px}
+.cd-filter .f{display:flex;flex-direction:column;gap:4px}
+.cd-filter label{font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px}
+.cd-filter select{height:38px;border:1.5px solid var(--border);border-radius:var(--r-sm);padding:0 10px;font-size:13px;background:var(--bg-card);color:var(--text);min-width:160px}
+.cd-filter select:focus{outline:none;border-color:var(--gold)}
+
+/* Grid historial */
+.cd-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-top:12px}
+.cd-g-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;cursor:pointer;transition:.15s}
+.cd-g-card:hover{border-color:var(--gold);box-shadow:0 4px 12px rgba(0,0,0,.08)}
+.cd-g-hdr{background:var(--navy);padding:10px 14px;color:#fff;font-size:12px;font-weight:700;display:flex;justify-content:space-between;align-items:center}
+.cd-g-body{padding:12px 14px}
+.cd-mini-bar{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.cd-mini-lbl{font-size:11px;color:var(--text-muted);width:90px;flex-shrink:0}
+.cd-mini-bg{flex:1;height:7px;background:var(--border);border-radius:20px;overflow:hidden}
+.cd-mini-fill{height:100%;border-radius:20px}
+.cd-mini-val{font-size:11px;font-weight:700;color:var(--text);width:32px;text-align:right}
+
+/* ── Modalidad toggle (reutiliza .cal-mod-btn de calificaciones) ── */
+.cal-mod-btn{padding:5px 14px;border:1.5px solid var(--border);border-radius:20px;font-size:12px;font-weight:600;color:var(--text-muted);background:transparent;cursor:pointer;transition:.15s}
+.cal-mod-btn:hover{border-color:var(--navy);color:var(--navy)}
+.cal-mod-btn.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+
+/* ── Tabs ── */
+.cd-tabs-bar{padding:0 22px;border-bottom:2px solid var(--border);display:flex;gap:4px;margin-bottom:0}
+.cd-tab{padding:11px 22px;font-size:13px;font-weight:600;color:var(--text-muted);cursor:pointer;
+  border-bottom:3px solid transparent;margin-bottom:-2px;transition:.15s;
+  border-radius:var(--r-sm) var(--r-sm) 0 0;border:none;background:none;
+  display:inline-flex;align-items:center;gap:7px}
+.cd-tab:hover{color:var(--navy);background:var(--bg-hover)}
+.cd-tab.on{color:var(--navy);border-bottom:3px solid var(--gold);background:transparent}
+
+/* ── Filtro compacto en card ── */
+.cd-filter-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r);
+  padding:16px 20px;margin-bottom:20px;display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap}
+.cd-filter-card .f{display:flex;flex-direction:column;gap:4px}
+.cd-filter-card label{font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px}
+.cd-filter-card select{height:38px;border:1.5px solid var(--border);border-radius:var(--r-sm);
+  padding:0 10px;font-size:13px;background:var(--bg-card);color:var(--text);min-width:160px}
+.cd-filter-card select:focus{outline:none;border-color:var(--gold)}
+
+/* ── Buscador mejorado ── */
+.cd-buscar-wrap{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r);
+  padding:16px 20px;margin-bottom:20px}
+.cd-buscar-wrap label{font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;
+  letter-spacing:.4px;display:block;margin-bottom:8px}
+
+@media(max-width:680px){
+  .cd-filter,.cd-filter-card{flex-direction:column}
+  .cd-filter select,.cd-filter-card select{min-width:0;width:100%}
+}
+</style>
+</head>
+<body data-modulo="conducta">
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-brand">
+      <div class="sb-logo" style="background:#fff;padding:3px">
+        <img src="images/ecca_logo.png" alt="ECCA" style="width:100%;height:100%;object-fit:contain">
+      </div>
+      <div>
+        <div class="sb-brand-name">ECCA Prepa León</div>
+        <div class="sb-brand-sub">Sistema de Admisiones</div>
+      </div>
+    </div>
+    <nav class="sb-nav">
+      <div class="sb-group-label">Principal</div>
+      <a href="index.html" class="sb-item"><i class="fas fa-house"></i><span>Inicio</span></a>
+      <a href="formulario.html" class="sb-item"><i class="fas fa-user-plus"></i><span>Nueva Inscripción</span></a>
+      <div class="sb-group-label">Gestión</div>
+      <a href="base-datos.html" class="sb-item"><i class="fas fa-table-list"></i><span>Base de Datos</span><span class="sb-badge" id="sb-badge">0</span></a>
+      <a href="grupos.html" class="sb-item"><i class="fas fa-people-group"></i><span>Grupos</span></a>
+      <a href="deportes.html" class="sb-item"><i class="fas fa-futbol"></i><span>Deportes</span></a>
+      <a href="horarios.html" class="sb-item"><i class="fas fa-calendar-week"></i><span>Horarios</span></a>
+      <a href="calificaciones.html" class="sb-item"><i class="fas fa-star-half-stroke"></i><span>Calificaciones</span></a>
+      <a href="avance-mensual.html" class="sb-item"><i class="fas fa-chart-gantt"></i><span>Avance Mensual</span></a>
+      <a href="boletas.html" class="sb-item"><i class="fas fa-file-lines"></i><span>Boletas</span></a>
+      <a href="documentos.html" class="sb-item"><i class="fas fa-folder-open"></i><span>Documentos</span></a>
+      <a href="pagos.html" class="sb-item"><i class="fas fa-circle-dollar-to-slot"></i><span>Pagos</span></a>
+      <a href="adeudos.html" class="sb-item"><i class="fas fa-triangle-exclamation"></i><span>Adeudos</span></a>
+      <a href="recibo.html" class="sb-item"><i class="fas fa-file-invoice"></i><span>Recibo</span></a>
+      <a href="credencial.html" class="sb-item"><i class="fas fa-id-card"></i><span>Credencial</span></a>
+      <a href="cumpleanos.html" class="sb-item"><i class="fas fa-cake-candles"></i><span>Cumpleaños</span></a>
+      <div class="sb-group-label">Administración</div>
+      <a href="avances-admin.html" class="sb-item"><i class="fas fa-chart-bar"></i><span>Avances Mensuales</span></a>
+      <a href="conducta-admin.html" class="sb-item active"><i class="fas fa-award"></i><span>Conducta Alumnos</span></a>
+      <a href="vista-padre.html" class="sb-item"><i class="fas fa-users"></i><span>Portal de Padres</span></a>
+      <a href="finanzas.html" class="sb-item"><i class="fas fa-chart-line"></i><span>Finanzas</span></a>
+      <a href="bitacora.html" class="sb-item"><i class="fas fa-clipboard-list"></i><span>Bitácora</span></a>
+      <a href="usuarios.html" class="sb-item"><i class="fas fa-users-gear"></i><span>Usuarios</span></a>
+    </nav>
+    <div class="sb-footer">
+      <i class="fas fa-location-dot"></i> 5 de Febrero 634, San Juan de Dios, 37000 León de los Aldama, Gto.<br>Tel. 479 153 4007
+    </div>
+  </aside>
+  <div class="sidebar-overlay"></div>
+
+  <div class="main-content">
+    <header class="topbar">
+      <button class="topbar-hamburger"><i class="fas fa-bars"></i></button>
+      <nav class="topbar-breadcrumb">
+        <a href="index.html"><i class="fas fa-house"></i></a>
+        <span class="sep">›</span>
+        <span class="current">Conducta</span>
+      </nav>
+    </header>
+
+    <div class="page-header">
+      <div>
+        <div class="page-title">Evaluación de Conducta</div>
+        <div class="page-sub">Registra el comportamiento de cada alumno por periodo</div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="cd-tabs-bar">
+      <button class="cd-tab on" id="tab-captura" onclick="setTab('captura')">
+        <i class="fas fa-pen-to-square"></i> Capturar
+      </button>
+      <button class="cd-tab" id="tab-lista" onclick="setTab('lista')">
+        <i class="fas fa-table-list"></i> Ver registros
+      </button>
+    </div>
+
+    <div style="padding:22px">
+
+      <!-- ══ CAPTURA ══ -->
+      <div id="sec-captura">
+        <!-- Filtros en card -->
+        <div class="cd-filter-card">
+          <div class="f">
+            <label><i class="fas fa-graduation-cap" style="color:var(--gold)"></i> Modalidad</label>
+            <div style="display:flex;gap:6px">
+              <button class="cal-mod-btn on" id="cd-mod-cuat" onclick="setCdModalidad('cuatrimestral')">Cuatrimestral</button>
+              <button class="cal-mod-btn" id="cd-mod-sem" onclick="setCdModalidad('semestral')">Semestral</button>
+            </div>
+          </div>
+          <div class="f">
+            <label><i class="fas fa-layer-group" style="color:var(--gold)"></i> Periodo</label>
+            <select id="cap-periodo">
+              <option value="1er Parcial">1er Parcial</option>
+              <option value="2do Parcial">2do Parcial</option>
+              <option value="3er Parcial">3er Parcial</option>
+              <option value="Final">Final</option>
+              <option value="Extraordinario">Extraordinario</option>
+            </select>
+          </div>
+          <div class="f">
+            <label><i class="fas fa-people-group" style="color:var(--gold)"></i> Grupo (opcional)</label>
+            <select id="cap-grupo" onchange="filtrarAlumnos()">
+              <option value="">— Todos —</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Buscador en card -->
+        <div class="cd-buscar-wrap">
+          <label><i class="fas fa-magnifying-glass" style="color:var(--gold)"></i> Buscar alumno</label>
+          <div class="cd-search-wrap">
+            <input type="text" id="cd-q" placeholder="Escribe el nombre o folio del alumno..." oninput="buscarAlumno()" autocomplete="off">
+            <i class="fas fa-magnifying-glass"></i>
+            <div class="cd-dropdown" id="cd-dropdown"></div>
+          </div>
+        </div>
+
+        <!-- Alumno seleccionado -->
+        <div id="cd-alumno-wrap" style="display:none">
+          <div class="cd-alumno-card">
+            <div class="cd-av" id="cd-av">?</div>
+            <div>
+              <div class="cd-av-nom" id="cd-av-nom">—</div>
+              <div class="cd-av-meta" id="cd-av-meta"></div>
+            </div>
+          </div>
+
+          <!-- Formulario sliders -->
+          <div class="cd-form">
+            <div class="cd-form-h"><i class="fas fa-award"></i> Evaluación de conducta</div>
+            <div class="cd-form-body" id="cd-form-body">
+              <!-- Generado por JS -->
+            </div>
+          </div>
+
+          <!-- Observaciones -->
+          <div class="cd-form">
+            <div class="cd-form-h"><i class="fas fa-comment-dots"></i> Observaciones</div>
+            <div class="cd-form-body">
+              <div class="cd-obs">
+                <textarea id="cd-obs" placeholder="Observaciones adicionales sobre la conducta del alumno..."></textarea>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <button class="btn btn-primary" onclick="guardar()">
+              <i class="fas fa-floppy-disk"></i> Guardar evaluación
+            </button>
+            <button class="btn btn-secondary" onclick="limpiarForm()">
+              <i class="fas fa-xmark"></i> Cancelar
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ LISTA ══ -->
+      <div id="sec-lista" style="display:none">
+        <div class="cd-filter-card">
+          <div class="f">
+            <label><i class="fas fa-layer-group" style="color:var(--gold)"></i> Periodo</label>
+            <select id="lst-periodo" onchange="cargarLista()">
+              <option value="1er Parcial">1er Parcial</option>
+              <option value="2do Parcial">2do Parcial</option>
+              <option value="3er Parcial">3er Parcial</option>
+              <option value="Final">Final</option>
+              <option value="Extraordinario">Extraordinario</option>
+            </select>
+          </div>
+          <div class="f">
+            <label><i class="fas fa-people-group" style="color:var(--gold)"></i> Grupo</label>
+            <select id="lst-grupo" onchange="cargarLista()">
+              <option value="">— Todos —</option>
+            </select>
+          </div>
+        </div>
+        <div id="lst-wrap"></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Modal confirm -->
+<div class="modal-ov" id="modal-confirm">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 id="mc-title">Confirmar</h3>
+      <button class="modal-close" onclick="closeModal('modal-confirm')">&#10005;</button>
+    </div>
+    <div class="modal-body"><p id="mc-msg"></p></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary btn-sm" onclick="closeModal('modal-confirm')">Cancelar</button>
+      <button class="btn btn-danger btn-sm" id="mc-ok">Aceptar</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script src="js/app.js"></script>
+<script>
+function g(id){ return document.getElementById(id); }
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+/* ── Modalidad ── */
+const PERIODOS_MOD = {
+  semestral:     ['1er Parcial','2do Parcial','3er Parcial','4to Parcial','Final','Extraordinario'],
+  cuatrimestral: ['1er Parcial','2do Parcial','3er Parcial','Final','Extraordinario']
+};
+let _cdModalidad = localStorage.getItem('ecca_modalidad') || 'cuatrimestral';
+
+function setCdModalidad(mod) {
+  _cdModalidad = mod;
+  localStorage.setItem('ecca_modalidad', mod);
+  g('cd-mod-sem').classList.toggle('on', mod === 'semestral');
+  g('cd-mod-cuat').classList.toggle('on', mod === 'cuatrimestral');
+  const opts = PERIODOS_MOD[mod].map(p => `<option value="${p}">${p}</option>`).join('');
+  ['cap-periodo','lst-periodo'].forEach(id => {
+    const sel = g(id);
+    if (!sel) return;
+    const cur = sel.value;
+    sel.innerHTML = opts;
+    if (PERIODOS_MOD[mod].includes(cur)) sel.value = cur;
+  });
+}
+
+let _alumnos  = [];
+let _grupos   = [];
+let _selAlumno = null;
+let _tabActivo = 'captura';
+
+const CD_ITEMS = [
+  { key:'conducta_pct',  label:'Conducta general',  icon:'fa-user-check',    desc:'Comportamiento general en clases' },
+  { key:'uniforme_pct',  label:'Uniforme',           icon:'fa-shirt',         desc:'Uso correcto del uniforme escolar' },
+  { key:'higiene_pct',   label:'Higiene',            icon:'fa-hand-sparkles', desc:'Presentación e higiene personal' },
+  { key:'retardos_pct',  label:'Puntualidad',        icon:'fa-clock',         desc:'Asistencia a tiempo (0% = muchos retardos)' },
+  { key:'peleas_pct',    label:'Sin faltas graves',  icon:'fa-heart',         desc:'Ausencia de incidentes graves' },
+];
+
+/* ── Tabs ── */
+function setTab(tab) {
+  _tabActivo = tab;
+  ['captura','lista'].forEach(t => {
+    g('tab-'+t).classList.toggle('on', t===tab);
+    g('sec-'+t).style.display = t===tab ? '' : 'none';
+  });
+  if (tab==='lista') cargarLista();
+}
+
+/* ── Init ── */
+async function init() {
+  await _permisosListos;
+  setCdModalidad(_cdModalidad);
+  try {
+    _grupos = await getGrupos();
+    const opts = '<option value="">— Todos —</option>' +
+      _grupos.map(gr => `<option value="${gr.id}">${esc(gr.nombre)}</option>`).join('');
+    g('cap-grupo').innerHTML = opts;
+    g('lst-grupo').innerHTML = opts;
+
+    const { data } = await _sb.from('inscripciones')
+      .select('folio,nombre,grupo_id').order('nombre');
+    _alumnos = (data||[]);
+  } catch(e) { console.error(e); }
+  renderFormSliders();
+}
+
+/* ── Formulario sliders ── */
+function renderFormSliders(vals) {
+  g('cd-form-body').innerHTML = CD_ITEMS.map(it => {
+    const val = vals ? (vals[it.key]??50) : 50;
+    return `<div class="cd-row">
+      <div class="cd-label-row">
+        <span class="cd-label"><i class="fas ${it.icon}" style="color:var(--gold)"></i>${esc(it.label)}</span>
+        <span class="cd-pct-num" id="pct-num-${it.key}">${val}%</span>
+      </div>
+      <input type="range" class="cd-slider" id="sl-${it.key}" min="0" max="100" step="5" value="${val}"
+        oninput="g('pct-num-${it.key}').textContent=this.value+'%';actualizarColorSlider(this)"
+        style="accent-color:var(--navy)">
+      <div class="cd-pills">
+        ${[0,20,40,60,80,100].map(p=>`<button class="cd-pill${p===val?' on':''}" onclick="setPctPill(this,'${it.key}',${p})">${p}%</button>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function setPctPill(el, key, val) {
+  g('sl-'+key).value = val;
+  g('pct-num-'+key).textContent = val+'%';
+  el.closest('.cd-row').querySelectorAll('.cd-pill').forEach(p=>p.classList.remove('on'));
+  el.classList.add('on');
+}
+
+/* ── Buscar alumno ── */
+let _busqTimer = null;
+function buscarAlumno() {
+  clearTimeout(_busqTimer);
+  _busqTimer = setTimeout(() => {
+    const q = (g('cd-q').value||'').toLowerCase().trim();
+    const grupoId = parseInt(g('cap-grupo').value)||0;
+    if (!q) { g('cd-dropdown').classList.remove('show'); return; }
+    const filtrados = _alumnos.filter(a =>
+      (!grupoId || a.grupo_id === grupoId) &&
+      ((a.nombre||'').toLowerCase().includes(q) || (a.folio||'').toLowerCase().includes(q))
+    ).slice(0,10);
+    if (!filtrados.length) {
+      g('cd-dropdown').innerHTML = '<div style="padding:12px;font-size:12px;color:var(--text-muted);text-align:center">Sin resultados</div>';
+    } else {
+      const gr = {};
+      _grupos.forEach(x => { gr[x.id]=x.nombre; });
+      g('cd-dropdown').innerHTML = filtrados.map(a =>
+        `<div class="cd-item" onclick="seleccionarAlumno('${esc(a.folio)}')">
+          <div class="cd-item-nom">${esc(a.nombre||a.folio)}</div>
+          <div class="cd-item-meta">${esc(a.folio)} · ${esc(gr[a.grupo_id]||'Sin grupo')}</div>
+        </div>`
+      ).join('');
+    }
+    g('cd-dropdown').classList.add('show');
+  }, 200);
+}
+
+function filtrarAlumnos() { buscarAlumno(); }
+
+async function seleccionarAlumno(folio) {
+  g('cd-dropdown').classList.remove('show');
+  g('cd-q').value = '';
+  const a = _alumnos.find(x => x.folio === folio);
+  if (!a) return;
+  _selAlumno = a;
+
+  const gr = _grupos.find(x => x.id === a.grupo_id);
+  const inits = (a.nombre||'?').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
+  g('cd-av').textContent   = inits;
+  g('cd-av-nom').textContent = a.nombre||a.folio;
+  g('cd-av-meta').textContent = [a.folio, gr?.nombre||'Sin grupo'].join(' · ');
+  g('cd-alumno-wrap').style.display = '';
+
+  // Cargar evaluación existente
+  const periodo = g('cap-periodo').value;
+  const { data } = await _sb.from('conducta_alumno')
+    .select('*').eq('folio',folio).eq('periodo',periodo).maybeSingle();
+  renderFormSliders(data||null);
+  g('cd-obs').value = data?.observacion||'';
+}
+
+function limpiarForm() {
+  _selAlumno = null;
+  g('cd-alumno-wrap').style.display = 'none';
+  g('cd-q').value = '';
+  renderFormSliders();
+  g('cd-obs').value = '';
+}
+
+/* ── Guardar ── */
+async function guardar() {
+  if (!_selAlumno) return;
+  const periodo = g('cap-periodo').value;
+  const payload = {
+    folio:         _selAlumno.folio,
+    periodo,
+    observacion:   g('cd-obs').value.trim(),
+    updated_at:    new Date().toISOString(),
+  };
+  CD_ITEMS.forEach(it => { payload[it.key] = parseInt(g('sl-'+it.key).value)||0; });
+
+  const { error } = await _sb.from('conducta_alumno')
+    .upsert(payload, { onConflict:'folio,periodo' });
+
+  if (error) { toast('Error al guardar: '+error.message,'err'); return; }
+  toast('Evaluación guardada correctamente.','ok');
+}
+
+/* ── Lista ── */
+async function cargarLista() {
+  const periodo  = g('lst-periodo').value;
+  const grupoId  = parseInt(g('lst-grupo').value)||0;
+  g('lst-wrap').innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-muted)"><i class="fas fa-spinner fa-spin"></i> Cargando...</div>';
+
+  let q = _sb.from('conducta_alumno').select('*').eq('periodo',periodo);
+  const { data: cds } = await q;
+
+  if (!cds||!cds.length) {
+    g('lst-wrap').innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-muted)"><i class="fas fa-award" style="font-size:28px;display:block;margin-bottom:8px;color:var(--border)"></i>No hay evaluaciones para este periodo.</div>';
+    return;
+  }
+
+  // Filtrar por grupo si aplica
+  const grMap = {};
+  _grupos.forEach(gr => { grMap[gr.id]=gr.nombre; });
+  const alumMap = {};
+  _alumnos.forEach(a => { alumMap[a.folio]=a; });
+
+  let filtrados = cds;
+  if (grupoId) {
+    const foliosGrupo = new Set(_alumnos.filter(a=>a.grupo_id===grupoId).map(a=>a.folio));
+    filtrados = cds.filter(c => foliosGrupo.has(c.folio));
+  }
+
+  if (!filtrados.length) {
+    g('lst-wrap').innerHTML = '<div style="padding:30px;text-align:center;color:var(--text-muted)">No hay evaluaciones para los filtros seleccionados.</div>';
+    return;
+  }
+
+  function barColor(p){ return p>=80?'#22c55e':p>=60?'#f59e0b':'#ef4444'; }
+
+  const cards = filtrados.map(c => {
+    const a = alumMap[c.folio] || {};
+    const gr = grMap[a.grupo_id]||'Sin grupo';
+    const inits = (a.nombre||c.folio||'?').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
+    const miniBars = CD_ITEMS.map(it => {
+      const pct = c[it.key]??0;
+      return `<div class="cd-mini-bar">
+        <span class="cd-mini-lbl">${it.label}</span>
+        <div class="cd-mini-bg"><div class="cd-mini-fill" style="width:${pct}%;background:${barColor(pct)}"></div></div>
+        <span class="cd-mini-val">${pct}%</span>
+      </div>`;
+    }).join('');
+    return `<div class="cd-g-card" onclick="editarDesdeCard('${esc(c.folio)}')">
+      <div class="cd-g-hdr">
+        <span>${esc(a.nombre||c.folio)}</span>
+        <span style="font-size:10px;opacity:.7">${esc(gr)}</span>
+      </div>
+      <div class="cd-g-body">${miniBars}</div>
+    </div>`;
+  }).join('');
+
+  g('lst-wrap').innerHTML = `<div class="cd-grid">${cards}</div>`;
+}
+
+async function editarDesdeCard(folio) {
+  setTab('captura');
+  await seleccionarAlumno(folio);
+  g('cd-form-body').scrollIntoView({ behavior:'smooth' });
+}
+
+document.addEventListener('click', e => {
+  if (!g('cd-search-wrap')?.contains(e.target)) g('cd-dropdown').classList.remove('show');
+});
+
+init();
+</script>
+</body>
+</html>

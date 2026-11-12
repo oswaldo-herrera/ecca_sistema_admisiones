@@ -556,15 +556,21 @@ function _aplicarPermisos(rol, nombre) {
     sbFooter.parentNode.insertBefore(el, sbFooter);
   }
 
-  // Inject avances-admin link for admin/director if not already present
-  if ((rol === 'admin' || rol === 'director') && !document.querySelector('.sb-item[href="avances-admin.html"]')) {
+  // Inject admin links for admin/director if not already present
+  if (rol === 'admin' || rol === 'director') {
     const usrLink = document.querySelector('.sb-item[href="usuarios.html"]');
     if (usrLink) {
-      const a = document.createElement('a');
-      a.href = 'avances-admin.html';
-      a.className = 'sb-item';
-      a.innerHTML = '<i class="fas fa-chart-bar"></i><span>Avances Mensuales</span>';
-      usrLink.parentNode.insertBefore(a, usrLink);
+      const injectar = (href, icon, label) => {
+        if (!document.querySelector(`.sb-item[href="${href}"]`)) {
+          const a = document.createElement('a');
+          a.href = href; a.className = 'sb-item';
+          a.innerHTML = `<i class="fas ${icon}"></i><span>${label}</span>`;
+          usrLink.parentNode.insertBefore(a, usrLink);
+        }
+      };
+      injectar('avances-admin.html',  'fa-chart-bar',    'Avances Mensuales');
+      injectar('conducta-admin.html', 'fa-award',        'Conducta Alumnos');
+      injectar('vista-padre.html',    'fa-person-breastfeeding', 'Portal de Padres');
     }
   }
 
@@ -574,7 +580,7 @@ function _aplicarPermisos(rol, nombre) {
     const href = el.getAttribute('href');
     if (!href) return;
     const visible = !perms || perms.includes(href);
-    const esUsuarios = href === 'usuarios.html' || href === 'avances-admin.html';
+    const esUsuarios = ['usuarios.html','avances-admin.html','conducta-admin.html','vista-padre.html'].includes(href);
     el.style.display = (visible && (!esUsuarios || rol === 'admin' || rol === 'director')) ? '' : 'none';
   });
 
@@ -924,18 +930,22 @@ async function aplicarPermisosSistema() {
       sessionStorage.setItem('ecca_solo_sabatino', 'false');
       sessionStorage.setItem('ecca_permisos', '__admin__');
       document.querySelectorAll('.sb-item[href="usuarios.html"]').forEach(el => el.style.display = '');
-      // Inject avances-admin link if not already in sidebar
-      if (!document.querySelector('.sb-item[href="avances-admin.html"]')) {
-        const usrLink = document.querySelector('.sb-item[href="usuarios.html"]');
-        if (usrLink) {
-          const a = document.createElement('a');
-          a.href = 'avances-admin.html';
-          a.className = 'sb-item';
-          a.innerHTML = '<i class="fas fa-chart-bar"></i><span>Avances Mensuales</span>';
-          usrLink.parentNode.insertBefore(a, usrLink);
-        }
-      } else {
-        document.querySelectorAll('.sb-item[href="avances-admin.html"]').forEach(el => el.style.display = '');
+      // Inject admin links if not already in sidebar
+      const usrLink2 = document.querySelector('.sb-item[href="usuarios.html"]');
+      if (usrLink2) {
+        const injectar2 = (href, icon, label) => {
+          if (!document.querySelector(`.sb-item[href="${href}"]`)) {
+            const a = document.createElement('a');
+            a.href = href; a.className = 'sb-item';
+            a.innerHTML = `<i class="fas ${icon}"></i><span>${label}</span>`;
+            usrLink2.parentNode.insertBefore(a, usrLink2);
+          } else {
+            document.querySelectorAll(`.sb-item[href="${href}"]`).forEach(el => el.style.display = '');
+          }
+        };
+        injectar2('avances-admin.html',  'fa-chart-bar', 'Avances Mensuales');
+        injectar2('conducta-admin.html', 'fa-award',     'Conducta Alumnos');
+        injectar2('vista-padre.html',    'fa-users',     'Portal de Padres');
       }
     } else {
       _permisosActivos = permisos || [];
