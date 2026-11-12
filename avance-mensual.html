@@ -625,6 +625,7 @@ let _grupos     = [];
 let _materias   = [];
 let _avancesMes = [];
 let _avanceIdx  = -1;
+let _borrador   = null; // guarda el formulario nuevo sin guardar
 
 function g(id) { return document.getElementById(id); }
 function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
@@ -779,6 +780,8 @@ function renderMateriaTabs() {
 }
 
 function seleccionarAvance(idx) {
+  // Si venimos de un formulario nuevo sin guardar, conservar su estado
+  if (_avanceIdx === -1) _borrador = getDatos();
   _avanceIdx = idx;
   const a = _avancesMes[idx];
   _recId = a.id;
@@ -792,8 +795,14 @@ function seleccionarAvance(idx) {
 function nuevoAvance() {
   _avanceIdx = -1;
   _recId = null;
-  rellenarForm({});
-  setEstado('vacio', null);
+  // Restaurar el borrador si lo hay, o empezar limpio
+  if (_borrador) {
+    rellenarForm(_borrador);
+    setEstado('vacio', null);
+  } else {
+    rellenarForm({});
+    setEstado('vacio', null);
+  }
   g('img-saved').style.display = 'none';
   renderMateriaTabs();
 }
@@ -801,6 +810,7 @@ function nuevoAvance() {
 async function cargarMes() {
   const mes    = g('am-mes').value;
   const nombre = g('am-profesor').value.trim();
+  _borrador = null; // nuevo mes/profesor, descartar borrador anterior
   if (!mes || !nombre) {
     _avancesMes = []; _avanceIdx = -1; _recId = null;
     renderTemas([]); renderMetas([]); setEstado('vacio',null);
@@ -845,6 +855,7 @@ async function guardar(nuevoEst) {
   if (btn) btn.disabled = false;
   if (error) { toast('Error al guardar: ' + error.message, 'err'); return; }
   _recId = data.id;
+  _borrador = null; // ya guardado, limpiar borrador temporal
   const existing = _avancesMes.findIndex(a => a.id === data.id);
   if (existing >= 0) { _avancesMes[existing] = data; _avanceIdx = existing; }
   else { _avancesMes.push(data); _avanceIdx = _avancesMes.length - 1; }

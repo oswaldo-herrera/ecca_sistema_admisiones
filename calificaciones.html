@@ -464,18 +464,8 @@ function setTab(tab) {
 (async function init() {
   [_grupos, _materias, _maestros] = await Promise.all([getGrupos(), getMaterias(), getMaestros()]);
 
-  // Poblar selects de grupos (captura y vista grupo)
-  const grupoOpts = _grupos.map(g =>
-    `<option value="${g.id}">${esc(g.nombre)}${g.modalidad ? ' · ' + esc(g.modalidad) : ''}</option>`
-  ).join('');
-  $('cap-grupo').innerHTML = '<option value="">— Seleccione grupo —</option>' + grupoOpts;
-  $('gv-grupo').innerHTML  = '<option value="">— Seleccione grupo —</option>' + grupoOpts;
-
-  // Poblar selects de materias (captura)
-  const matOpts = _materias.map(m =>
-    `<option value="${m.id}">${esc(m.nombre)}${m.grado ? ' (' + esc(m.grado) + ')' : ''}</option>`
-  ).join('');
-  $('cap-materia').innerHTML = '<option value="">— Seleccione materia —</option>' + matOpts;
+  // Poblar grupos y materias filtrados por modalidad
+  actualizarFiltrosModalidad(_modalidad);
 
   // Poblar select de maestros (captura)
   const maeOpts = _maestros.map(m =>
@@ -643,9 +633,11 @@ function _filtrarMateriasPorGrupo() {
   const grupoId = parseInt(gv('cap-grupo'));
   const sel = $('cap-materia');
   if (!grupoId) {
-    // Sin grupo: mostrar todas
+    // Sin grupo: filtrar por modalidad seleccionada
+    const modKey = _modalidad === 'semestral' ? 'semestral' : 'cuatrimestral';
+    const matsFilt = _materias.filter(m => !m.grado || m.grado.toLowerCase().includes(modKey));
     sel.innerHTML = '<option value="">— Seleccione materia —</option>' +
-      _materias.map(m => `<option value="${m.id}">${esc(m.nombre)}${m.grado ? ' ('+esc(m.grado)+')' : ''}</option>`).join('');
+      matsFilt.map(m => `<option value="${m.id}">${esc(m.nombre)}${m.grado ? ' ('+esc(m.grado)+')' : ''}</option>`).join('');
     return;
   }
   const grupo = _grupos.find(g => g.id === grupoId);
@@ -1237,7 +1229,27 @@ function setModalidad(mod) {
     sel.innerHTML = opts;
     if (PERIODOS_MOD[mod].includes(cur)) sel.value = cur;
   });
+  // Filtrar grupos y materias si ya cargaron
+  if (_grupos.length) actualizarFiltrosModalidad(mod);
 }
+
+function actualizarFiltrosModalidad(mod) {
+  const modKey = mod === 'semestral' ? 'sem' : 'cuatri';
+  // Filtrar grupos: incluir si no tiene modalidad definida o coincide
+  const gruposFilt = _grupos.filter(g => {
+    if (!g.modalidad) return true;
+    const m = g.modalidad.toLowerCase();
+    return mod === 'semestral' ? m.includes('sem') : (m.includes('cuatri') || m.includes('sab'));
+  });
+  const grupoOpts = gruposFilt.map(g =>
+    `<option value="${g.id}">${esc(g.nombre)}${g.modalidad ? ' · '+esc(g.modalidad) : ''}</option>`
+  ).join('');
+  $('cap-grupo').innerHTML = '<option value="">— Seleccione grupo —</option>' + grupoOpts;
+  $('gv-grupo').innerHTML  = '<option value="">— Seleccione grupo —</option>' + grupoOpts;
+  // Refrescar materias con nueva modalidad
+  _filtrarMateriasPorGrupo();
+}
+
 // Aplicar modalidad al cargar
 setModalidad(_modalidad);
 
