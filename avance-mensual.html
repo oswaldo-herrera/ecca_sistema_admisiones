@@ -742,11 +742,14 @@ function rellenarForm(d) {
     if (g('am-grupos-extra')) g('am-grupos-extra').value = d.grupos || '';
   }
   // Restaurar materia: buscar en el select por texto visible
-  if (g('am-materia') && d.materia) {
-    const matSel = g('am-materia');
-    // Primero filtrar el select al grupo cargado, luego seleccionar
+  if (g('am-materia')) {
     const grupoId = g('am-grupo').value ? parseInt(g('am-grupo').value) : 0;
-    _filtrarMaterias(grupoId, d.materia);
+    if (d.materia) {
+      _filtrarMaterias(grupoId, d.materia);
+    } else {
+      _filtrarMaterias(grupoId, '');
+      g('am-materia').value = '';
+    }
   }
   if (g('am-semestre')) g('am-semestre').value = d.semestre || '';
   renderTemas(d.temas || []);
